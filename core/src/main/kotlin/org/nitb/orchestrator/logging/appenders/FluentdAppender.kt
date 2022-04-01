@@ -5,6 +5,7 @@ import ch.qos.logback.core.AppenderBase
 import org.fluentd.logger.FluentLogger
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
+import java.lang.RuntimeException
 import java.net.InetAddress
 
 class FluentdAppender(
@@ -17,9 +18,9 @@ class FluentdAppender(
 
         // region PRIVATE
 
-        private val fluentdHost = ConfigManager.getProperty(ConfigNames.LOGGING_FLUENTD_HOST, FluentdAppenderPropertyNotFoundException("No mandatory property found: ${ConfigNames.LOGGING_FLUENTD_HOST}"))
+        private val fluentdHost = ConfigManager.getProperty(ConfigNames.LOGGING_FLUENTD_HOST, RuntimeException("Mandatory property not found: ${ConfigNames.LOGGING_FLUENTD_HOST}"))
         private val fluentdPort = ConfigManager.getInt(ConfigNames.LOGGING_FLUENTD_PORT, ConfigNames.LOGGING_FLUENTD_DEFAULT_PORT)
-        private val fluentdTagPrefix = ConfigManager.getProperty(ConfigNames.LOGGING_FLUENTD_TAG_PREFIX, FluentdAppenderPropertyNotFoundException("No mandatory property found: ${ConfigNames.LOGGING_FLUENTD_TAG_PREFIX}"))
+        private val fluentdTagPrefix = ConfigManager.getProperty(ConfigNames.LOGGING_FLUENTD_TAG_PREFIX, RuntimeException("Mandatory property not found: ${ConfigNames.LOGGING_FLUENTD_TAG_PREFIX}"))
         private val fluentLogger = FluentLogger.getLogger(fluentdTagPrefix, fluentdHost, fluentdPort)
 
         // endregion
@@ -47,7 +48,7 @@ class FluentdAppender(
 
     // region PRIVATE
 
-    private val fluentdTag = ConfigManager.getProperty(ConfigNames.LOGGING_FLUENTD_TAG, FluentdAppenderPropertyNotFoundException("No mandatory property found: ${ConfigNames.LOGGING_FLUENTD_TAG}")) + ".$loggerName"
+    private val fluentdTag = ConfigManager.getProperty(ConfigNames.LOGGING_FLUENTD_TAG, RuntimeException("Mandatory property not found: ${ConfigNames.LOGGING_FLUENTD_TAG}")) + ".$loggerName"
 
     // endregion
 }

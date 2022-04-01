@@ -15,7 +15,7 @@ import java.math.BigInteger
 
 @NoArgsConstructor
 abstract class Subscription<I, O>(
-    protected val name: String,
+    val name: String,
     protected val timeout: Long = -1,
     private val description: String? = null
 ) {

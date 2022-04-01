@@ -31,6 +31,7 @@
     <activemq.jms.version>5.17.0</activemq.jms.version>
     <cron.utils.version>9.1.6</cron.utils.version>
     <jackson.version>2.13.2</jackson.version>
+    <quarkus.version>2.7.5.Final</quarkus.version>
     <kotlin.version>1.6.20-RC2</kotlin.version>
   </properties>
 
@@ -170,6 +171,24 @@
             <descriptorRef>jar-with-dependencies</descriptorRef>
           </descriptorRefs>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+        <version>${quarkus.version}</version>
+        <executions>
+          <execution>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>extension-descriptor</goal>
+            </goals>
+            <configuration>
+              <dependencyCondition>
+                <artifact>org.acme:quarkus-extension-c</artifact>
+              </dependencyCondition>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

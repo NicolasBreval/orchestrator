@@ -1,5 +1,8 @@
 package org.nitb.orchestrator.config
 
+import org.nitb.orchestrator.annotations.RequiredProperty
+import org.nitb.orchestrator.subscriber.entities.AllocationStrategy
+
 object ConfigNames {
 
     // region LOGGING
@@ -23,9 +26,12 @@ object ConfigNames {
 
     // region FLUENTD
 
+    @RequiredProperty("Only if logging.fluentd.enabled is true")
     const val LOGGING_FLUENTD_HOST = "logging.fluentd.host"
     const val LOGGING_FLUENTD_PORT = "logging.fluentd.port"
+    @RequiredProperty("Only if logging.fluentd.enabled is true")
     const val LOGGING_FLUENTD_TAG = "logging.fluentd.tag"
+    @RequiredProperty("Only if logging.fluentd.enabled is true")
     const val LOGGING_FLUENTD_TAG_PREFIX = "logging.fluentd.tag.prefix"
 
     // endregion
@@ -38,9 +44,13 @@ object ConfigNames {
 
     // region DATABASE
 
+    @RequiredProperty("Master node needs to connect to database, also slaves can connect to database when changes to master mode")
     const val DATABASE_DRIVER_CLASSNAME = "database.driver.classname"
+    @RequiredProperty("Master node needs to connect to database, also slaves can connect to database when changes to master mode")
     const val DATABASE_JDBC_URL = "database.jdbc.url"
+    @RequiredProperty("Master node needs to connect to database, also slaves can connect to database when changes to master mode")
     const val DATABASE_USERNAME = "database.username"
+    @RequiredProperty("Master node needs to connect to database, also slaves can connect to database when changes to master mode")
     const val DATABASE_PASSWORD = "database.password"
     const val DATABASE_MAX_POOL_SIZE = "database.max.pool.size"
     const val DATABASE_MAX_LIFE_TIME = "database.max.life.time"
@@ -56,21 +66,28 @@ object ConfigNames {
 
     // region CLOUD
 
+    @RequiredProperty("Needed to select queue connection type")
     const val CLOUD_TYPE = "cloud.type"
 
     // region RABBITMQ
 
+    @RequiredProperty("Only if cloud.type is RABBITMQ")
     const val RABBITMQ_HOST = "cloud.rabbitmq.host"
     const val RABBITMQ_PORT = "cloud.rabbitmq.port"
+    @RequiredProperty("Only if cloud.type is RABBITMQ")
     const val RABBITMQ_USERNAME = "cloud.rabbitmq.username"
+    @RequiredProperty("Only if cloud.type is RABBITMQ")
     const val RABBITMQ_PASSWORD = "cloud.rabbitmq.password"
 
     // endregion
 
     // region ACTIVEMQ
 
+    @RequiredProperty("Only if cloud.type is ACTIVEMQ")
     const val ACTIVEMQ_BROKER_URL = "cloud.activemq.broker.url"
+    @RequiredProperty("Only if cloud.type is ACTIVEMQ")
     const val ACTIVEMQ_USERNAME = "cloud.activemq.username"
+    @RequiredProperty("Only if cloud.type is ACTIVEMQ")
     const val ACTIVEMQ_PASSWORD = "cloud.activemq.password"
 
     // endregion
@@ -93,6 +110,49 @@ object ConfigNames {
     const val ACTIVEMQ_DEFAULT_PASSWORD = "admin"
 
     // endregion
+
+    // endregion
+
+    // region NETWORK
+
+    @RequiredProperty("Needed to notify master slave port number")
+    const val PORT_NUMBER = "server.port.number"
+
+    // endregion
+
+    // region NETWORK DEFAULTS
+
+    const val PORT_NUMBER_DEFAULT = 80
+
+    // endregion
+
+    // region SECONDARY SUBSCRIBER
+
+    @RequiredProperty("Needed only if allocation strategy is FIXED")
+    const val SECONDARY_NAME = "subscriber.slave.name"
+    const val SECONDARY_SEND_INFO_PERIOD = "subscriber.slave.send.info.period"
+    const val SECONDARY_SEND_INFO_TIMEOUT = "subscriber.slave.send.ingo.timeout"
+
+    // endregion
+
+    // region PRIMARY SUBSCRIBER
+
+    @RequiredProperty
+    const val PRIMARY_NAME = "subscriber.master.name"
+    const val ALLOCATION_STRATEGY = "subscriber.master.allocation.strategy"
+
+    // endregion
+
+    // region SECONDARY SUBSCRIBER DEFAULTS
+
+    const val SECONDARY_SEND_INFO_PERIOD_DEFAULT = 5000L
+    const val SECONDARY_SEND_INFO_TIMEOUT_DEFAULT = 4000L
+
+    // endregion
+
+    // region PRIMARY SUBSCRIBER DEFAULTS
+
+    val ALLOCATION_STRATEGY_DEFAULT = AllocationStrategy.FIXED
 
     // endregion
 }
