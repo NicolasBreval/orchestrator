@@ -1,0 +1,79 @@
+package org.nitb.orchestrator.cloud.rabbitmq
+
+import com.rabbitmq.client.AlreadyClosedException
+import com.rabbitmq.client.ConnectionFactory
+import org.nitb.orchestrator.cloud.CloudClient
+import org.nitb.orchestrator.cloud.CloudMessage
+import org.nitb.orchestrator.config.ConfigManager
+import org.nitb.orchestrator.config.ConfigNames
+import org.nitb.orchestrator.logging.LoggingManager
+import org.nitb.orchestrator.serialization.binary.BinarySerializer
+import java.io.IOException
+import java.io.Serializable
+import java.lang.RuntimeException
+import java.util.function.Consumer
+
+class RabbitMqCloudClient<T: Serializable>(
+    name: String
+): CloudClient<T>(name) {
+
+    companion object {
+        private val connectionFactory: ConnectionFactory = ConnectionFactory()
+
+        init {
+            connectionFactory.host = ConfigManager.getProperty(ConfigNames.RABBITMQ_HOST, RuntimeException("Needed property doesn't exists: ${ConfigNames.RABBITMQ_HOST}"))
+            connectionFactory.port = ConfigManager.getInt(ConfigNames.RABBITMQ_PORT, ConfigNames.RABBITMQ_DEFAULT_PORT)
+            connectionFactory.username = ConfigManager.getProperty(ConfigNames.RABBITMQ_USERNAME, ConfigNames.RABBITMQ_DEFAULT_USERNAME)
+            connectionFactory.password = ConfigManager.getProperty(ConfigNames.RABBITMQ_PASSWORD, ConfigNames.RABBITMQ_DEFAULT_PASSWORD)
+        }
+    }
+
+    override fun <M: Serializable> send(receiver: String, message: M) {
+       try {
+           declareQueue()
+           channel.basicPublish("", receiver, null, BinarySerializer.encode(
+               CloudMessage(
+                   name,
+                   message
+               )
+           ))
+       } catch (e: AlreadyClosedException) {
+           logger.error("RABBITMQ ERROR: Error connecting with server for queue $name, please check connection to server", e)
+       }
+    }
+
+    override fun createConsumer(onConsume: Consumer<CloudMessage<T>>) {
+        try {
+            declareQueue()
+            consumerTag = channel.basicConsume(name,
+                RabbitMqConsumer(name, channel, onConsume) {
+                    createConsumer(onConsume)
+                })
+        } catch (e: IOException) {
+            logger.error("RABBITMQ ERROR: Error creating new consumer for queue $name", e)
+        }
+    }
+
+    override fun cancelConsumer() {
+        if (this::consumerTag.isInitialized)
+            channel.basicCancel(consumerTag)
+    }
+
+    override fun purge() {
+        channel.queuePurge(name)
+    }
+
+    override fun close() {
+        channel.close()
+        connection.close()
+    }
+
+    private fun declareQueue() {
+        channel.queueDeclare(name, true, true, false, null)
+    }
+
+    private val connection = connectionFactory.newConnection()
+    private val channel = connection.createChannel()
+    private val logger = LoggingManager.getLogger(this::class.java)
+    private lateinit var consumerTag: String
+}

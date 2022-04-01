@@ -1,0 +1,120 @@
+package org.nitb.orchestrator.subscription
+
+import com.fasterxml.jackson.annotation.JsonIgnore
+import org.nitb.orchestrator.annotations.NoArgsConstructor
+import org.nitb.orchestrator.cloud.CloudConsumer
+import org.nitb.orchestrator.cloud.CloudManager
+import org.nitb.orchestrator.cloud.CloudSender
+import org.nitb.orchestrator.logging.LoggerWrapper
+import org.nitb.orchestrator.logging.LoggingManager
+import org.nitb.orchestrator.serialization.binary.BinarySerializer
+import org.nitb.orchestrator.serialization.json.JSONSerializer
+import java.io.Serializable
+import java.lang.Exception
+import java.math.BigInteger
+
+@NoArgsConstructor
+abstract class Subscription<I, O>(
+    protected val name: String,
+    protected val timeout: Long = -1,
+    private val description: String? = null
+) {
+
+    // region PUBLIC METHODS
+
+    fun start() {
+        status = SubscriptionStatus.IDLE
+        starts = starts.add(BigInteger.ONE)
+        initialize()
+        onStart()
+    }
+
+    fun stop() {
+        onStop()
+        deactivate()
+        status = SubscriptionStatus.STOPPED
+        stops = stops.add(BigInteger.ONE)
+    }
+
+    // endregion
+
+    // region PRIVATE PROPERTIES
+
+    @JsonIgnore
+    private val creation: Long = System.currentTimeMillis()
+    @JsonIgnore
+    private var isStored: Boolean = false
+    @JsonIgnore
+    private var status: SubscriptionStatus = SubscriptionStatus.STOPPED
+    @JsonIgnore
+    private var inputVolume: BigInteger = BigInteger.ZERO
+    @JsonIgnore
+    private var outputVolume: BigInteger = BigInteger.ZERO
+    @JsonIgnore
+    private var starts: BigInteger = BigInteger.ZERO
+    @JsonIgnore
+    private var stops: BigInteger = BigInteger.ZERO
+    @JsonIgnore
+    private var success: BigInteger = BigInteger.ZERO
+    @JsonIgnore
+    private var error: BigInteger = BigInteger.ZERO
+    @JsonIgnore
+    private var lastExecution: Long = -1L
+    @JsonIgnore
+    private var schema: String? = JSONSerializer.getSchema(this::class.java)
+    @JsonIgnore
+    protected val logger: LoggerWrapper = LoggingManager.getLogger(name)
+
+    // endregion
+
+    // region PRIVATE METHODS
+
+    protected abstract fun onEvent(sender: String, input: I): O?
+
+    protected abstract fun preRun(input: I)
+
+    protected abstract fun initialize()
+
+    protected abstract fun deactivate()
+
+    protected fun runEvent(messageSize: BigInteger, sender: String, input: I): O? {
+        status = SubscriptionStatus.RUNNING
+        lastExecution = System.currentTimeMillis()
+        inputVolume = inputVolume.add(messageSize)
+
+        return try {
+            preRun(input)
+            val output = onEvent(sender, input)
+            onSuccess(input, output)
+            success = success.add(BigInteger.ONE)
+
+            try {
+                outputVolume = outputVolume.add(if (output is Unit) BigInteger.ZERO else output?.let { BinarySerializer.encode(output).size.toBigInteger() } ?: BigInteger.ZERO)
+            } catch (e: Exception) {
+                logger.error("Fatal error obtaining output volume", e)
+            }
+            output
+        } catch (e: Exception) {
+            if (e !is InterruptedException) {
+                logger.error("Fatal error during execution", e)
+                error = error.add(BigInteger.ONE)
+                onError(input)
+            } else {
+                logger.warn("Interruption detected")
+            }
+            null
+        } finally {
+            status = SubscriptionStatus.IDLE
+        }
+    }
+
+    protected open fun onStart() {}
+
+    protected open fun onStop() {}
+
+    protected open fun onSuccess(input: I, output: O?) {}
+
+    protected open fun onError(input: I) {}
+
+    // endregion
+}

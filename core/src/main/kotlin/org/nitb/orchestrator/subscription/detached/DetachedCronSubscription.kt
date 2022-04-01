@@ -1,0 +1,24 @@
+package org.nitb.orchestrator.subscription.detached
+
+import org.nitb.orchestrator.annotations.HeritableSubscription
+import org.nitb.orchestrator.scheduling.CronScheduler
+import org.nitb.orchestrator.scheduling.Scheduler
+import org.nitb.orchestrator.subscription.CyclicalSubscription
+import java.math.BigInteger
+
+@HeritableSubscription
+abstract class DetachedCronSubscription(
+    name: String,
+    private val cronExpression: String,
+    timeout: Long = -1,
+    description: String? = null
+): CyclicalSubscription<Unit>(name, timeout, description) {
+
+    override fun createScheduler(): Scheduler {
+        return object : CronScheduler(cronExpression, timeout) {
+            override fun onCycle() {
+                runEvent(BigInteger.ZERO, name, Unit)
+            }
+        }
+    }
+}
