@@ -1,7 +1,9 @@
 package org.nitb.orchestrator.config
 
+import org.nitb.orchestrator.annotations.RequiredProperty
 import java.io.File
 import java.io.FileInputStream
+import java.lang.RuntimeException
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.util.*
@@ -215,7 +217,36 @@ object ConfigManager {
     }
     
     // endregion
-    
+
+    // region PROPERTIES CHECK
+
+    fun checkProperties() {
+        val allPropertiesFields = ConfigNames::class.java.fields
+        val requiredPropertiesFields = allPropertiesFields.filter { it.isAnnotationPresent(RequiredProperty::class.java) }.toMutableList()
+        val errors = mutableListOf<String>()
+
+        for (requiredProperty in requiredPropertiesFields) {
+            val requiredPropertyName = requiredProperty.get(null) as String
+            val requiredAnnotation = requiredProperty.getAnnotation(RequiredProperty::class.java)
+
+            if (getProperty(requiredPropertyName) == null && !requiredAnnotation.depends) {
+                errors.add("Required property not found: $requiredPropertyName. Cause of necessity: ${requiredAnnotation.value} ")
+            }
+
+            if (getProperty(requiredPropertyName) == null && requiredAnnotation.depends && requiredAnnotation.dependencyValue != ""
+                && getProperty(requiredAnnotation.dependency) == requiredAnnotation.dependencyValue) {
+                errors.add("Required child property not found for property ${requiredAnnotation.dependency}: ${requiredProperty.get(null)}")
+            }
+        }
+
+        if (errors.size > 0) {
+            val errorMessages = listOf("Some required properties have not been found or some dependencies are wrong") + errors
+            throw RuntimeException(errorMessages.joinToString("\n\n"))
+        }
+    }
+
+    // endregion
+
     // endregion
 
     // region PRIVATE PROPERTIES
