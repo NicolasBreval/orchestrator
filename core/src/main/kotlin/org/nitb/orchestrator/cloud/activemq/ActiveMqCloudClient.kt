@@ -24,9 +24,9 @@ class ActiveMqCloudClient<T: Serializable>(
 
     companion object {
         val connectionFactory: ActiveMQConnectionFactory = ActiveMQConnectionFactory(
-            ConfigManager.getProperty(ConfigNames.ACTIVEMQ_USERNAME, RuntimeException("Needed property doesn't exists: ${ConfigNames.ACTIVEMQ_USERNAME}")),
+            ConfigManager.getProperty(ConfigNames.ACTIVEMQ_USERNAME, ConfigNames.ACTIVEMQ_DEFAULT_PASSWORD),
             ConfigManager.getProperty(ConfigNames.ACTIVEMQ_PASSWORD, ConfigNames.ACTIVEMQ_DEFAULT_PASSWORD),
-            ConfigManager.getProperty(ConfigNames.ACTIVEMQ_BROKER_URL, ConfigNames.ACTIVEMQ_DEFAULT_PASSWORD))
+            ConfigManager.getProperty(ConfigNames.ACTIVEMQ_BROKER_URL, RuntimeException("Needed property doesn't exists: ${ConfigNames.ACTIVEMQ_USERNAME}")))
     }
 
     override fun <M: Serializable> send(receiver: String, message: M) {
