@@ -6,12 +6,12 @@
 
   <groupId>org.nitb.orchestrator</groupId>
   <artifactId>core</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.0</version>
 
   <parent>
     <artifactId>orchestrator</artifactId>
     <groupId>org.nitb</groupId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
   </parent>
 
   <name>core</name>
@@ -158,37 +158,6 @@
         <configuration>
           <jvmTarget>17</jvmTarget>
         </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifest>
-              <mainClass>fully.qualified.MainClass</mainClass>
-            </manifest>
-          </archive>
-          <descriptorRefs>
-            <descriptorRef>jar-with-dependencies</descriptorRef>
-          </descriptorRefs>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
-        <version>${quarkus.version}</version>
-        <executions>
-          <execution>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>extension-descriptor</goal>
-            </goals>
-            <configuration>
-              <dependencyCondition>
-                <artifact>org.acme:quarkus-extension-c</artifact>
-              </dependencyCondition>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
