@@ -8,12 +8,12 @@ import java.io.Serializable
 import java.net.InetAddress
 
 @NoArgsConstructor
-class SubscriptionInfo(
+class SubscriberInfo(
     val name: String,
     val subscriptions: List<Subscription<*, *>>,
     val isMaster: Boolean,
     val timestamp: Long = System.currentTimeMillis(),
     val hostname: String = InetAddress.getLocalHost().hostName,
     val ipAddress: String = InetAddress.getLocalHost().hostAddress,
-    val port: Int = ConfigManager.getInt(ConfigNames.PORT_NUMBER, ConfigNames.PORT_NUMBER_DEFAULT)
+    val port: Int? = ConfigManager.getInt(ConfigNames.PORT_NUMBER)
 ): Serializable
