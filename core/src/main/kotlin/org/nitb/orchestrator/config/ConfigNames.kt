@@ -26,12 +26,12 @@ object ConfigNames {
 
     // region FLUENTD
 
-    @RequiredProperty("Only if logging.fluentd.enabled is true")
+    @RequiredProperty("Only if logging.fluentd.enabled is true", depends = true, dependency = "logging.fluentd.enabled", "true")
     const val LOGGING_FLUENTD_HOST = "logging.fluentd.host"
     const val LOGGING_FLUENTD_PORT = "logging.fluentd.port"
-    @RequiredProperty("Only if logging.fluentd.enabled is true")
+    @RequiredProperty("Only if logging.fluentd.enabled is true", depends = true, dependency = "logging.fluentd.enabled", "true")
     const val LOGGING_FLUENTD_TAG = "logging.fluentd.tag"
-    @RequiredProperty("Only if logging.fluentd.enabled is true")
+    @RequiredProperty("Only if logging.fluentd.enabled is true", depends = true, dependency = "logging.fluentd.enabled", "true")
     const val LOGGING_FLUENTD_TAG_PREFIX = "logging.fluentd.tag.prefix"
 
     // endregion
@@ -71,23 +71,23 @@ object ConfigNames {
 
     // region RABBITMQ
 
-    @RequiredProperty("Only if cloud.type is RABBITMQ")
+    @RequiredProperty("Only if cloud.type is RABBITMQ", depends = true, dependency = "cloud.type", dependencyValue = "RABBITMQ")
     const val RABBITMQ_HOST = "cloud.rabbitmq.host"
     const val RABBITMQ_PORT = "cloud.rabbitmq.port"
-    @RequiredProperty("Only if cloud.type is RABBITMQ")
+    @RequiredProperty("Only if cloud.type is RABBITMQ", depends = true, dependency = "cloud.type", dependencyValue = "RABBITMQ")
     const val RABBITMQ_USERNAME = "cloud.rabbitmq.username"
-    @RequiredProperty("Only if cloud.type is RABBITMQ")
+    @RequiredProperty("Only if cloud.type is RABBITMQ", depends = true, dependency = "cloud.type", dependencyValue = "RABBITMQ")
     const val RABBITMQ_PASSWORD = "cloud.rabbitmq.password"
 
     // endregion
 
     // region ACTIVEMQ
 
-    @RequiredProperty("Only if cloud.type is ACTIVEMQ")
+    @RequiredProperty("Only if cloud.type is ACTIVEMQ", depends = true, dependency = "cloud.type", dependencyValue = "ACTIVEMQ")
     const val ACTIVEMQ_BROKER_URL = "cloud.activemq.broker.url"
-    @RequiredProperty("Only if cloud.type is ACTIVEMQ")
+    @RequiredProperty("Only if cloud.type is ACTIVEMQ", depends = true, dependency = "cloud.type", dependencyValue = "ACTIVEMQ")
     const val ACTIVEMQ_USERNAME = "cloud.activemq.username"
-    @RequiredProperty("Only if cloud.type is ACTIVEMQ")
+    @RequiredProperty("Only if cloud.type is ACTIVEMQ", depends = true, dependency = "cloud.type", dependencyValue = "ACTIVEMQ")
     const val ACTIVEMQ_PASSWORD = "cloud.activemq.password"
 
     // endregion
@@ -115,20 +115,13 @@ object ConfigNames {
 
     // region NETWORK
 
-    @RequiredProperty("Needed to notify master slave port number")
     const val PORT_NUMBER = "server.port.number"
-
-    // endregion
-
-    // region NETWORK DEFAULTS
-
-    const val PORT_NUMBER_DEFAULT = 80
 
     // endregion
 
     // region SECONDARY SUBSCRIBER
 
-    @RequiredProperty("Needed only if allocation strategy is FIXED")
+    @RequiredProperty("Needed only if allocation strategy is FIXED", depends = true, dependency = "subscriber.master.allocation.strategy", dependencyValue = "FIXED")
     const val SECONDARY_NAME = "subscriber.slave.name"
     const val SECONDARY_SEND_INFO_PERIOD = "subscriber.slave.send.info.period"
     const val SECONDARY_SEND_INFO_TIMEOUT = "subscriber.slave.send.ingo.timeout"
@@ -137,7 +130,7 @@ object ConfigNames {
 
     // region PRIMARY SUBSCRIBER
 
-    @RequiredProperty
+    @RequiredProperty("All nodes need to know the name of the primary node in order to know to which queue to send availability notification messages and to consume the queue in case they get the primary role")
     const val PRIMARY_NAME = "subscriber.master.name"
     const val ALLOCATION_STRATEGY = "subscriber.master.allocation.strategy"
 
