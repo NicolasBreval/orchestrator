@@ -68,6 +68,10 @@ class RabbitMqCloudClient<T: Serializable>(
         connection.close()
     }
 
+    override fun masterConsuming(): Boolean {
+        return channel.queueDeclare(ConfigManager.getProperty(ConfigNames.PRIMARY_NAME), true, true, false, null).consumerCount > 0
+    }
+
     private fun declareQueue() {
         channel.queueDeclare(name, true, true, false, null)
     }

@@ -16,4 +16,6 @@ abstract class CloudClient<T: Serializable>(
     abstract fun purge()
 
     abstract fun close()
+
+    abstract fun masterConsuming(): Boolean
 }

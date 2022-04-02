@@ -15,4 +15,8 @@ interface CloudManager<T: Serializable> {
             CloudType.RABBITMQ -> RabbitMqCloudClient(name)
         }
     }
+
+    fun masterConsuming(client: CloudClient<T>): Boolean {
+        return client.masterConsuming()
+    }
 }

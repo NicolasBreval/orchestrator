@@ -37,7 +37,7 @@ class ActiveMqCloudClient<T: Serializable>(
             bytesMessage.writeBytes(bytes)
             producer.send(bytesMessage)
         } catch (e: Exception) {
-            logger.error("Error sending message")
+            logger.error("Error sending message", e)
         }
     }
 
@@ -95,6 +95,10 @@ class ActiveMqCloudClient<T: Serializable>(
         connection.close()
     }
 
+    override fun masterConsuming(): Boolean {
+        return masterConsumersCount.get() > 0
+    }
+
     private fun declareQueue(): Destination {
         return session.createQueue(name)
     }
@@ -103,7 +107,7 @@ class ActiveMqCloudClient<T: Serializable>(
         val source = message?.jmsDestination
 
         if (source == AdvisorySupport.getConsumerAdvisoryTopic(monitored)) {
-            consumerCount.set(message?.getIntProperty("consumerCount") ?: consumerCount.get())
+            masterConsumersCount.set(message?.getIntProperty("consumerCount") ?: masterConsumersCount.get())
         }
 
         message?.acknowledge()
@@ -114,8 +118,8 @@ class ActiveMqCloudClient<T: Serializable>(
     private val session: ActiveMQSession by lazy { connection.createSession(false, Session.CLIENT_ACKNOWLEDGE) as ActiveMQSession }
     private val producer: ActiveMQMessageProducer by lazy { session.createProducer(declareQueue()) as ActiveMQMessageProducer }
     private lateinit var consumer: ActiveMQMessageConsumer
-    private val monitored: Destination by lazy { declareQueue() }
-    private var consumerCount: AtomicInteger = AtomicInteger(0)
+    private val monitored: Destination by lazy { session.createQueue(ConfigManager.getProperty(ConfigNames.PRIMARY_NAME)) }
+    private var masterConsumersCount: AtomicInteger = AtomicInteger(0)
 
     init {
         if (consumerCountListener) {
