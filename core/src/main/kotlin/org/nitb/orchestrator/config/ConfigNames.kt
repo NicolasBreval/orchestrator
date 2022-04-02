@@ -119,20 +119,18 @@ object ConfigNames {
 
     // endregion
 
-    // region SECONDARY SUBSCRIBER
+    // region SUBSCRIBER
 
     @RequiredProperty("Needed only if allocation strategy is FIXED", depends = true, dependency = "subscriber.master.allocation.strategy", dependencyValue = "FIXED")
-    const val SECONDARY_NAME = "subscriber.slave.name"
-    const val SECONDARY_SEND_INFO_PERIOD = "subscriber.slave.send.info.period"
-    const val SECONDARY_SEND_INFO_TIMEOUT = "subscriber.slave.send.ingo.timeout"
-
-    // endregion
-
-    // region PRIMARY SUBSCRIBER
+    const val SECONDARY_NAME = "subscriber.secondary.name"
+    const val SUBSCRIBER_SEND_INFO_PERIOD = "subscriber.secondary.send.info.period"
+    const val SUBSCRIBER_SEND_INFO_TIMEOUT = "subscriber.secondary.send.ingo.timeout"
+    const val SUBSCRIBER_CHECK_MASTER_EXISTS_PERIOD = "subscriber.secondary.check.master.exists.period"
+    const val SUBSCRIBER_CHECK_MASTER_EXISTS_TIMEOUT = "subscriber.secondary.check.master.exists.timeout"
 
     @RequiredProperty("All nodes need to know the name of the primary node in order to know to which queue to send availability notification messages and to consume the queue in case they get the primary role")
-    const val PRIMARY_NAME = "subscriber.master.name"
-    const val ALLOCATION_STRATEGY = "subscriber.master.allocation.strategy"
+    const val PRIMARY_NAME = "subscriber.primary.name"
+    const val ALLOCATION_STRATEGY = "subscriber.primary.allocation.strategy"
 
     // endregion
 
@@ -140,10 +138,12 @@ object ConfigNames {
 
     const val SECONDARY_SEND_INFO_PERIOD_DEFAULT = 5000L
     const val SECONDARY_SEND_INFO_TIMEOUT_DEFAULT = 4000L
+    const val SUBSCRIBER_CHECK_MASTER_EXISTS_PERIOD_DEFAULT = 5000L
+    const val SUBSCRIBER_CHECK_MASTER_EXISTS_TIMEOUT_DEFAULT = 4000L
 
     // endregion
 
-    // region PRIMARY SUBSCRIBER DEFAULTS
+    // region SUBSCRIBER DEFAULTS
 
     val ALLOCATION_STRATEGY_DEFAULT = AllocationStrategy.FIXED
 
