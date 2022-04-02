@@ -17,6 +17,7 @@ abstract class DeliverySubscription<I: Serializable, O: Serializable>(
     description: String? = null
 ): Subscription<I, O>(name, timeout, description), CloudManager<I>, CloudConsumer<I>, CloudSender {
 
+    @delegate:Transient
     protected val client: CloudClient<I> by lazy { createClient(name) }
 
     override fun initialize() {

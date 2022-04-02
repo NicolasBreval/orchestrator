@@ -10,6 +10,7 @@ abstract class CyclicalSubscription<O>(
 
     // region PRIVATE PROPERTIES
 
+    @delegate:Transient
     private val scheduler: Scheduler by lazy { createScheduler() }
 
     // endregion

@@ -20,6 +20,7 @@ abstract class DeliveryCronSubscription<O: Serializable>(
     description: String? = null
 ): CyclicalSubscription<O>(name, timeout, description), CloudManager<O>, CloudSender {
 
+    @delegate:Transient
     private val client: CloudClient<O> by lazy { createClient(name) }
 
     override fun createScheduler(): Scheduler {
