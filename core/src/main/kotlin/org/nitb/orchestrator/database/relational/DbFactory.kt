@@ -1,13 +1,26 @@
 package org.nitb.orchestrator.database.relational
 
+import ch.qos.logback.classic.Level
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
+import org.nitb.orchestrator.logging.LoggingManager
 import java.lang.RuntimeException
+import java.sql.Connection
 
 object DbFactory {
+
+    // region PUBLIC PROPERTIES
+
+    fun connect() {
+        TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
+        Database.connect(createHikariDataSource())
+    }
+
+    // endregion
 
     // region PRIVATE PROPERTIES
 
@@ -17,13 +30,23 @@ object DbFactory {
     private val password = ConfigManager.getProperty(ConfigNames.DATABASE_PASSWORD, RuntimeException("No mandatory property found: ${ConfigNames.DATABASE_PASSWORD}"))
     private val maxPoolSize = ConfigManager.getInt(ConfigNames.DATABASE_MAX_POOL_SIZE, ConfigNames.DATABASE_MAX_POOL_SIZE_DEFAULT)
     private val maxLifeTime = ConfigManager.getLong(ConfigNames.DATABASE_MAX_LIFE_TIME, ConfigNames.DATABASE_MAX_LIFE_TIME_DEFAULT)
-    private val database = Database.connect(createHikariDataSource())
 
     // endregion
 
     // region PRIVATE METHODS
 
     private fun createHikariDataSource(): HikariDataSource {
+        LoggingManager.useCommonLoggerLevel("com.zaxxer.hikari.pool.PoolBase")
+        LoggingManager.useCommonLoggerLevel("com.zaxxer.hikari.pool.HikariPool")
+        LoggingManager.useCommonLoggerLevel("com.zaxxer.hikari.HikariDataSource")
+        LoggingManager.useCommonLoggerLevel("com.zaxxer.hikari.HikariConfig")
+        LoggingManager.useCommonLoggerLevel("com.zaxxer.hikari.util.DriverDataSource")
+        LoggingManager.useCommonLoggerLevel("com.zaxxer.hikari.pool.ProxyConnection")
+
+        if (!ConfigManager.getBoolean(ConfigNames.DATABASE_SHOW_SQL_QUERIES)) {
+            LoggingManager.useCommonLoggerLevel("Exposed", Level.OFF)
+        }
+
         val config = HikariConfig()
         config.driverClassName = driverClassname
         config.jdbcUrl = jdbcUrl
@@ -35,14 +58,6 @@ object DbFactory {
         config.transactionIsolation = "TRANSACTION_REPEATABLE_READ"
         config.validate()
         return HikariDataSource(config)
-    }
-
-    // endregion
-
-    // region INIT
-
-    init {
-        Database.connect(createHikariDataSource())
     }
 
     // endregion

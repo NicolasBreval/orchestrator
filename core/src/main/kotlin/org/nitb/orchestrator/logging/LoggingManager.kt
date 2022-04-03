@@ -1,5 +1,6 @@
 package org.nitb.orchestrator.logging
 
+import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder
@@ -13,6 +14,7 @@ import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.logging.appenders.FluentdAppender
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.lang.RuntimeException
 
 object LoggingManager {
 
@@ -34,10 +36,16 @@ object LoggingManager {
         return LoggerWrapper(logger)
     }
 
+    fun useCommonLoggerLevel(loggerName: String, level: Level = commonLoggerLevel) {
+        val logger = context.getLogger(loggerName)
+        logger.level = level
+    }
+
     // endregion
 
     // region PRIVATE PROPERTIES
 
+    private val commonLoggerLevel = levelPropertyToLevel()
     private const val rollingAppenderName = "FILE_ROLLING_APPENDER"
     private const val fluentdAppenderName = "FLUENTD_APPENDER"
     private val context = LoggerFactory.getILoggerFactory() as LoggerContext
@@ -50,6 +58,21 @@ object LoggingManager {
     // endregion
 
     // region PRIVATE METHODS
+
+    private fun levelPropertyToLevel(): Level {
+        val strLevel = ConfigManager.getProperty(ConfigNames.LOGGING_LEVEL, ConfigNames.LOGGING_LEVEL_DEFAULT)
+
+        return when (strLevel) {
+            "OFF" -> Level.OFF
+            "ERROR" -> Level.ERROR
+            "WARN" -> Level.WARN
+            "INFO" -> Level.INFO
+            "DEBUG" -> Level.DEBUG
+            "TRACE" -> Level.TRACE
+            "ALL" -> Level.ALL
+            else -> throw RuntimeException("Invalid level name: $strLevel")
+        }
+    }
 
     private fun initializeLogger(logger: Logger) {
         if (logger.getAppender(rollingAppenderName) == null) {
@@ -92,6 +115,8 @@ object LoggingManager {
 
             logger.addAppender(fluentdAppender)
         }
+
+        logger.level = commonLoggerLevel
     }
 
     // endregion
