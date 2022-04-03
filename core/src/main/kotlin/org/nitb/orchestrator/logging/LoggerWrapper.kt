@@ -1,12 +1,13 @@
 package org.nitb.orchestrator.logging
 
+import ch.qos.logback.classic.Level
 import org.slf4j.Logger
 import org.slf4j.Marker
 
 class LoggerWrapper(
-    private val logger: Logger
+    private val logger: Logger,
+    val level: Level
 ): Logger {
-
 
     override fun getName(): String {
         return logger.name

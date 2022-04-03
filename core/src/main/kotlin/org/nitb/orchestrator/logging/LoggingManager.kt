@@ -25,7 +25,7 @@ object LoggingManager {
 
         initializeLogger(logger)
 
-        return LoggerWrapper(logger)
+        return LoggerWrapper(logger, logger.level)
     }
 
     fun getLogger(loggerClass: Class<*>): LoggerWrapper {
@@ -33,7 +33,7 @@ object LoggingManager {
 
         initializeLogger(logger)
 
-        return LoggerWrapper(logger)
+        return LoggerWrapper(logger, logger.level)
     }
 
     fun useCommonLoggerLevel(loggerName: String, level: Level = commonLoggerLevel) {
@@ -60,9 +60,7 @@ object LoggingManager {
     // region PRIVATE METHODS
 
     private fun levelPropertyToLevel(): Level {
-        val strLevel = ConfigManager.getProperty(ConfigNames.LOGGING_LEVEL, ConfigNames.LOGGING_LEVEL_DEFAULT)
-
-        return when (strLevel) {
+        return when (val strLevel = ConfigManager.getProperty(ConfigNames.LOGGING_LEVEL, ConfigNames.LOGGING_LEVEL_DEFAULT)) {
             "OFF" -> Level.OFF
             "ERROR" -> Level.ERROR
             "WARN" -> Level.WARN
