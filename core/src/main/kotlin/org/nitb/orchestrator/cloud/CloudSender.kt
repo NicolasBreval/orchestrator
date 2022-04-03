@@ -10,4 +10,8 @@ interface CloudSender {
             client.send(receiver.name, message)
         }
     }
+
+    fun sendMessage(message: Serializable, client: CloudClient<*>, receiver: String) {
+        client.send(receiver, message)
+    }
 }
