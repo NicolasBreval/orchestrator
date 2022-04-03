@@ -36,15 +36,15 @@ object DbFactory {
     // region PRIVATE METHODS
 
     private fun createHikariDataSource(): HikariDataSource {
-        LoggingManager.useCommonLoggerLevel("com.zaxxer.hikari.pool.PoolBase")
-        LoggingManager.useCommonLoggerLevel("com.zaxxer.hikari.pool.HikariPool")
-        LoggingManager.useCommonLoggerLevel("com.zaxxer.hikari.HikariDataSource")
-        LoggingManager.useCommonLoggerLevel("com.zaxxer.hikari.HikariConfig")
-        LoggingManager.useCommonLoggerLevel("com.zaxxer.hikari.util.DriverDataSource")
-        LoggingManager.useCommonLoggerLevel("com.zaxxer.hikari.pool.ProxyConnection")
+        LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.PoolBase")
+        LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.HikariPool")
+        LoggingManager.setLoggerLevel("com.zaxxer.hikari.HikariDataSource")
+        LoggingManager.setLoggerLevel("com.zaxxer.hikari.HikariConfig")
+        LoggingManager.setLoggerLevel("com.zaxxer.hikari.util.DriverDataSource")
+        LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.ProxyConnection")
 
         if (!ConfigManager.getBoolean(ConfigNames.DATABASE_SHOW_SQL_QUERIES)) {
-            LoggingManager.useCommonLoggerLevel("Exposed", Level.OFF)
+            LoggingManager.setLoggerLevel("Exposed", Level.OFF)
         }
 
         val config = HikariConfig()
