@@ -9,4 +9,8 @@ interface CloudConsumer<T: Serializable> {
         client.cancelConsumer()
         client.createConsumer(onConsume)
     }
+
+    fun cancelConsumer(client: CloudClient<T>) {
+        client.cancelConsumer()
+    }
 }
