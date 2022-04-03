@@ -8,7 +8,7 @@ import java.time.LocalDateTime
 class SubscriptionEntry(
     val name: String,
     val content: ByteArray,
-    val subscriber: String,
+    var subscriber: String,
     val stopped: Boolean,
     val active: Boolean,
     val creationDate: LocalDateTime = LocalDateTime.now(),
