@@ -35,7 +35,7 @@ class ActiveMqCloudClient<T: Serializable>(
             val bytes = BinarySerializer.encode(cloudMessage)
             val bytesMessage = session.createBytesMessage()
             bytesMessage.writeBytes(bytes)
-            val producer = session.createProducer(session.createQueue(receiver))
+            val producer = session.createProducer(declareQueue(receiver))
             producer.deliveryMode = DeliveryMode.NON_PERSISTENT
             producer.send(bytesMessage)
         } catch (e: Exception) {
@@ -45,7 +45,7 @@ class ActiveMqCloudClient<T: Serializable>(
 
     @Suppress("UNCHECKED_CAST")
     override fun createConsumer(onConsume: Consumer<CloudMessage<T>>) {
-        consumer = session.createConsumer(declareQueue()) { message ->
+        consumer = session.createConsumer(declareQueue(name)) { message ->
 
             try {
                 val cloudMessage = when (message) {
@@ -74,7 +74,7 @@ class ActiveMqCloudClient<T: Serializable>(
 
     override fun purge() {
         consumer.close()
-        val destination = declareQueue()
+        val destination = declareQueue(name)
         val messageListener = consumer.messageListener
 
         val browser = session.createBrowser(destination as Queue)
@@ -101,8 +101,8 @@ class ActiveMqCloudClient<T: Serializable>(
         return masterConsumersCount.get() > 0
     }
 
-    private fun declareQueue(): Destination {
-        return session.createQueue(name)
+    private fun declareQueue(name: String): Destination {
+        return session.createQueue("$name?consumer.exclusive=true")
     }
 
     override fun onMessage(message: Message?) {
@@ -119,7 +119,7 @@ class ActiveMqCloudClient<T: Serializable>(
     private val connection: ActiveMQConnection = connectionFactory.createConnection() as ActiveMQConnection
     private val session: ActiveMQSession by lazy { connection.createSession(false, Session.CLIENT_ACKNOWLEDGE) as ActiveMQSession }
     private lateinit var consumer: ActiveMQMessageConsumer
-    private val monitored: Destination by lazy { session.createQueue(ConfigManager.getProperty(ConfigNames.PRIMARY_NAME)) }
+    private val monitored: Destination by lazy { declareQueue(ConfigManager.getProperty(ConfigNames.PRIMARY_NAME, RuntimeException("Mandatory property not found ${ConfigNames.PRIMARY_NAME}"))) }
     private var masterConsumersCount: AtomicInteger = AtomicInteger(0)
 
     init {
