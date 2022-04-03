@@ -15,7 +15,7 @@ object DbController {
 
     fun getActiveSubscriptionsBySlave(slaveName: String): List<SubscriptionEntry> {
         return transaction {
-            Subscriptions.select { Subscriptions.slave eq slaveName and Subscriptions.active }.map { resultRow ->
+            Subscriptions.select { Subscriptions.subscriber eq slaveName and Subscriptions.active }.map { resultRow ->
                 SubscriptionEntry(resultRow)
             }
         }
@@ -39,7 +39,7 @@ object DbController {
             Subscriptions.batchInsert(subscriptions) { entry ->
                 this[Subscriptions.name] = entry.name
                 this[Subscriptions.content] = ExposedBlob(entry.content)
-                this[Subscriptions.slave] = entry.slave
+                this[Subscriptions.subscriber] = entry.subscriber
                 this[Subscriptions.active] = entry.active
                 this[Subscriptions.stopped] = entry.stopped
                 this[Subscriptions.creationDate] = entry.creationDate
@@ -55,7 +55,7 @@ object DbController {
 
             if (ConfigManager.getBoolean(ConfigNames.DATABASE_CREATE_SCHEMAS_ON_STARTUP)) {
                 transaction {
-                    SchemaUtils.create(Subscriptions)
+                    SchemaUtils.createMissingTablesAndColumns(Subscriptions)
                 }
             }
         } catch (e: Exception) {
