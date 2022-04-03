@@ -27,6 +27,10 @@ class ActiveMqCloudClient<T: Serializable>(
             ConfigManager.getProperty(ConfigNames.ACTIVEMQ_USERNAME, ConfigNames.ACTIVEMQ_DEFAULT_PASSWORD),
             ConfigManager.getProperty(ConfigNames.ACTIVEMQ_PASSWORD, ConfigNames.ACTIVEMQ_DEFAULT_PASSWORD),
             ConfigManager.getProperty(ConfigNames.ACTIVEMQ_BROKER_URL, RuntimeException("Needed property doesn't exists: ${ConfigNames.ACTIVEMQ_USERNAME}")))
+
+        init {
+            LoggingManager.setLoggerLevel("org.apache.activemq.transport.AbstractInactivityMonitor")
+        }
     }
 
     override fun <M: Serializable> send(receiver: String, message: M) {
