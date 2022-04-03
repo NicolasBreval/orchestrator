@@ -35,6 +35,8 @@ class ActiveMqCloudClient<T: Serializable>(
             val bytes = BinarySerializer.encode(cloudMessage)
             val bytesMessage = session.createBytesMessage()
             bytesMessage.writeBytes(bytes)
+            val producer = session.createProducer(session.createQueue(receiver))
+            producer.deliveryMode = DeliveryMode.NON_PERSISTENT
             producer.send(bytesMessage)
         } catch (e: Exception) {
             logger.error("Error sending message", e)
@@ -116,7 +118,6 @@ class ActiveMqCloudClient<T: Serializable>(
     private val logger = LoggingManager.getLogger(this::class.java)
     private val connection: ActiveMQConnection = connectionFactory.createConnection() as ActiveMQConnection
     private val session: ActiveMQSession by lazy { connection.createSession(false, Session.CLIENT_ACKNOWLEDGE) as ActiveMQSession }
-    private val producer: ActiveMQMessageProducer by lazy { session.createProducer(declareQueue()) as ActiveMQMessageProducer }
     private lateinit var consumer: ActiveMQMessageConsumer
     private val monitored: Destination by lazy { session.createQueue(ConfigManager.getProperty(ConfigNames.PRIMARY_NAME)) }
     private var masterConsumersCount: AtomicInteger = AtomicInteger(0)
@@ -130,7 +131,6 @@ class ActiveMqCloudClient<T: Serializable>(
         }
 
         connection.start()
-        producer.deliveryMode = DeliveryMode.NON_PERSISTENT
     }
 
 }
