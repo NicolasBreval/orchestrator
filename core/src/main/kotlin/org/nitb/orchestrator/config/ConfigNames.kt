@@ -7,6 +7,7 @@ object ConfigNames {
 
     // region LOGGING
 
+    const val LOGGING_LEVEL = "logging.level"
     const val LOGGING_FOLDER = "logging.folder"
     const val LOGGING_PATTERN = "logging.pattern"
     const val LOGGING_DATE_PATTERN = "logging.date.pattern"
@@ -17,6 +18,7 @@ object ConfigNames {
 
     // region LOGGING DEFAULTS
 
+    const val LOGGING_LEVEL_DEFAULT = "INFO"
     const val LOGGING_FOLDER_DEFAULT = "./logs"
     const val LOGGING_PATTERN_DEFAULT = "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
     const val LOGGING_DATE_PATTERN_DEFAULT = "yyyy-MM-dd"
@@ -54,6 +56,8 @@ object ConfigNames {
     const val DATABASE_PASSWORD = "database.password"
     const val DATABASE_MAX_POOL_SIZE = "database.max.pool.size"
     const val DATABASE_MAX_LIFE_TIME = "database.max.life.time"
+    const val DATABASE_CREATE_SCHEMAS_ON_STARTUP = "database.create.schemas.on.startup"
+    const val DATABASE_SHOW_SQL_QUERIES = "database.show.sql.queries"
 
     // endregion
 
@@ -125,8 +129,11 @@ object ConfigNames {
     const val SECONDARY_NAME = "subscriber.secondary.name"
     const val SUBSCRIBER_SEND_INFO_PERIOD = "subscriber.secondary.send.info.period"
     const val SUBSCRIBER_SEND_INFO_TIMEOUT = "subscriber.secondary.send.ingo.timeout"
-    const val SUBSCRIBER_CHECK_MASTER_EXISTS_PERIOD = "subscriber.secondary.check.master.exists.period"
-    const val SUBSCRIBER_CHECK_MASTER_EXISTS_TIMEOUT = "subscriber.secondary.check.master.exists.timeout"
+    const val SUBSCRIBER_CHECK_MAIN_NODE_EXISTS_PERIOD = "subscriber.secondary.check.main.node.exists.period"
+    const val SUBSCRIBER_CHECK_MAIN_NODE_EXISTS_TIMEOUT = "subscriber.secondary.check.main.node.exists.timeout"
+    const val SUBSCRIBER_CHECK_SECONDARY_NODES_UP_PERIOD = "subscriber.main.check.secondary.nodes.up.period"
+    const val SUBSCRIBER_CHECK_SECONDARY_NODES_UP_TIMEOUT = "subscriber.main.check.secondary.nodes.up.timeout"
+    const val SUBSCRIBER_SECONDARY_NODE_MAX_INACTIVITY_TIME = "subscriber.secondary.node.max.inactivity.time"
 
     @RequiredProperty("All nodes need to know the name of the primary node in order to know to which queue to send availability notification messages and to consume the queue in case they get the primary role")
     const val PRIMARY_NAME = "subscriber.primary.name"
@@ -138,8 +145,11 @@ object ConfigNames {
 
     const val SECONDARY_SEND_INFO_PERIOD_DEFAULT = 5000L
     const val SECONDARY_SEND_INFO_TIMEOUT_DEFAULT = 4000L
-    const val SUBSCRIBER_CHECK_MASTER_EXISTS_PERIOD_DEFAULT = 5000L
-    const val SUBSCRIBER_CHECK_MASTER_EXISTS_TIMEOUT_DEFAULT = 4000L
+    const val SUBSCRIBER_CHECK_MAIN_NODE_EXISTS_PERIOD_DEFAULT = 5000L
+    const val SUBSCRIBER_CHECK_MAIN_NODE_EXISTS_TIMEOUT_DEFAULT = 4000L
+    const val SUBSCRIBER_CHECK_SECONDARY_NODES_UP_PERIOD_DEFAULT = 5000L
+    const val SUBSCRIBER_CHECK_SECONDARY_NODES_UP_TIMEOUT_DEFAULT = 4000L
+    const val SUBSCRIBER_SECONDARY_NODE_MAX_INACTIVITY_TIME_DEFAULT = 10000L
 
     // endregion
 
