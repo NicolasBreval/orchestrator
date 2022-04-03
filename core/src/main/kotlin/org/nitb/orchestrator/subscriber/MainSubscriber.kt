@@ -11,6 +11,12 @@ import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.scheduling.PeriodicalScheduler
 import org.nitb.orchestrator.serialization.json.JSONSerializer
 import org.nitb.orchestrator.subscriber.entities.*
+import org.nitb.orchestrator.subscriber.entities.subscriptions.remove.RemoveSubscriptionRequest
+import org.nitb.orchestrator.subscriber.entities.subscriptions.remove.RemoveSubscriptionResponse
+import org.nitb.orchestrator.subscriber.entities.subscriptions.remove.RemoveSubscriptionStatus
+import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionResponse
+import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionStatus
+import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionsReq
 import org.nitb.orchestrator.subscription.Subscription
 import java.io.Serializable
 import java.lang.RuntimeException
@@ -50,12 +56,21 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
                     }
                     uploadSubscriptions()
                 }
+                is RemoveSubscriptionRequest -> {
+                    sendRemoveRequests(message.message.subscriptions, message.message.id)
+                }
+                is RemoveSubscriptionResponse -> {
+                    if (message.message.status == RemoveSubscriptionStatus.OK) {
+                        waitingSubscriptionsToRemoveAck.remove(message.message.id)
+                    }
+                }
                 else -> logger.error("Unrecognized message type has been received. Type: ${message::class.java.name}")
             }
         }
 
         checkNodesScheduler.start()
         checkWaitingSubscriptionsToUploadScheduler.start()
+        checkFailRemovedSubscriptions.start()
     }
 
     // endregion
@@ -97,6 +112,10 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
      */
     private val checkSubscriptionsToUploadTimeout = ConfigManager.getLong(ConfigNames.SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_UPLOAD_TIMEOUT, ConfigNames.SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_UPLOAD_TIMEOUT_DEFAULT)
 
+    private val checkSubscriptionsToRemovePeriod = ConfigManager.getLong(ConfigNames.SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_REMOVE_PERIOD, ConfigNames.SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_REMOVE_PERIOD_DEFAULT)
+
+    private val checkSubscriptionsToRemoveTimeout = ConfigManager.getLong(ConfigNames.SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_REMOVE_TIMEOUT, ConfigNames.SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_REMOVE_TIMEOUT_DEFAULT)
+
     /**
      * Type of allocation strategy to send subscriptions to secondary subscribers
      */
@@ -118,6 +137,16 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
     private val waitingSubscriptionsToReceiveAck = ConcurrentHashMap<String, ConcurrentHashMap<String, SubscriptionEntry>>()
 
     /**
+     * List of waiting removing subscriptions task
+     */
+    private val waitingSubscriptionsToRemoveAck = ConcurrentHashMap<String, ConcurrentHashMap<String, Long>>()
+
+    /**
+     * List of subscriptions that could not be removed
+     */
+    private val failedRemovedSubscriptions = Collections.synchronizedList(mutableListOf<String>())
+
+    /**
      * Client used for communication with another subscribers
      */
     private val client = createClient(name)
@@ -128,18 +157,33 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
     private val checkNodesScheduler by lazy { object : PeriodicalScheduler(checkSecondaryNodesPeriod, 0, checkSecondaryNodesTimeout) {
         override fun onCycle() {
             val currentTime = System.currentTimeMillis()
+            val downSubscribers = mutableListOf<String>()
 
             for ((name, info) in secondaryNodes) {
                 if (currentTime - info.timestamp > maxSecondaryNodeInactivityTime) {
                     secondaryNodes.remove(name)
+                    downSubscribers.add(name)
                 }
             }
+
+            onSubscriberDown(downSubscribers)
         }
     } }
 
     private val checkWaitingSubscriptionsToUploadScheduler by lazy { object : PeriodicalScheduler(checkSubscriptionsToUploadPeriod, 0, checkSubscriptionsToUploadTimeout) {
         override fun onCycle() {
             uploadSubscriptions()
+        }
+    }
+    }
+
+    private val checkFailRemovedSubscriptions by lazy { object : PeriodicalScheduler(checkSubscriptionsToRemovePeriod, 0, checkSubscriptionsToRemoveTimeout) {
+        override fun onCycle() {
+            for ((id, subscriptions) in waitingSubscriptionsToRemoveAck) {
+                if (subscriptions.minOf { (_, timestamp) -> timestamp } > checkSubscriptionsToRemovePeriod) {
+                    sendRemoveRequests(subscriptions.keys().toList(), id)
+                }
+            }
         }
     }
     }
@@ -201,6 +245,18 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
                 }
             }
         }
+    }
+
+    private fun sendRemoveRequests(subscriptions: List<String>, id: String) {
+        subscriptions.groupBy { subscription -> secondaryNodes
+            .filter { (_, info) -> info.subscriptions.containsKey(subscription) }
+            .map { (name, _) -> name }.firstOrNull() ?: "" }
+            .filter { (name, _) -> name.isNotEmpty() }.forEach { (subscriber, subscriptions) ->
+                subscriptions.forEach { subscription ->
+                    waitingSubscriptionsToRemoveAck.computeIfAbsent(id) { ConcurrentHashMap() }[subscription] = System.currentTimeMillis()
+                }
+                sendMessage(RemoveSubscriptionRequest(subscriptions, id), client, subscriber)
+            }
     }
 
     // endregion
