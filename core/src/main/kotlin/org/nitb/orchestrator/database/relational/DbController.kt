@@ -7,17 +7,20 @@ import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.database.relational.entities.SubscriptionEntry
 import org.nitb.orchestrator.database.relational.entities.Subscriptions
+import org.nitb.orchestrator.logging.LoggingManager
 import java.lang.RuntimeException
 
 object DbController {
 
     // region PUBLIC METHODS
 
-    fun getActiveSubscriptionsBySlave(slaveName: String): List<SubscriptionEntry> {
+    fun getLastActiveSubscriptionsBySlave(subscriber: String): List<SubscriptionEntry> {
         return transaction {
-            Subscriptions.select { Subscriptions.subscriber eq slaveName and Subscriptions.active }.map { resultRow ->
-                SubscriptionEntry(resultRow)
-            }
+            Subscriptions
+                .select { Subscriptions.id inSubQuery Subscriptions.slice(Subscriptions.id.max()).select { Subscriptions.subscriber eq subscriber }.groupBy(Subscriptions.name) }
+                .map { resultRow ->
+                    SubscriptionEntry(resultRow)
+                }
         }
     }
 
@@ -49,6 +52,14 @@ object DbController {
 
     // endregion
 
+    // region PRIVATE PROPERTIES
+
+    val logger = LoggingManager.getLogger(this::class.java)
+
+    // endregion
+
+    // region INIT
+
     init {
         try {
             DbFactory.connect()
@@ -63,4 +74,5 @@ object DbController {
         }
     }
 
+    // endregion
 }
