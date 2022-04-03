@@ -9,7 +9,6 @@
   <name>orchestrator</name>
   <modules>
     <module>core</module>
-    <module>examples</module>
   </modules>
   <properties>
     <kotlin.version>1.6.10</kotlin.version>
