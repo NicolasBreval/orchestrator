@@ -8,7 +8,7 @@ import java.time.LocalDateTime
 class SubscriptionEntry(
     val name: String,
     val content: ByteArray,
-    val slave: String,
+    val subscriber: String,
     val stopped: Boolean,
     val active: Boolean,
     val creationDate: LocalDateTime = LocalDateTime.now(),
@@ -17,7 +17,7 @@ class SubscriptionEntry(
     constructor(resultRow: ResultRow): this(
         resultRow[Subscriptions.name],
         resultRow[Subscriptions.content].bytes,
-        resultRow[Subscriptions.slave],
+        resultRow[Subscriptions.subscriber],
         resultRow[Subscriptions.stopped],
         resultRow[Subscriptions.active],
         resultRow[Subscriptions.creationDate],
@@ -29,7 +29,7 @@ object Subscriptions: Table("SUBSCRIPTIONS") {
     val id = long("ID").autoIncrement()
     val name = varchar("NAME", 300)
     val content = blob("CONTENT")
-    val slave = varchar("SLAVE", 300)
+    val subscriber = varchar("SUBSCRIBER", 300)
     val stopped = bool("STOPPED")
     val creationDate = datetime("CREATION_DATE")
     val active = bool("ACTIVE")
