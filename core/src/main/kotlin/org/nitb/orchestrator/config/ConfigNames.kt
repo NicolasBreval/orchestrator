@@ -136,6 +136,8 @@ object ConfigNames {
     const val SUBSCRIBER_SECONDARY_NODE_MAX_INACTIVITY_TIME = "subscriber.secondary.node.max.inactivity.time"
     const val SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_UPLOAD_PERIOD = "subscriber.check.waiting.subscriptions.to.upload.period"
     const val SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_UPLOAD_TIMEOUT = "subscriber.check.waiting.subscriptions.to.upload.timeout"
+    const val SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_REMOVE_PERIOD = "subscriber.check.waiting.subscriptions.to.remove.period"
+    const val SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_REMOVE_TIMEOUT = "subscriber.check.waiting.subscriptions.to.remove.timeout"
 
     @RequiredProperty("All nodes need to know the name of the primary node in order to know to which queue to send availability notification messages and to consume the queue in case they get the primary role")
     const val PRIMARY_NAME = "subscriber.primary.name"
@@ -153,7 +155,10 @@ object ConfigNames {
     const val SUBSCRIBER_CHECK_SECONDARY_NODES_UP_TIMEOUT_DEFAULT = 4000L
     const val SUBSCRIBER_SECONDARY_NODE_MAX_INACTIVITY_TIME_DEFAULT = 10000L
     const val SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_UPLOAD_PERIOD_DEFAULT = 5000L
-    const val SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_UPLOAD_TIMEOUT_DEFAULT = 5000L
+    const val SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_UPLOAD_TIMEOUT_DEFAULT = 4000L
+    const val SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_REMOVE_PERIOD_DEFAULT = 5000L
+    const val SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_REMOVE_TIMEOUT_DEFAULT = 4000L
+
 
     // endregion
 
