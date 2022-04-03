@@ -31,7 +31,6 @@
     <activemq.jms.version>5.17.0</activemq.jms.version>
     <cron.utils.version>9.1.6</cron.utils.version>
     <jackson.version>2.13.2</jackson.version>
-    <quarkus.version>2.7.5.Final</quarkus.version>
     <kotlin.version>1.6.20-RC2</kotlin.version>
   </properties>
 
