@@ -24,7 +24,10 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
     fun start() {
         registerConsumer(client) { message ->
             when (message.message) {
-                is SubscriberInfo -> secondaryNodes[message.sender] = System.currentTimeMillis()
+                is SubscriberInfo -> {
+                    secondaryNodes[message.sender] = message.message
+
+                }
                 is UploadSubscriptionResponse -> {
                     if (message.message.status == UploadSubscriptionStatus.ERROR) {
                         waitingSubscriptionsToReceiveAck[message.message.id]?.forEach { (name, subscription) ->
@@ -53,10 +56,6 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
 
         checkNodesScheduler.start()
         checkWaitingSubscriptionsToUploadScheduler.start()
-    }
-
-    fun stop() {
-        cancelConsumer(client)
     }
 
     // endregion
@@ -106,12 +105,7 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
     /**
      * All secondary nodes with their last timestamp when primary node receives an information message from it
      */
-    private val secondaryNodes = ConcurrentHashMap<String, Long>()
-
-    /**
-     * List with downed nodes names to get their subscriptions and try to put in another nodes again
-     */
-    private val missingNodes = Collections.synchronizedList(mutableListOf<String>())
+    private val secondaryNodes = ConcurrentHashMap<String, SubscriberInfo>()
 
     /**
      * List of subscriptions, grouped by unique id, which their subscribers have been fallen
@@ -135,9 +129,9 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
         override fun onCycle() {
             val currentTime = System.currentTimeMillis()
 
-            for ((name, timestamp) in secondaryNodes) {
-                if (currentTime - timestamp > maxSecondaryNodeInactivityTime) {
-                    missingNodes.add(name)
+            for ((name, info) in secondaryNodes) {
+                if (currentTime - info.timestamp > maxSecondaryNodeInactivityTime) {
+                    secondaryNodes.remove(name)
                 }
             }
         }
@@ -168,20 +162,44 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
         uploadSubscriptions()
     }
 
+    private fun makeRanking(): List<String> {
+        return when (allocationStrategy) {
+            AllocationStrategy.CPU -> secondaryNodes.values.sortedBy { info -> info.cpuUsage }.map { info -> info.name }
+            AllocationStrategy.MEMORY -> secondaryNodes.values.sortedByDescending { info -> info.freeMemory }.map { info -> info.name }
+            AllocationStrategy.CPU_MEMORY -> secondaryNodes.values.sortedWith(compareBy<SubscriberInfo> { info -> info.cpuUsage }.thenByDescending { info -> info.freeMemory }).map { info -> info.name }
+            AllocationStrategy.MEMORY_CPU -> secondaryNodes.values.sortedWith(compareByDescending<SubscriberInfo> { info -> info.freeMemory }.thenBy { info -> info.cpuUsage }).map { info -> info.name }
+            AllocationStrategy.OCCUPATION -> secondaryNodes.values.sortedBy { info -> info.subscriptions.size }.map { info -> info.name }
+            else -> throw RuntimeException("Impossible case: trying to obtain ranking with invalid allocation strategy")
+        }
+    }
+
+    private fun sendRequestToSubscriber(subscriptions: ConcurrentHashMap<String, SubscriptionEntry>, subscriber: String) {
+        val id = UUID.randomUUID().toString()
+        sendMessage(UploadSubscriptionsReq(subscriptions.map { subscription -> String(subscription.value.content) }, subscriber, id), client, subscriber)
+        waitingSubscriptionsToReceiveAck[id] = subscriptions
+        subscriptions.forEach { (name, _) ->
+            waitingSubscriptionsToUpload[subscriber]?.remove(name)
+        }
+    }
+
     private fun uploadSubscriptions() {
         if (allocationStrategy == AllocationStrategy.FIXED) {
             for ((subscriber, subscriptions) in waitingSubscriptionsToUpload) {
                 if (secondaryNodes.containsKey(subscriber)) {
-                    val id = UUID.randomUUID().toString()
-                    sendMessage(UploadSubscriptionsReq(subscriptions.map { subscription -> String(subscription.value.content) }, subscriber, id), client, subscriber)
-                    waitingSubscriptionsToReceiveAck[id] = subscriptions
-                    subscriptions.forEach { (name, _) ->
-                        waitingSubscriptionsToUpload[subscriber]?.remove(name)
-                    }
+                    sendRequestToSubscriber(subscriptions, subscriber)
                 }
             }
         } else {
-            // TODO: Add another strategies
+            if (secondaryNodes.isNotEmpty()) {
+                val rankedSubscribers = makeRanking()
+
+                var i = 0
+                for ((_, subscriptions) in waitingSubscriptionsToUpload) {
+                    val subscriber = rankedSubscribers[i % rankedSubscribers.size]
+                    sendRequestToSubscriber(subscriptions, subscriber)
+                    i++
+                }
+            }
         }
     }
 
