@@ -36,7 +36,7 @@ object LoggingManager {
         return LoggerWrapper(logger, logger.level)
     }
 
-    fun useCommonLoggerLevel(loggerName: String, level: Level = commonLoggerLevel) {
+    fun setLoggerLevel(loggerName: String, level: Level = commonLoggerLevel) {
         val logger = context.getLogger(loggerName)
         logger.level = level
     }
@@ -79,12 +79,11 @@ object LoggingManager {
             val rollingFileAppender = RollingFileAppender<ILoggingEvent>()
             rollingFileAppender.name = rollingAppenderName
             rollingFileAppender.context = context
-            rollingFileAppender.file = File(loggingFolder, "${logger.name}.log").absolutePath
 
             val timeBasedRollingPolicy = TimeBasedRollingPolicy<ILoggingEvent>()
             timeBasedRollingPolicy.context = context
             timeBasedRollingPolicy.maxHistory = 5
-            timeBasedRollingPolicy.fileNamePattern = "-%d{$loggingDatePattern}.log"
+            timeBasedRollingPolicy.fileNamePattern = File(loggingFolder, "${logger.name}-%d{$loggingDatePattern}.log").absolutePath
             timeBasedRollingPolicy.setParent(rollingFileAppender)
             timeBasedRollingPolicy.start()
 
