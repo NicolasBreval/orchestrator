@@ -1,13 +1,15 @@
 package org.nitb.orchestrator.subscriber
 
+import org.nitb.orchestrator.cloud.CloudConsumer
 import org.nitb.orchestrator.cloud.CloudManager
+import org.nitb.orchestrator.cloud.CloudSender
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
+import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.scheduling.PeriodicalScheduler
 import org.nitb.orchestrator.serialization.json.JSONSerializer
-import org.nitb.orchestrator.subscriber.entities.SubscriberInfo
+import org.nitb.orchestrator.subscriber.entities.*
 import org.nitb.orchestrator.subscription.Subscription
-import org.nitb.orchestrator.subscriber.entities.AllocationStrategy
 import java.io.Serializable
 import java.lang.RuntimeException
 import java.util.concurrent.ConcurrentHashMap
@@ -15,20 +17,12 @@ import java.util.concurrent.ConcurrentMap
 
 class Subscriber(
     private val name: String
-): CloudManager<Serializable> {
+): CloudManager<Serializable>, CloudConsumer<Serializable>, CloudSender {
 
-    fun addSubscriptions(subscriptions: List<Subscription<*, *>>) {
-        subscriptions.forEach { subscription ->
-            subscriptionsPool[subscription.name] = subscription
-            subscription.start()
-        }
-    }
-
-    fun removeSubscription(subscriptions: List<Subscription<*, *>>) {
-        subscriptions.forEach { subscription ->
-            subscriptionsPool.remove(subscription.name)
-        }
-    }
+    /**
+     * Logger object to print logs
+     */
+    private val logger = LoggingManager.getLogger(name)
 
     /**
      * Name of master node. This name is used to declare master queue in queues system
@@ -101,7 +95,27 @@ class Subscriber(
         }
     }
 
+    private fun uploadSubscriptions(request: UploadSubscriptionsReq) {
+        try {
+            request.subscriptions.map { subscription -> JSONSerializer.deserializeWithClassName(subscription) as Subscription<*, *> }.forEach { subscription ->
+                subscriptionsPool[subscription.name] = subscription
+                subscription.start()
+            }
+            sendMessage(UploadSubscriptionResponse(UploadSubscriptionStatus.OK, request.id), client, masterName)
+        } catch (e: Exception) {
+            logger.error("Query ${request.id} fails. Unable to upload subscriptions", e)
+            sendMessage(UploadSubscriptionResponse(UploadSubscriptionStatus.ERROR, request.id), client, masterName)
+        }
+    }
+
     init {
+        registerConsumer(client) { message ->
+            when (message.message) {
+                is UploadSubscriptionsReq -> uploadSubscriptions(message.message)
+                else -> logger.error("Unrecognized message type has been received. Type: ${message::class.java.name}")
+            }
+        }
+
         sendInformationScheduler.start()
         checkMainNodeExistsScheduler.start()
     }
