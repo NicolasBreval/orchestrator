@@ -4,8 +4,7 @@ import org.nitb.orchestrator.logging.LoggingManager
 import java.util.concurrent.*
 
 abstract class Scheduler(
-    private val timeout: Long = -1,
-    autoStart: Boolean = false
+    private val timeout: Long = -1
 ) {
     val running: Boolean get() = !executorTask.isDone && !executorTask.isCancelled
 
@@ -47,9 +46,6 @@ abstract class Scheduler(
     private lateinit var timeoutTask: ScheduledFuture<*>
 
     init {
-        if (autoStart)
-            start()
-
         Runtime.getRuntime().addShutdownHook(Thread{ executor.shutdownNow(); timeoutExecutor.shutdownNow(); })
     }
 }

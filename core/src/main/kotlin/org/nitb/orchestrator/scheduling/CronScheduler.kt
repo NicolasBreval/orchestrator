@@ -15,9 +15,8 @@ import java.util.concurrent.TimeUnit
 
 abstract class CronScheduler(
     private val cronExpression: String,
-    timeout: Long = -1,
-    autoStart: Boolean = false
-): Scheduler(timeout, autoStart) {
+    timeout: Long = -1
+): Scheduler(timeout) {
 
     override fun createExecutor(): ScheduledExecutorService {
         return Executors.newSingleThreadScheduledExecutor()
