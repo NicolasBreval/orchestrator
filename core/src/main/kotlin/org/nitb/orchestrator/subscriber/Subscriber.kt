@@ -15,12 +15,20 @@ import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubs
 import org.nitb.orchestrator.subscription.Subscription
 import java.io.Serializable
 import java.lang.RuntimeException
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
 class Subscriber(
-    private val name: String
+    private val name: String = if (ConfigManager.getEnumProperty(ConfigNames.ALLOCATION_STRATEGY, AllocationStrategy::class.java, ConfigNames.ALLOCATION_STRATEGY_DEFAULT) == AllocationStrategy.FIXED)
+        ConfigManager.getProperty(ConfigNames.SECONDARY_NAME, RuntimeException("${ConfigNames.SECONDARY_NAME} property is required when allocation type is ${AllocationStrategy.FIXED}"))
+    else UUID.randomUUID().toString()
 ): CloudManager<Serializable>, CloudConsumer<Serializable>, CloudSender {
+
+    /**
+     * Flag to check if subscriber has master role
+     */
+    var isMaster: Boolean = false
 
     /**
      * Logger object to print logs
@@ -92,6 +100,7 @@ class Subscriber(
         object : PeriodicalScheduler(checkMainNodeExistPeriod, 0, checkMainNodeExistsTimeout) {
             override fun onCycle() {
                 if (!masterConsuming(client)) {
+                    isMaster = true
                     mainSubscriber.start()
                 }
             }
