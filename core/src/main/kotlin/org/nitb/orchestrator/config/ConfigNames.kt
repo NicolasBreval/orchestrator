@@ -167,4 +167,10 @@ object ConfigNames {
     val ALLOCATION_STRATEGY_DEFAULT = AllocationStrategy.FIXED
 
     // endregion
+
+    // region CONTROLLER
+
+    const val CONTROLLER_NAME = "subscriber.controller.name"
+
+    // endregion
 }
