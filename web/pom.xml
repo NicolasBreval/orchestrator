@@ -50,6 +50,11 @@
       <artifactId>jakarta.annotation-api</artifactId>
       <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>org.nitb.orchestrator</groupId>
+      <artifactId>core</artifactId>
+      <version>1.0.1</version>
+    </dependency>
   </dependencies>
 
   <build>
