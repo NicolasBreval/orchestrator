@@ -11,12 +11,11 @@ import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.scheduling.PeriodicalScheduler
 import org.nitb.orchestrator.serialization.json.JSONSerializer
 import org.nitb.orchestrator.subscriber.entities.*
+import org.nitb.orchestrator.subscriber.entities.subscriptions.ResponseStatus
 import org.nitb.orchestrator.subscriber.entities.subscriptions.remove.RemoveSubscriptionRequest
 import org.nitb.orchestrator.subscriber.entities.subscriptions.remove.RemoveSubscriptionResponse
-import org.nitb.orchestrator.subscriber.entities.subscriptions.remove.RemoveSubscriptionStatus
 import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionResponse
-import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionStatus
-import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionsReq
+import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionsRequest
 import org.nitb.orchestrator.subscription.Subscription
 import java.io.Serializable
 import java.lang.RuntimeException
@@ -35,7 +34,7 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
 
                 }
                 is UploadSubscriptionResponse -> {
-                    if (message.message.status == UploadSubscriptionStatus.ERROR) {
+                    if (message.message.status == ResponseStatus.ERROR) {
                         waitingSubscriptionsToReceiveAck[message.message.id]?.forEach { (name, subscription) ->
                             waitingSubscriptionsToUpload.computeIfAbsent(subscription.subscriber) { ConcurrentHashMap() }[name] = subscription
                         }
@@ -48,7 +47,7 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
 
                     waitingSubscriptionsToReceiveAck.remove(message.message.id)
                 }
-                is UploadSubscriptionsReq -> {
+                is UploadSubscriptionsRequest -> {
                     message.message.subscriptions.forEach { subscription ->
                         val deserialized = JSONSerializer.deserializeWithClassName(subscription) as Subscription<*, *>
                         waitingSubscriptionsToUpload.computeIfAbsent(message.message.subscriber ?: "") { ConcurrentHashMap() }[deserialized.name] =
@@ -60,7 +59,7 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
                     sendRemoveRequests(message.message.subscriptions, message.message.id)
                 }
                 is RemoveSubscriptionResponse -> {
-                    if (message.message.status == RemoveSubscriptionStatus.OK) {
+                    if (message.message.status == ResponseStatus.OK) {
                         waitingSubscriptionsToRemoveAck.remove(message.message.id)
                     }
                 }
@@ -219,7 +218,7 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
 
     private fun sendRequestToSubscriber(subscriptions: ConcurrentHashMap<String, SubscriptionEntry>, subscriber: String) {
         val id = UUID.randomUUID().toString()
-        sendMessage(UploadSubscriptionsReq(subscriptions.map { subscription -> String(subscription.value.content) }, subscriber, id), client, subscriber)
+        sendMessage(UploadSubscriptionsRequest(subscriptions.map { subscription -> String(subscription.value.content) }, subscriber, id), client, subscriber)
         waitingSubscriptionsToReceiveAck[id] = subscriptions
         subscriptions.forEach { (name, _) ->
             waitingSubscriptionsToUpload[subscriber]?.remove(name)

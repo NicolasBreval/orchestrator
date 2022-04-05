@@ -9,9 +9,9 @@ import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.scheduling.PeriodicalScheduler
 import org.nitb.orchestrator.serialization.json.JSONSerializer
 import org.nitb.orchestrator.subscriber.entities.*
+import org.nitb.orchestrator.subscriber.entities.subscriptions.ResponseStatus
 import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionResponse
-import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionStatus
-import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionsReq
+import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionsRequest
 import org.nitb.orchestrator.subscription.Subscription
 import java.io.Serializable
 import java.lang.RuntimeException
@@ -107,23 +107,23 @@ class Subscriber(
         }
     }
 
-    private fun uploadSubscriptions(request: UploadSubscriptionsReq) {
+    private fun uploadSubscriptions(request: UploadSubscriptionsRequest) {
         try {
             request.subscriptions.map { subscription -> JSONSerializer.deserializeWithClassName(subscription) as Subscription<*, *> }.forEach { subscription ->
                 subscriptionsPool[subscription.name] = subscription
                 subscription.start()
             }
-            sendMessage(UploadSubscriptionResponse(UploadSubscriptionStatus.OK, request.id), client, masterName)
+            sendMessage(UploadSubscriptionResponse(ResponseStatus.OK, request.id), client, masterName)
         } catch (e: Exception) {
             logger.error("Query ${request.id} fails. Unable to upload subscriptions", e)
-            sendMessage(UploadSubscriptionResponse(UploadSubscriptionStatus.ERROR, request.id), client, masterName)
+            sendMessage(UploadSubscriptionResponse(ResponseStatus.ERROR, request.id), client, masterName)
         }
     }
 
     init {
         registerConsumer(client) { message ->
             when (message.message) {
-                is UploadSubscriptionsReq -> uploadSubscriptions(message.message)
+                is UploadSubscriptionsRequest -> uploadSubscriptions(message.message)
                 else -> logger.error("Unrecognized message type has been received. Type: ${message::class.java.name}")
             }
         }
