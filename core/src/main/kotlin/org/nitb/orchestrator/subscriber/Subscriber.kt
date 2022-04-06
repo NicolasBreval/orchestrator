@@ -34,7 +34,8 @@ class Subscriber(
     var isMaster: Boolean = false
 
     fun stop() {
-        subscriptionsPool.forEach { (_, subscription) ->
+        subscriptionsPool.forEach { (name, subscription) ->
+            logger.info("Deleting subscription $name due to a stop invocation")
             subscription.stop()
         }
 
@@ -42,7 +43,6 @@ class Subscriber(
         checkMainNodeExistsScheduler.stop()
         mainSubscriber.stop()
 
-        cancelConsumer(client)
         client.close()
     }
 
@@ -130,6 +130,7 @@ class Subscriber(
         object : PeriodicalScheduler(checkMainNodeExistPeriod, 0, checkMainNodeExistsTimeout) {
             override fun onCycle() {
                 if (!masterConsuming(client)) {
+                    logger.info("Master node is fallen, obtaining master role")
                     isMaster = true
                     mainSubscriber.start()
                 }

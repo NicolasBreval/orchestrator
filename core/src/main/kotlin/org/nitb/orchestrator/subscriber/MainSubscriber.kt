@@ -21,6 +21,7 @@ import java.io.Serializable
 import java.lang.RuntimeException
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
 class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, CloudSender {
 
@@ -88,15 +89,33 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
         client.close()
     }
 
-    fun subscriptionUploadResult(id: String): RequestResult? {
-        return waitingUploadRequests[id]
+    fun subscriptionUploadResult(id: String): RequestResult {
+        return if (!waitingUploadRequests.containsKey(id)) {
+            val countPerStatus = RequestStatus.values().associateWith { AtomicInteger(0) }
+
+            waitingUploadRequests.filter { (_, value) -> value.parent == id }.forEach { (_, value) ->
+                countPerStatus[value.status]?.incrementAndGet()
+            }
+
+            if ((countPerStatus[RequestStatus.WAITING]?.get() ?: 0) > 0) {
+                RequestResult(RequestStatus.WAITING)
+            } else if ((countPerStatus[RequestStatus.ERROR]?.get() ?: 0) > 0) {
+                RequestResult(RequestStatus.ERROR)
+            } else if ((countPerStatus[RequestStatus.OK]?.get() ?: 0) > 0) {
+                RequestResult(RequestStatus.OK)
+            } else {
+                RequestResult(RequestStatus.DELETED)
+            }
+        } else {
+            waitingUploadRequests[id] ?: RequestResult(RequestStatus.DELETED)
+        }
     }
+
+    
 
     // endregion
 
     // region PRIVATE PROPERTIES
-
-    private val subscriberlessName = "SUBSCRIBERLESS"
 
     /**
      * Name of master node, obtaining from properties

@@ -64,7 +64,7 @@ class ActiveMqCloudClient<T: Serializable>(
             producer.deliveryMode = DeliveryMode.NON_PERSISTENT
             producer.send(bytesMessage)
         } catch (e: Exception) {
-            logger.error("Error sending message", e)
+            logger.error("Error sending message from $name to $receiver", e)
         }
     }
 
