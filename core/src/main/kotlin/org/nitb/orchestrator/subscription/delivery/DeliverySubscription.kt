@@ -12,7 +12,7 @@ import java.io.Serializable
 @HeritableSubscription
 abstract class DeliverySubscription<I: Serializable, O: Serializable>(
     name: String,
-    protected val receivers: List<SubscriptionReceiver> = listOf(),
+    private val receivers: List<SubscriptionReceiver> = listOf(),
     timeout: Long = -1,
     description: String? = null
 ): Subscription<I, O>(name, timeout, description), CloudManager<I>, CloudConsumer<I>, CloudSender {
@@ -30,7 +30,7 @@ abstract class DeliverySubscription<I: Serializable, O: Serializable>(
     }
 
     override fun deactivate() {
-        client.cancelConsumer()
+        client.close()
     }
 
 

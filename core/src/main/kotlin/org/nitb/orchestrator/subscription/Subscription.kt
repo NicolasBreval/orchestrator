@@ -66,7 +66,7 @@ abstract class Subscription<I, O>(
 
     protected abstract fun onEvent(sender: String, input: I): O?
 
-    protected abstract fun preRun(input: I)
+    protected open fun preRun(input: I) {}
 
     protected abstract fun initialize()
 

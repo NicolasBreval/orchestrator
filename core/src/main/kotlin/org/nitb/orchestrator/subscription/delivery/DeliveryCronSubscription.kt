@@ -33,4 +33,9 @@ abstract class DeliveryCronSubscription<O: Serializable>(
             }
         }
     }
+
+    override fun deactivate() {
+        super.deactivate()
+        client.close()
+    }
 }

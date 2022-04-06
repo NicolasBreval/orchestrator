@@ -24,6 +24,6 @@ abstract class ConsumerSubscription<I: Serializable>(
     }
 
     override fun deactivate() {
-        client.cancelConsumer()
+        client.close()
     }
 }
