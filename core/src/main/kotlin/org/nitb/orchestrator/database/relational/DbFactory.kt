@@ -36,12 +36,21 @@ object DbFactory {
     // region PRIVATE METHODS
 
     private fun createHikariDataSource(): HikariDataSource {
-        LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.PoolBase")
-        LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.HikariPool")
-        LoggingManager.setLoggerLevel("com.zaxxer.hikari.HikariDataSource")
-        LoggingManager.setLoggerLevel("com.zaxxer.hikari.HikariConfig")
-        LoggingManager.setLoggerLevel("com.zaxxer.hikari.util.DriverDataSource")
-        LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.ProxyConnection")
+        if (ConfigManager.getBoolean(ConfigNames.DATABASE_SHOW_LOGS)) {
+            LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.PoolBase")
+            LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.HikariPool")
+            LoggingManager.setLoggerLevel("com.zaxxer.hikari.HikariDataSource")
+            LoggingManager.setLoggerLevel("com.zaxxer.hikari.HikariConfig")
+            LoggingManager.setLoggerLevel("com.zaxxer.hikari.util.DriverDataSource")
+            LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.ProxyConnection")
+        } else {
+            LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.PoolBase", Level.OFF)
+            LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.HikariPool", Level.OFF)
+            LoggingManager.setLoggerLevel("com.zaxxer.hikari.HikariDataSource", Level.OFF)
+            LoggingManager.setLoggerLevel("com.zaxxer.hikari.HikariConfig", Level.OFF)
+            LoggingManager.setLoggerLevel("com.zaxxer.hikari.util.DriverDataSource", Level.OFF)
+            LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.ProxyConnection", Level.OFF)
+        }
 
         if (!ConfigManager.getBoolean(ConfigNames.DATABASE_SHOW_SQL_QUERIES)) {
             LoggingManager.setLoggerLevel("Exposed", Level.OFF)

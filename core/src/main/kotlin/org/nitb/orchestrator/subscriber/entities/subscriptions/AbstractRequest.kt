@@ -4,5 +4,6 @@ import java.io.Serializable
 import java.util.*
 
 abstract class AbstractRequest(
-    val id: String = UUID.randomUUID().toString()
+    val id: String = UUID.randomUUID().toString(),
+    val creation: Long = System.currentTimeMillis()
 ): Serializable

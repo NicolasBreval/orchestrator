@@ -19,4 +19,8 @@ interface CloudManager<T: Serializable> {
     fun masterConsuming(client: CloudClient<T>): Boolean {
         return client.masterConsuming()
     }
+
+    fun closeConnection() {
+
+    }
 }

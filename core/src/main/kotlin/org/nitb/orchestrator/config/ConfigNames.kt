@@ -58,6 +58,7 @@ object ConfigNames {
     const val DATABASE_MAX_LIFE_TIME = "database.max.life.time"
     const val DATABASE_CREATE_SCHEMAS_ON_STARTUP = "database.create.schemas.on.startup"
     const val DATABASE_SHOW_SQL_QUERIES = "database.show.sql.queries"
+    const val DATABASE_SHOW_LOGS = "database.show.logs"
 
     // endregion
 
@@ -72,6 +73,7 @@ object ConfigNames {
 
     @RequiredProperty("Needed to select queue connection type")
     const val CLOUD_TYPE = "cloud.type"
+    const val CLOUD_SHOW_LOGS = "cloud.show.logs"
 
     // region RABBITMQ
 
@@ -128,7 +130,7 @@ object ConfigNames {
     @RequiredProperty("Needed only if allocation strategy is FIXED", depends = true, dependency = "subscriber.master.allocation.strategy", dependencyValue = "FIXED")
     const val SECONDARY_NAME = "subscriber.secondary.name"
     const val SUBSCRIBER_SEND_INFO_PERIOD = "subscriber.secondary.send.info.period"
-    const val SUBSCRIBER_SEND_INFO_TIMEOUT = "subscriber.secondary.send.ingo.timeout"
+    const val SUBSCRIBER_SEND_INFO_TIMEOUT = "subscriber.secondary.send.info.timeout"
     const val SUBSCRIBER_CHECK_MAIN_NODE_EXISTS_PERIOD = "subscriber.secondary.check.main.node.exists.period"
     const val SUBSCRIBER_CHECK_MAIN_NODE_EXISTS_TIMEOUT = "subscriber.secondary.check.main.node.exists.timeout"
     const val SUBSCRIBER_CHECK_SECONDARY_NODES_UP_PERIOD = "subscriber.main.check.secondary.nodes.up.period"

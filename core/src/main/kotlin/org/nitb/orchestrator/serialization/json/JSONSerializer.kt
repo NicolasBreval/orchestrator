@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import java.lang.NullPointerException
 
 object JSONSerializer {
     private val jacksonMapper: ObjectMapper = jacksonObjectMapper()
@@ -24,10 +25,15 @@ object JSONSerializer {
 
     @Synchronized
     fun deserializeWithClassName(content: String): Any {
-        val node = jacksonMapper.readValue(content, JsonNode::class.java)
-        val clazz = Class.forName((node as ObjectNode).get("className").asText())
-        node.remove("className")
-        return jacksonMapper.readValue(node.toString(), clazz)
+        try {
+            val node = jacksonMapper.readValue(content, JsonNode::class.java)
+            val clazz = Class.forName((node as ObjectNode).get("className").asText())
+            node.remove("className")
+            return jacksonMapper.readValue(node.toString(), clazz)
+        } catch (e: NullPointerException) {
+            System.currentTimeMillis()
+            throw e
+        }
     }
 
     @Synchronized

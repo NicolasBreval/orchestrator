@@ -14,7 +14,7 @@ object DbController {
 
     // region PUBLIC METHODS
 
-    fun getLastActiveSubscriptionsBySlave(subscriber: String): List<SubscriptionEntry> {
+    fun getLastActiveSubscriptionsBySubscriber(subscriber: String): List<SubscriptionEntry> {
         return transaction {
             Subscriptions
                 .select { Subscriptions.id inSubQuery Subscriptions.slice(Subscriptions.id.max()).select { Subscriptions.subscriber eq subscriber }.groupBy(Subscriptions.name) }

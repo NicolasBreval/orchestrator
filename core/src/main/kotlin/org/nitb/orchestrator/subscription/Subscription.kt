@@ -2,14 +2,11 @@ package org.nitb.orchestrator.subscription
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import org.nitb.orchestrator.annotations.NoArgsConstructor
-import org.nitb.orchestrator.cloud.CloudConsumer
-import org.nitb.orchestrator.cloud.CloudManager
-import org.nitb.orchestrator.cloud.CloudSender
 import org.nitb.orchestrator.logging.LoggerWrapper
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.serialization.binary.BinarySerializer
 import org.nitb.orchestrator.serialization.json.JSONSerializer
-import java.io.Serializable
+import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
 import java.lang.Exception
 import java.math.BigInteger
 
@@ -42,8 +39,6 @@ abstract class Subscription<I, O>(
 
     @JsonIgnore
     private val creation: Long = System.currentTimeMillis()
-    @JsonIgnore
-    private var isStored: Boolean = false
     @JsonIgnore
     private var status: SubscriptionStatus = SubscriptionStatus.STOPPED
     @JsonIgnore
@@ -115,6 +110,16 @@ abstract class Subscription<I, O>(
     protected open fun onSuccess(input: I, output: O?) {}
 
     protected open fun onError(input: I) {}
+
+    // endregion
+
+    // region PUBLIC PROPERTIES
+
+    @delegate:Transient
+    private val content: String by lazy { JSONSerializer.serializeWithClassName(this) }
+
+    @get:JsonIgnore
+    val info: SubscriptionInfo get() = SubscriptionInfo(name, creation, status, inputVolume, outputVolume, starts, stops, success, error, lastExecution, schema, content)
 
     // endregion
 }

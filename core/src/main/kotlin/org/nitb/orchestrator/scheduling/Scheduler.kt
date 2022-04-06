@@ -21,7 +21,7 @@ abstract class Scheduler(
         }
     }
 
-    fun stop(wait: Boolean = false) {
+    fun pause(wait: Boolean = false) {
         if (timeout > 0) timeoutTask.cancel(true)
         executorTask.cancel(true)
 
@@ -30,7 +30,12 @@ abstract class Scheduler(
                 Thread.sleep(100)
             }
         }
+    }
 
+    fun stop(wait: Boolean = false) {
+        pause(wait)
+        executor.shutdownNow()
+        timeoutExecutor.shutdownNow()
     }
 
     protected abstract fun createExecutor(): ScheduledExecutorService

@@ -64,6 +64,7 @@ class RabbitMqCloudClient<T: Serializable>(
     }
 
     override fun close() {
+        cancelConsumer()
         channel.close()
         connection.close()
     }
@@ -80,4 +81,5 @@ class RabbitMqCloudClient<T: Serializable>(
     private val channel = connection.createChannel()
     private val logger = LoggingManager.getLogger(this::class.java)
     private lateinit var consumerTag: String
+
 }

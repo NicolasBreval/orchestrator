@@ -9,18 +9,20 @@ import org.nitb.orchestrator.database.relational.DbController
 import org.nitb.orchestrator.database.relational.entities.SubscriptionEntry
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.scheduling.PeriodicalScheduler
-import org.nitb.orchestrator.serialization.json.JSONSerializer
 import org.nitb.orchestrator.subscriber.entities.*
+import org.nitb.orchestrator.subscriber.entities.subscriptions.AbstractRequest
+import org.nitb.orchestrator.subscriber.entities.subscriptions.AbstractResponse
 import org.nitb.orchestrator.subscriber.entities.subscriptions.ResponseStatus
 import org.nitb.orchestrator.subscriber.entities.subscriptions.remove.RemoveSubscriptionRequest
 import org.nitb.orchestrator.subscriber.entities.subscriptions.remove.RemoveSubscriptionResponse
 import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionResponse
 import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionsRequest
-import org.nitb.orchestrator.subscription.Subscription
+import org.nitb.orchestrator.subscription.SubscriptionStatus
 import java.io.Serializable
 import java.lang.RuntimeException
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 
 class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, CloudSender {
 
@@ -29,39 +31,29 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
     fun start() {
         registerConsumer(client) { message ->
             when (message.message) {
-                is SubscriberInfo -> {
-                    secondaryNodes[message.sender] = message.message
-
+                is SubscriberInfo -> subscribers[message.sender] = message.message
+                is UploadSubscriptionsRequest -> {
+                    logger.debug("Upload subscriptions request received from ${message.sender}")
+                    uploadSubscriptions(message.message.subscriptions, message.message.subscriber)
                 }
                 is UploadSubscriptionResponse -> {
-                    if (message.message.status == ResponseStatus.ERROR) {
-                        waitingSubscriptionsToReceiveAck[message.message.id]?.forEach { (name, subscription) ->
-                            waitingSubscriptionsToUpload.computeIfAbsent(subscription.subscriber) { ConcurrentHashMap() }[name] = subscription
-                        }
-                    }
-                    waitingSubscriptionsToReceiveAck[message.message.id]?.forEach { (_, subscription) ->
-                        subscription.subscriber = message.sender
+                    logger.debug("Upload subscriptions response received from ${message.sender}")
+                    waitingResponses[message.message.id] = message.message
+
+                    if (message.message.id == fallenSubscriptionsOperationId.get()) {
+                        fallenSubscriptionsOperationId.set("")
                     }
 
-                    DbController.insertSubscriptions(waitingSubscriptionsToReceiveAck[message.message.id]?.values?.toList() ?: listOf())
-
-                    waitingSubscriptionsToReceiveAck.remove(message.message.id)
-                }
-                is UploadSubscriptionsRequest -> {
-                    message.message.subscriptions.forEach { subscription ->
-                        val deserialized = JSONSerializer.deserializeWithClassName(subscription) as Subscription<*, *>
-                        waitingSubscriptionsToUpload.computeIfAbsent(message.message.subscriber ?: "") { ConcurrentHashMap() }[deserialized.name] =
-                            SubscriptionEntry(deserialized.name, subscription.toByteArray(), message.message.subscriber ?: "", stopped = false, active = true)
-                    }
-                    uploadSubscriptions()
+                    DbController.insertSubscriptions(message.message.subscriptions.map { info ->
+                        SubscriptionEntry(info.name, info.content.toByteArray(Charsets.UTF_8), message.sender, info.status == SubscriptionStatus.STOPPED, true)
+                    })
                 }
                 is RemoveSubscriptionRequest -> {
-                    sendRemoveRequests(message.message.subscriptions, message.message.id)
+                    logger.debug("Remove subscriptions request received from ${message.sender}")
                 }
                 is RemoveSubscriptionResponse -> {
-                    if (message.message.status == ResponseStatus.OK) {
-                        waitingSubscriptionsToRemoveAck.remove(message.message.id)
-                    }
+                    logger.debug("Remove subscriptions response received from ${message.sender}")
+
                 }
                 else -> logger.error("Unrecognized message type has been received. Type: ${message::class.java.name}")
             }
@@ -69,12 +61,30 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
 
         checkNodesScheduler.start()
         checkWaitingSubscriptionsToUploadScheduler.start()
-        checkFailRemovedSubscriptions.start()
+        checkAutomaticOperations.start()
+    }
+
+    fun stop() {
+        if (checkNodesSchedulerDelegate.isInitialized()) {
+            checkNodesScheduler.stop()
+        }
+
+        if (checkWaitingSubscriptionsToUploadSchedulerDelegate.isInitialized()) {
+            checkWaitingSubscriptionsToUploadScheduler.stop()
+        }
+
+        if (checkAutomaticOperationsDelegate.isInitialized()) {
+            checkAutomaticOperations.stop()
+        }
+
+        client.close()
     }
 
     // endregion
 
     // region PRIVATE PROPERTIES
+
+    private val subscriberlessName = "SUBSCRIBERLESS"
 
     /**
      * Name of master node, obtaining from properties
@@ -123,27 +133,23 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
     /**
      * All secondary nodes with their last timestamp when primary node receives an information message from it
      */
-    private val secondaryNodes = ConcurrentHashMap<String, SubscriberInfo>()
+    private val subscribers = ConcurrentHashMap<String, SubscriberInfo>()
 
     /**
-     * List of subscriptions, grouped by unique id, which their subscribers have been fallen
+     * List of subscriptions to reallocate due to node crash
      */
-    private val waitingSubscriptionsToUpload = ConcurrentHashMap<String, ConcurrentHashMap<String, SubscriptionEntry>>()
+    private val fallenSubscriptionsBySubscriber = ConcurrentHashMap<String, MutableList<String>>()
+
+    private val fallenSubscriptionsOperationId: AtomicReference<String> = AtomicReference("")
 
     /**
-     * List of subscriptions, grouped by subscriber, that are waiting to check if has been uploaded to subscriber
+     * All requests send to main subscriber that are not resolved yet
      */
-    private val waitingSubscriptionsToReceiveAck = ConcurrentHashMap<String, ConcurrentHashMap<String, SubscriptionEntry>>()
+    private val waitingRequests = ConcurrentHashMap<String, AbstractRequest>()
 
-    /**
-     * List of waiting removing subscriptions task
-     */
-    private val waitingSubscriptionsToRemoveAck = ConcurrentHashMap<String, ConcurrentHashMap<String, Long>>()
+    private val waitingResponses = ConcurrentHashMap<String, AbstractResponse>()
 
-    /**
-     * List of subscriptions that could not be removed
-     */
-    private val failedRemovedSubscriptions = Collections.synchronizedList(mutableListOf<String>())
+    private val automaticOperations = Collections.synchronizedList(mutableListOf<String>())
 
     /**
      * Client used for communication with another subscribers
@@ -153,14 +159,14 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
     /**
      * Scheduler used to check if any secondary node is down
      */
-    private val checkNodesScheduler by lazy { object : PeriodicalScheduler(checkSecondaryNodesPeriod, 0, checkSecondaryNodesTimeout) {
+    private val checkNodesSchedulerDelegate = lazy { object : PeriodicalScheduler(checkSecondaryNodesPeriod, 0, checkSecondaryNodesTimeout) {
         override fun onCycle() {
             val currentTime = System.currentTimeMillis()
             val downSubscribers = mutableListOf<String>()
 
-            for ((name, info) in secondaryNodes) {
+            for ((name, info) in subscribers) {
                 if (currentTime - info.timestamp > maxSecondaryNodeInactivityTime) {
-                    secondaryNodes.remove(name)
+                    subscribers.remove(name)
                     downSubscribers.add(name)
                 }
             }
@@ -168,95 +174,108 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
             onSubscriberDown(downSubscribers)
         }
     } }
+    private val checkNodesScheduler by checkNodesSchedulerDelegate
 
-    private val checkWaitingSubscriptionsToUploadScheduler by lazy { object : PeriodicalScheduler(checkSubscriptionsToUploadPeriod, 0, checkSubscriptionsToUploadTimeout) {
+    private val checkWaitingSubscriptionsToUploadSchedulerDelegate = lazy { object : PeriodicalScheduler(checkSubscriptionsToUploadPeriod, 0, checkSubscriptionsToUploadTimeout) {
         override fun onCycle() {
-            uploadSubscriptions()
-        }
-    }
-    }
-
-    private val checkFailRemovedSubscriptions by lazy { object : PeriodicalScheduler(checkSubscriptionsToRemovePeriod, 0, checkSubscriptionsToRemoveTimeout) {
-        override fun onCycle() {
-            for ((id, subscriptions) in waitingSubscriptionsToRemoveAck) {
-                if (subscriptions.minOf { (_, timestamp) -> timestamp } > checkSubscriptionsToRemovePeriod) {
-                    sendRemoveRequests(subscriptions.keys().toList(), id)
+            if (fallenSubscriptionsOperationId.get().isNotEmpty()) {
+                fallenSubscriptionsBySubscriber.forEach { (subscriber, subscriptions) ->
+                    automaticOperations.add(uploadSubscriptions(subscriptions, subscriber))
+                    fallenSubscriptionsBySubscriber.remove(subscriber)
                 }
             }
         }
-    }
-    }
+    } }
+    private val checkWaitingSubscriptionsToUploadScheduler by checkWaitingSubscriptionsToUploadSchedulerDelegate
+
+    private val checkAutomaticOperationsDelegate = lazy { object : PeriodicalScheduler(checkSubscriptionsToRemovePeriod, 0, checkSubscriptionsToRemoveTimeout) {
+        override fun onCycle() {
+            for (operation in automaticOperations) {
+                if (waitingRequests.containsKey(operation) && waitingResponses.containsKey(operation)) {
+                    if (waitingRequests[operation] is UploadSubscriptionsRequest && waitingResponses[operation] is UploadSubscriptionResponse) {
+                        if ((waitingResponses[operation] as UploadSubscriptionResponse).status == ResponseStatus.OK) {
+                            logger.debug("Success operation received with id $operation")
+                        } else {
+                            logger.debug("Fail operation received with id $operation")
+                        }
+                        waitingResponses[operation]?.finished = true
+                    } else {
+                        logger.error("Unknown response received for a pending request. ${waitingRequests[operation]!!::class.java} vs ${waitingResponses[operation]!!::class.java}")
+                        waitingResponses.remove(operation)
+                    }
+                    waitingRequests.remove(operation)
+                } else if (waitingRequests.containsKey(operation) && !waitingResponses.containsKey(operation) && (System.currentTimeMillis() - waitingRequests[operation]!!.creation) > 5000) {
+                    waitingRequests.remove(operation)
+                } else if (!waitingRequests.containsKey(operation) && waitingResponses.containsKey(operation)) {
+                    waitingResponses.remove(operation)
+                }
+            }
+        }
+    } }
+    private val checkAutomaticOperations by checkAutomaticOperationsDelegate
 
     // endregion
 
     // region PRIVATE METHODS
 
     private fun onSubscriberDown(subscribers: List<String>) {
-        val subscriptionsBySubscriber = subscribers.associateWith { subscriber -> DbController.getLastActiveSubscriptionsBySlave(subscriber) }
-
-        for ((subscriber, subscriptions) in subscriptionsBySubscriber) {
-            val currentSubscriptions = waitingSubscriptionsToUpload.computeIfAbsent(subscriber) { ConcurrentHashMap() }
-
-            for (subscription in subscriptions) {
-                currentSubscriptions[subscription.name] = subscription
-            }
+        if (subscribers.isNotEmpty()) {
+            logger.info("Nodes fallen detected: $subscribers")
         }
 
-        uploadSubscriptions()
+        subscribers.forEach { subscriber ->
+            val subscriptionEntries = DbController.getLastActiveSubscriptionsBySubscriber(subscriber)
+            fallenSubscriptionsOperationId.set(UUID.randomUUID().toString())
+            automaticOperations.add(uploadSubscriptions(subscriptionEntries.map { String(it.content) }, subscriber, fallenSubscriptionsOperationId.get()))
+        }
     }
 
     private fun makeRanking(): List<String> {
         return when (allocationStrategy) {
-            AllocationStrategy.CPU -> secondaryNodes.values.sortedBy { info -> info.cpuUsage }.map { info -> info.name }
-            AllocationStrategy.MEMORY -> secondaryNodes.values.sortedByDescending { info -> info.freeMemory }.map { info -> info.name }
-            AllocationStrategy.CPU_MEMORY -> secondaryNodes.values.sortedWith(compareBy<SubscriberInfo> { info -> info.cpuUsage }.thenByDescending { info -> info.freeMemory }).map { info -> info.name }
-            AllocationStrategy.MEMORY_CPU -> secondaryNodes.values.sortedWith(compareByDescending<SubscriberInfo> { info -> info.freeMemory }.thenBy { info -> info.cpuUsage }).map { info -> info.name }
-            AllocationStrategy.OCCUPATION -> secondaryNodes.values.sortedBy { info -> info.subscriptions.size }.map { info -> info.name }
+            AllocationStrategy.CPU -> subscribers.values.sortedBy { info -> info.cpuUsage }.map { info -> info.name }
+            AllocationStrategy.MEMORY -> subscribers.values.sortedByDescending { info -> info.freeMemory }.map { info -> info.name }
+            AllocationStrategy.CPU_MEMORY -> subscribers.values.sortedWith(compareBy<SubscriberInfo> { info -> info.cpuUsage }.thenByDescending { info -> info.freeMemory }).map { info -> info.name }
+            AllocationStrategy.MEMORY_CPU -> subscribers.values.sortedWith(compareByDescending<SubscriberInfo> { info -> info.freeMemory }.thenBy { info -> info.cpuUsage }).map { info -> info.name }
+            AllocationStrategy.OCCUPATION -> subscribers.values.sortedBy { info -> info.subscriptions.size }.map { info -> info.name }
             else -> throw RuntimeException("Impossible case: trying to obtain ranking with invalid allocation strategy")
         }
     }
 
-    private fun sendRequestToSubscriber(subscriptions: ConcurrentHashMap<String, SubscriptionEntry>, subscriber: String) {
-        val id = UUID.randomUUID().toString()
-        sendMessage(UploadSubscriptionsRequest(subscriptions.map { subscription -> String(subscription.value.content) }, subscriber, id), client, subscriber)
-        waitingSubscriptionsToReceiveAck[id] = subscriptions
-        subscriptions.forEach { (name, _) ->
-            waitingSubscriptionsToUpload[subscriber]?.remove(name)
-        }
+    private fun reallocateSubscriptions(subscriptions: List<String>, subscriber: String, id: String) {
+        val request = UploadSubscriptionsRequest(subscriptions, subscriber, id)
+        sendMessage(request, client, subscriber)
+        waitingRequests[id] = request
     }
 
-    private fun uploadSubscriptions() {
+    private fun uploadSubscriptions(subscriptions: List<String>, subscriber: String? = null, id: String? = UUID.randomUUID().toString()): String {
+        val finalId = id ?: UUID.randomUUID().toString()
+
         if (allocationStrategy == AllocationStrategy.FIXED) {
-            for ((subscriber, subscriptions) in waitingSubscriptionsToUpload) {
-                if (secondaryNodes.containsKey(subscriber)) {
-                    sendRequestToSubscriber(subscriptions, subscriber)
-                }
+            if (subscriber == null)
+                throw IllegalArgumentException("Invalid parameter `subscriber`. When allocation strategy is FIXED, subscriber name must be not null")
+
+            if (subscribers.containsKey(subscriber)) {
+                reallocateSubscriptions(subscriptions, subscriber, finalId)
+            } else {
+                fallenSubscriptionsBySubscriber.computeIfAbsent(subscriber) { mutableListOf() }.addAll(subscriptions)
             }
         } else {
-            if (secondaryNodes.isNotEmpty()) {
+            if (subscribers.isNotEmpty()) {
                 val rankedSubscribers = makeRanking()
 
-                var i = 0
-                for ((_, subscriptions) in waitingSubscriptionsToUpload) {
-                    val subscriber = rankedSubscribers[i % rankedSubscribers.size]
-                    sendRequestToSubscriber(subscriptions, subscriber)
-                    i++
+                subscriptions.withIndex().groupBy { (i, _) ->
+                    rankedSubscribers[i % rankedSubscribers.size]
+                }.mapValues { (_, value) -> value.map { it.value } }.forEach { (subscriber, subscriptions) ->
+                    reallocateSubscriptions(subscriptions, subscriber, finalId)
                 }
+            } else {
+                fallenSubscriptionsBySubscriber.computeIfAbsent(subscriberlessName) { mutableListOf() }.addAll(subscriptions)
             }
         }
+
+        return finalId
     }
 
-    private fun sendRemoveRequests(subscriptions: List<String>, id: String) {
-        subscriptions.groupBy { subscription -> secondaryNodes
-            .filter { (_, info) -> info.subscriptions.containsKey(subscription) }
-            .map { (name, _) -> name }.firstOrNull() ?: "" }
-            .filter { (name, _) -> name.isNotEmpty() }.forEach { (subscriber, subscriptions) ->
-                subscriptions.forEach { subscription ->
-                    waitingSubscriptionsToRemoveAck.computeIfAbsent(id) { ConcurrentHashMap() }[subscription] = System.currentTimeMillis()
-                }
-                sendMessage(RemoveSubscriptionRequest(subscriptions, id), client, subscriber)
-            }
-    }
 
     // endregion
 

@@ -30,6 +30,31 @@ class Subscriber(
      */
     var isMaster: Boolean = false
 
+    fun stop() {
+        subscriptionsPool.forEach { (_, subscription) ->
+            subscription.stop()
+        }
+
+        sendInformationScheduler.stop()
+        checkMainNodeExistsScheduler.stop()
+        mainSubscriber.stop()
+
+        cancelConsumer(client)
+        client.close()
+    }
+
+    fun start() {
+        registerConsumer(client) { message ->
+            when (message.message) {
+                is UploadSubscriptionsRequest -> uploadSubscriptions(message.message)
+                else -> logger.error("Unrecognized message type has been received. Type: ${message::class.java.name}")
+            }
+        }
+
+        sendInformationScheduler.start()
+        checkMainNodeExistsScheduler.start()
+    }
+
     /**
      * Logger object to print logs
      */
@@ -85,7 +110,7 @@ class Subscriber(
                     subscriptionsPool.values.associate { subscription ->
                         Pair(
                             subscription.name,
-                            JSONSerializer.serialize(subscription)
+                            subscription.info
                         )
                     }, name == masterName))
             }
@@ -109,26 +134,26 @@ class Subscriber(
 
     private fun uploadSubscriptions(request: UploadSubscriptionsRequest) {
         try {
-            request.subscriptions.map { subscription -> JSONSerializer.deserializeWithClassName(subscription) as Subscription<*, *> }.forEach { subscription ->
-                subscriptionsPool[subscription.name] = subscription
-                subscription.start()
-            }
-            sendMessage(UploadSubscriptionResponse(ResponseStatus.OK, request.id), client, masterName)
+            val subscriptionInfos = request.subscriptions
+                .map { subscription ->
+                    JSONSerializer.deserializeWithClassName(subscription) as Subscription<*, *>
+                }
+                .filter { subscription -> !subscriptionsPool.containsKey(subscription.name)
+                        || subscriptionsPool[subscription.name]?.info?.content == subscription.info.content }
+                .onEach { subscription ->
+                    subscriptionsPool[subscription.name]?.stop()
+                    subscriptionsPool[subscription.name] = subscription
+                    subscription.start()
+                }.map { it.info }
+
+            sendMessage(UploadSubscriptionResponse(ResponseStatus.OK, subscriptionInfos, request.id), client, masterName)
         } catch (e: Exception) {
             logger.error("Query ${request.id} fails. Unable to upload subscriptions", e)
-            sendMessage(UploadSubscriptionResponse(ResponseStatus.ERROR, request.id), client, masterName)
+            sendMessage(UploadSubscriptionResponse(ResponseStatus.ERROR, listOf(), request.id), client, masterName)
         }
     }
 
     init {
-        registerConsumer(client) { message ->
-            when (message.message) {
-                is UploadSubscriptionsRequest -> uploadSubscriptions(message.message)
-                else -> logger.error("Unrecognized message type has been received. Type: ${message::class.java.name}")
-            }
-        }
-
-        sendInformationScheduler.start()
-        checkMainNodeExistsScheduler.start()
+        start()
     }
 }

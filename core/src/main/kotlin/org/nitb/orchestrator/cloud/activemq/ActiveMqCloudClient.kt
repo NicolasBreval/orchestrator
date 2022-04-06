@@ -1,5 +1,6 @@
 package org.nitb.orchestrator.cloud.activemq
 
+import ch.qos.logback.classic.Level
 import org.apache.activemq.*
 import org.apache.activemq.advisory.AdvisorySupport
 import org.nitb.orchestrator.cloud.CloudClient
@@ -23,13 +24,33 @@ class ActiveMqCloudClient<T: Serializable>(
 ): CloudClient<T>(name), MessageListener {
 
     companion object {
-        val connectionFactory: ActiveMQConnectionFactory = ActiveMQConnectionFactory(
+        private val connectionFactory: ActiveMQConnectionFactory = ActiveMQConnectionFactory(
             ConfigManager.getProperty(ConfigNames.ACTIVEMQ_USERNAME, ConfigNames.ACTIVEMQ_DEFAULT_PASSWORD),
             ConfigManager.getProperty(ConfigNames.ACTIVEMQ_PASSWORD, ConfigNames.ACTIVEMQ_DEFAULT_PASSWORD),
             ConfigManager.getProperty(ConfigNames.ACTIVEMQ_BROKER_URL, RuntimeException("Needed property doesn't exists: ${ConfigNames.ACTIVEMQ_USERNAME}")))
 
         init {
-            LoggingManager.setLoggerLevel("org.apache.activemq.transport.AbstractInactivityMonitor")
+            if (ConfigManager.getBoolean(ConfigNames.CLOUD_SHOW_LOGS)) {
+                LoggingManager.setLoggerLevel("org.apache.activemq.thread.TaskRunnerFactory")
+                LoggingManager.setLoggerLevel("org.apache.activemq.transport.failover.FailoverTransport")
+                LoggingManager.setLoggerLevel("org.apache.activemq.transport.WireFormatNegotiator")
+                LoggingManager.setLoggerLevel("org.apache.activemq.transport.InactivityMonitor")
+                LoggingManager.setLoggerLevel("org.apache.activemq.util.ThreadPoolUtils")
+                LoggingManager.setLoggerLevel("org.apache.activemq.transport.tcp.TcpTransport")
+                LoggingManager.setLoggerLevel("org.apache.activemq.ActiveMQMessageConsumer")
+                LoggingManager.setLoggerLevel("org.apache.activemq.transport.AbstractInactivityMonitor")
+                LoggingManager.setLoggerLevel("org.apache.activemq.ActiveMQConnection")
+            } else {
+                LoggingManager.setLoggerLevel("org.apache.activemq.thread.TaskRunnerFactory", Level.OFF)
+                LoggingManager.setLoggerLevel("org.apache.activemq.transport.failover.FailoverTransport", Level.OFF)
+                LoggingManager.setLoggerLevel("org.apache.activemq.transport.WireFormatNegotiator", Level.OFF)
+                LoggingManager.setLoggerLevel("org.apache.activemq.transport.InactivityMonitor", Level.OFF)
+                LoggingManager.setLoggerLevel("org.apache.activemq.util.ThreadPoolUtils", Level.OFF)
+                LoggingManager.setLoggerLevel("org.apache.activemq.transport.tcp.TcpTransport", Level.OFF)
+                LoggingManager.setLoggerLevel("org.apache.activemq.ActiveMQMessageConsumer", Level.OFF)
+                LoggingManager.setLoggerLevel("org.apache.activemq.transport.AbstractInactivityMonitor", Level.OFF)
+                LoggingManager.setLoggerLevel("org.apache.activemq.ActiveMQConnection", Level.OFF)
+            }
         }
     }
 
@@ -105,10 +126,6 @@ class ActiveMqCloudClient<T: Serializable>(
         return masterConsumersCount.get() > 0
     }
 
-    private fun declareQueue(name: String): Destination {
-        return session.createQueue("$name?consumer.exclusive=true")
-    }
-
     override fun onMessage(message: Message?) {
         val source = message?.jmsDestination
 
@@ -125,6 +142,10 @@ class ActiveMqCloudClient<T: Serializable>(
     private lateinit var consumer: ActiveMQMessageConsumer
     private val monitored: Destination by lazy { declareQueue(ConfigManager.getProperty(ConfigNames.PRIMARY_NAME, RuntimeException("Mandatory property not found ${ConfigNames.PRIMARY_NAME}"))) }
     private var masterConsumersCount: AtomicInteger = AtomicInteger(0)
+
+    private fun declareQueue(name: String): Destination {
+        return session.createQueue("$name?consumer.exclusive=true")
+    }
 
     init {
         if (consumerCountListener) {
