@@ -1,4 +1,4 @@
-package org.nitb.orchestrator.subscriber.entities
+package org.nitb.orchestrator.subscriber.entities.subscribers
 
 import com.sun.management.OperatingSystemMXBean
 import org.nitb.orchestrator.annotations.NoArgsConstructor

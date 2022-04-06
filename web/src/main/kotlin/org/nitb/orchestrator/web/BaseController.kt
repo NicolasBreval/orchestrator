@@ -10,7 +10,7 @@ import org.nitb.orchestrator.cloud.CloudManager
 import org.nitb.orchestrator.cloud.CloudSender
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
-import org.nitb.orchestrator.subscriber.entities.SubscriberInfo
+import org.nitb.orchestrator.subscriber.entities.subscribers.SubscriberInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.remove.RemoveSubscriptionRequest
 import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionsRequest
 import org.nitb.orchestrator.web.entities.AddSubscriptionRequest
@@ -24,7 +24,7 @@ abstract class BaseController: CloudManager<Serializable>, CloudSender, CloudCon
 
     @Get("/subscriptions/list")
     fun listSubscriptions(): List<String> {
-        return nodes.flatMap { (_, info) -> info.subscriptions.values }
+        return nodes.flatMap { (_, info) -> info.subscriptions.values }.map { it.content }
     }
 
     @Put("/subscriptions/add")

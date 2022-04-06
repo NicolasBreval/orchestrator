@@ -8,5 +8,6 @@ import java.io.Serializable
 @NoArgsConstructor
 class RemoveSubscriptionResponse(
     val status: ResponseStatus,
-    id: String
+    id: String,
+    val parentId: String? = null
 ): AbstractResponse(id), Serializable

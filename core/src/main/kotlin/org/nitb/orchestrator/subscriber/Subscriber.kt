@@ -8,8 +8,11 @@ import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.scheduling.PeriodicalScheduler
 import org.nitb.orchestrator.serialization.json.JSONSerializer
-import org.nitb.orchestrator.subscriber.entities.*
+import org.nitb.orchestrator.subscriber.entities.subscribers.AllocationStrategy
+import org.nitb.orchestrator.subscriber.entities.subscribers.SubscriberInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.ResponseStatus
+import org.nitb.orchestrator.subscriber.entities.subscriptions.remove.RemoveSubscriptionRequest
+import org.nitb.orchestrator.subscriber.entities.subscriptions.remove.RemoveSubscriptionResponse
 import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionResponse
 import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionsRequest
 import org.nitb.orchestrator.subscription.Subscription
@@ -47,6 +50,7 @@ class Subscriber(
         registerConsumer(client) { message ->
             when (message.message) {
                 is UploadSubscriptionsRequest -> uploadSubscriptions(message.message)
+                is RemoveSubscriptionRequest -> removeSubscriptions(message.message)
                 else -> logger.error("Unrecognized message type has been received. Type: ${message::class.java.name}")
             }
         }
@@ -112,7 +116,8 @@ class Subscriber(
                             subscription.name,
                             subscription.info
                         )
-                    }, name == masterName))
+                    }, name == masterName)
+                )
             }
         }
     }
@@ -151,6 +156,23 @@ class Subscriber(
             logger.error("Query ${request.id} fails. Unable to upload subscriptions", e)
             sendMessage(UploadSubscriptionResponse(ResponseStatus.ERROR, listOf(), request.id), client, masterName)
         }
+    }
+
+    private fun removeSubscriptions(request: RemoveSubscriptionRequest) {
+        var responseStatus = ResponseStatus.OK
+
+        try {
+            request.subscriptions.forEach { subscriptionsName ->
+                subscriptionsPool[subscriptionsName]?.stop()
+                subscriptionsPool.remove(subscriptionsName)
+            }
+
+        } catch (e: Exception) {
+            logger.error("Query ${request.id} fails. Unable to remove subscriptions", e)
+            responseStatus = ResponseStatus.ERROR
+        }
+
+        sendMessage(RemoveSubscriptionResponse(responseStatus, request.id), client, masterName)
     }
 
     init {

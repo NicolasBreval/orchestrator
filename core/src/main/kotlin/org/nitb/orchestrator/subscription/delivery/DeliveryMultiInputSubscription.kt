@@ -15,20 +15,20 @@ import java.util.concurrent.LinkedBlockingDeque
 import java.io.Serializable
 
 @HeritableSubscription
-abstract class DeliveryMultiInputSubscription<I: Serializable, O: Serializable>(
+abstract class DeliveryMultiInputSubscription<O: Serializable>(
     name: String,
     private val receivers: List<SubscriptionReceiver>,
     private val senders: List<String>,
     private val limit: Int = Int.MAX_VALUE,
     timeout: Long = -1,
     description: String? = null
-): Subscription<SerializableMap<String, I>, O>(name, timeout, description), CloudManager<I>, CloudConsumer<I>, CloudSender {
+): Subscription<SerializableMap<String, Serializable>, O>(name, timeout, description), CloudManager<Serializable>, CloudConsumer<Serializable>, CloudSender {
 
     @Transient
     private val senderQueues = senders.associateWith { LinkedBlockingDeque<String>(limit) }
 
     @delegate:Transient
-    private val client: CloudClient<I> by lazy { createClient(name) }
+    private val client: CloudClient<Serializable> by lazy { createClient(name) }
 
     override fun initialize() {
         client.createConsumer() { cloudMessage ->
@@ -38,7 +38,7 @@ abstract class DeliveryMultiInputSubscription<I: Serializable, O: Serializable>(
             }
 
             if (senderQueues.all { queue -> queue.value.size > 0 }) {
-                val values = SerializableMap(senders.associateWith { sender -> pop(sender) })
+                val values = SerializableMap<String, Serializable>(senders.associateWith { sender -> pop(sender) })
                 val result = runEvent(cloudMessage.size, cloudMessage.sender, values)
 
                 if (result != null)
@@ -51,7 +51,7 @@ abstract class DeliveryMultiInputSubscription<I: Serializable, O: Serializable>(
         client.close()
     }
 
-    private fun push(input: I): String {
+    private fun push(input: Serializable): String {
         val uuid = UUID.randomUUID().toString()
         val path = Paths.get("queues/$name/$uuid")
 
@@ -61,11 +61,11 @@ abstract class DeliveryMultiInputSubscription<I: Serializable, O: Serializable>(
         return uuid
     }
 
-    private fun pop(sender: String): I {
+    private fun pop(sender: String): Serializable {
         val uuid = senderQueues[sender]?.pop()
         val path = Paths.get("./queues/$name/$uuid")
 
-        val message = BinarySerializer.decode<I>(Files.readAllBytes(path))
+        val message = BinarySerializer.decode<Serializable>(Files.readAllBytes(path))
         Files.deleteIfExists(path)
 
         return message
