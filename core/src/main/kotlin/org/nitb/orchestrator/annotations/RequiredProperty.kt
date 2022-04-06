@@ -1,7 +1,7 @@
 package org.nitb.orchestrator.annotations
 
 @Target(AnnotationTarget.FIELD)
-@Retention(AnnotationRetention.RUNTIME)
+@Retention(AnnotationRetention.SOURCE)
 annotation class RequiredProperty(
     val value: String = "",
     val depends: Boolean = false,
