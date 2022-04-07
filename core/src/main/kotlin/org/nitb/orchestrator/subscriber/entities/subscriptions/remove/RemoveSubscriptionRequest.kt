@@ -7,6 +7,5 @@ import java.io.Serializable
 @NoArgsConstructor
 class RemoveSubscriptionRequest(
     val subscriptions: List<String>,
-    id: String,
-    val parentId: String? = null
+    id: String
 ): AbstractRequest(id), Serializable

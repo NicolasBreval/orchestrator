@@ -32,7 +32,4 @@ abstract class DeliverySubscription<I: Serializable, O: Serializable>(
     override fun deactivate() {
         client.close()
     }
-
-
-
 }

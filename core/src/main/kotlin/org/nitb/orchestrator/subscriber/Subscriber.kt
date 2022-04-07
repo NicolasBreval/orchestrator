@@ -28,36 +28,8 @@ class Subscriber(
     else UUID.randomUUID().toString()
 ): CloudManager<Serializable>, CloudConsumer<Serializable>, CloudSender {
 
-    /**
-     * Flag to check if subscriber has master role
-     */
-    var isMaster: Boolean = false
 
-    fun stop() {
-        subscriptionsPool.forEach { (name, subscription) ->
-            logger.info("Deleting subscription $name due to a stop invocation")
-            subscription.stop()
-        }
-
-        sendInformationScheduler.stop()
-        checkMainNodeExistsScheduler.stop()
-        mainSubscriber.stop()
-
-        client.close()
-    }
-
-    fun start() {
-        registerConsumer(client) { message ->
-            when (message.message) {
-                is UploadSubscriptionsRequest -> uploadSubscriptions(message.message)
-                is RemoveSubscriptionRequest -> removeSubscriptions(message.message)
-                else -> logger.error("Unrecognized message type has been received. Type: ${message::class.java.name}")
-            }
-        }
-
-        sendInformationScheduler.start()
-        checkMainNodeExistsScheduler.start()
-    }
+    // region PRIVATE PROPERTIES
 
     /**
      * Logger object to print logs
@@ -138,6 +110,10 @@ class Subscriber(
         }
     }
 
+    // endregion
+
+    // region PRIVATE METHODS
+
     private fun uploadSubscriptions(request: UploadSubscriptionsRequest) {
         try {
             val subscriptionInfos = request.subscriptions
@@ -176,7 +152,52 @@ class Subscriber(
         sendMessage(RemoveSubscriptionResponse(responseStatus, request.id), client, masterName)
     }
 
+    // endregion
+
+    // region PUBLIC PROPERTIES
+
+    /**
+     * Flag to check if subscriber has master role
+     */
+    var isMaster: Boolean = false
+
+    // endregion
+
+    // region PUBLIC METHODS
+
+    fun stop() {
+        subscriptionsPool.forEach { (name, subscription) ->
+            logger.info("Deleting subscription $name due to a stop invocation")
+            subscription.stop()
+        }
+
+        sendInformationScheduler.stop()
+        checkMainNodeExistsScheduler.stop()
+        mainSubscriber.stop()
+
+        client.close()
+    }
+
+    fun start() {
+        registerConsumer(client) { message ->
+            when (message.message) {
+                is UploadSubscriptionsRequest -> uploadSubscriptions(message.message)
+                is RemoveSubscriptionRequest -> removeSubscriptions(message.message)
+                else -> logger.error("Unrecognized message type has been received. Type: ${message::class.java.name}")
+            }
+        }
+
+        sendInformationScheduler.start()
+        checkMainNodeExistsScheduler.start()
+    }
+
+    // endregion
+
+    // region INIT
+
     init {
         start()
     }
+
+    // endregion
 }
