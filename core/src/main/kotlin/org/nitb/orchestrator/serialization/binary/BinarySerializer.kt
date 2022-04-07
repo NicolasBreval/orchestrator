@@ -8,7 +8,7 @@ import org.nitb.orchestrator.logging.LoggingManager
 object BinarySerializer {
 
     @Synchronized
-    fun encode(message: Any): ByteArray {
+    fun serialize(message: Any): ByteArray {
         val output = Output(0, Int.MAX_VALUE)
         conf.writeClassAndObject(output, message)
         return output.toBytes()
@@ -16,7 +16,7 @@ object BinarySerializer {
 
     @Synchronized
     @Suppress("UNCHECKED_CAST")
-    fun <T> decode(bytes: ByteArray): T {
+    fun <T> deserialize(bytes: ByteArray): T {
         val input = Input(bytes)
         return conf.readClassAndObject(input) as T
     }

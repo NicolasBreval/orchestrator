@@ -26,7 +26,7 @@ class RabbitMqConsumer<T: Serializable>(
 
         try {
             val message = try {
-                BinarySerializer.decode(body!!)
+                BinarySerializer.deserialize(body!!)
             } catch (e: Exception) {
                 JSONSerializer.deserialize(String(body!!), CloudMessage::class.java) as CloudMessage<T>
             }

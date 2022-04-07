@@ -58,6 +58,7 @@ abstract class Subscription<I, O>(
     @JsonIgnore
     private var schema: String? = JSONSerializer.getSchema(this::class.java)
     @JsonIgnore
+    @Transient
     protected val logger: LoggerWrapper = LoggingManager.getLogger(name)
 
     // endregion
@@ -84,7 +85,7 @@ abstract class Subscription<I, O>(
             success = success.add(BigInteger.ONE)
 
             try {
-                outputVolume = outputVolume.add(if (output is Unit) BigInteger.ZERO else output?.let { BinarySerializer.encode(output).size.toBigInteger() } ?: BigInteger.ZERO)
+                outputVolume = outputVolume.add(if (output is Unit) BigInteger.ZERO else output?.let { BinarySerializer.serialize(output).size.toBigInteger() } ?: BigInteger.ZERO)
             } catch (e: Exception) {
                 logger.error("Fatal error obtaining output volume", e)
             }
@@ -120,6 +121,25 @@ abstract class Subscription<I, O>(
 
     @get:JsonIgnore
     val info: SubscriptionInfo get() = SubscriptionInfo(name, creation, status, inputVolume, outputVolume, starts, stops, success, error, lastExecution, schema, content)
+
+    // endregion
+
+    // region PUBLIC METHODS
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Subscription<*, *>
+
+        if (schema != other.schema) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return schema?.hashCode() ?: 0
+    }
 
     // endregion
 }

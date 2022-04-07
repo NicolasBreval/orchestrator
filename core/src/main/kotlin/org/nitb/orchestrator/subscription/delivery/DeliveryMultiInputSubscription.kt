@@ -56,7 +56,7 @@ abstract class DeliveryMultiInputSubscription<O: Serializable>(
         val path = Paths.get("queues/$name/$uuid")
 
         Files.createDirectories(path.parent)
-        Files.write(path, BinarySerializer.encode(input))
+        Files.write(path, BinarySerializer.serialize(input))
 
         return uuid
     }
@@ -65,7 +65,7 @@ abstract class DeliveryMultiInputSubscription<O: Serializable>(
         val uuid = senderQueues[sender]?.pop()
         val path = Paths.get("./queues/$name/$uuid")
 
-        val message = BinarySerializer.decode<Serializable>(Files.readAllBytes(path))
+        val message = BinarySerializer.deserialize<Serializable>(Files.readAllBytes(path))
         Files.deleteIfExists(path)
 
         return message

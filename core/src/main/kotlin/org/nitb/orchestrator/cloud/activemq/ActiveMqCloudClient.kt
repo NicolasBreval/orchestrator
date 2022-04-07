@@ -57,7 +57,7 @@ class ActiveMqCloudClient<T: Serializable>(
     override fun <M: Serializable> send(receiver: String, message: M) {
         try {
             val cloudMessage = CloudMessage(name, message)
-            val bytes = BinarySerializer.encode(cloudMessage)
+            val bytes = BinarySerializer.serialize(cloudMessage)
             val bytesMessage = session.createBytesMessage()
             bytesMessage.writeBytes(bytes)
             val producer = session.createProducer(declareQueue(receiver))
@@ -77,7 +77,7 @@ class ActiveMqCloudClient<T: Serializable>(
                     is BytesMessage -> {
                         val bytes = ByteArray(message.bodyLength.toInt())
                         message.readBytes(bytes)
-                        BinarySerializer.decode(bytes)
+                        BinarySerializer.deserialize(bytes)
                     }
                     is TextMessage -> JSONSerializer.deserialize(message.text, CloudMessage::class.java) as CloudMessage<T>
                     else -> throw IllegalArgumentException("Invalid input message type")

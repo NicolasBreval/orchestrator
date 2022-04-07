@@ -31,7 +31,7 @@ class RabbitMqCloudClient<T: Serializable>(
     override fun <M: Serializable> send(receiver: String, message: M) {
        try {
            declareQueue()
-           channel.basicPublish("", receiver, null, BinarySerializer.encode(
+           channel.basicPublish("", receiver, null, BinarySerializer.serialize(
                CloudMessage(
                    name,
                    message
