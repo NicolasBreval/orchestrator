@@ -52,6 +52,22 @@ object DbController {
 
     // endregion
 
+    // region INTERNAL METHODS
+
+    fun checkTablesAreCreated(): Boolean {
+        return transaction {
+            Subscriptions.exists()
+        }
+    }
+
+    fun clearSubscriptions() {
+        transaction {
+            Subscriptions.deleteAll()
+        }
+    }
+
+    // endregion
+
     // region PRIVATE PROPERTIES
 
     val logger = LoggingManager.getLogger(this::class.java)

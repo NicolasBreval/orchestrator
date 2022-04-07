@@ -31,6 +31,7 @@
     <activemq.jms.version>5.17.0</activemq.jms.version>
     <cron.utils.version>9.1.6</cron.utils.version>
     <jackson.version>2.13.2</jackson.version>
+    <sqlite.version>3.36.0.3</sqlite.version>
   </properties>
 
   <dependencies>
@@ -118,6 +119,12 @@
       <groupId>com.fasterxml.jackson.module</groupId>
       <artifactId>jackson-module-jsonSchema</artifactId>
       <version>${jackson.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.xerial</groupId>
+      <artifactId>sqlite-jdbc</artifactId>
+      <version>${sqlite.version}</version>
+      <scope>test-runtime</scope>
     </dependency>
   </dependencies>
 
