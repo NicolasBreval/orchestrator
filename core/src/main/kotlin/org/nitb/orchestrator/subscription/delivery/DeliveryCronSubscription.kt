@@ -1,5 +1,6 @@
 package org.nitb.orchestrator.subscription.delivery
 
+import com.cronutils.model.CronType
 import org.nitb.orchestrator.annotations.HeritableSubscription
 import org.nitb.orchestrator.cloud.CloudClient
 import org.nitb.orchestrator.cloud.CloudManager
@@ -16,6 +17,7 @@ abstract class DeliveryCronSubscription<O: Serializable>(
     name: String,
     private val cronExpression: String,
     private val receivers: List<SubscriptionReceiver> = listOf(),
+    private val cronType: CronType = CronType.UNIX,
     timeout: Long = -1,
     description: String? = null
 ): CyclicalSubscription<O>(name, timeout, description), CloudManager<O>, CloudSender {
@@ -24,7 +26,7 @@ abstract class DeliveryCronSubscription<O: Serializable>(
     private val client: CloudClient<O> by lazy { createClient(name) }
 
     override fun createScheduler(): Scheduler {
-        return object : CronScheduler(cronExpression, timeout) {
+        return object : CronScheduler(cronExpression, cronType, timeout) {
             override fun onCycle() {
                 val result = runEvent(BigInteger.ZERO, name, Unit)
 

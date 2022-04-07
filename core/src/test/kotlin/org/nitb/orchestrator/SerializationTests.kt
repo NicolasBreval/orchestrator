@@ -1,5 +1,6 @@
 package org.nitb.orchestrator
 
+import com.cronutils.model.CronType
 import org.junit.Test
 import org.nitb.orchestrator.serialization.binary.BinarySerializer
 import org.nitb.orchestrator.serialization.json.JSONSerializer
@@ -26,9 +27,10 @@ class SerializableDetachedPeriodicalSubscription(
 class SerializableDetachedCronSubscription(
     name: String,
     cronExpression: String,
+    cronType: CronType,
     timeout: Long = -1,
     description: String? = null
-): DetachedCronSubscription(name, cronExpression, timeout, description) {
+): DetachedCronSubscription(name, cronExpression, cronType, timeout, description) {
     override fun onEvent(sender: String, input: Unit) {
         // do nothing
     }
@@ -51,9 +53,10 @@ class SerializableDeliveryCronSubscription(
     name: String,
     cronExpression: String,
     receivers: List<SubscriptionReceiver> = listOf(),
+    cronType: CronType,
     timeout: Long = -1,
     description: String? = null
-): DeliveryCronSubscription<Serializable>(name, cronExpression, receivers, timeout, description) {
+): DeliveryCronSubscription<Serializable>(name, cronExpression, receivers, cronType, timeout, description) {
     override fun onEvent(sender: String, input: Unit): Serializable? {
         return null
     }
@@ -97,10 +100,10 @@ class SerializationTests {
 
     companion object {
         val serializableDetachedPeriodicalSubscription = SerializableDetachedPeriodicalSubscription("serializableDetachedPeriodicalSubscription", 100, 0, -1, "")
-        val serializableDetachedCronSubscription = SerializableDetachedCronSubscription("serializableDetachedCronSubscription", "* * * * *", -1, "")
+        val serializableDetachedCronSubscription = SerializableDetachedCronSubscription("serializableDetachedCronSubscription", "* * * * *", CronType.UNIX, -1, "")
         val serializableDeliverySubscription = SerializableDeliverySubscription("serializableDeliverySubscription", listOf(), -1, "")
         val serializableDeliveryPeriodicalSubscription = SerializableDeliveryPeriodicalSubscription("serializableDeliveryPeriodicalSubscription", 100, 0, listOf(), -1, "")
-        val serializableDeliveryCronSubscription = SerializableDeliveryCronSubscription("serializableDeliveryCronSubscription", "* * * * *", listOf(), -1, "")
+        val serializableDeliveryCronSubscription = SerializableDeliveryCronSubscription("serializableDeliveryCronSubscription", "* * * * *", listOf(), CronType.UNIX, -1, "")
         val serializableDeliveryMultiInputSubscription = SerializableDeliveryMultiInputSubscription("serializableDeliveryMultiInputSubscription", listOf(), listOf(), 10, -1, "")
         val serializableConsumerSubscription = SerializableConsumerSubscription("serializableConsumerSubscription", -1, null)
     }

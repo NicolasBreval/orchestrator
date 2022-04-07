@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit
 
 abstract class CronScheduler(
     private val cronExpression: String,
+    private val cronType: CronType = CronType.UNIX,
     timeout: Long = -1
 ): Scheduler(timeout) {
 
@@ -43,7 +44,7 @@ abstract class CronScheduler(
         }, delay, TimeUnit.MILLISECONDS)
     }
 
-    private val cron by lazy { CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX)).parse(cronExpression) }
+    private val cron by lazy { CronParser(CronDefinitionBuilder.instanceDefinitionFor(cronType)).parse(cronExpression) }
 
     init {
         cron.validate()
