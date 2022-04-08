@@ -38,7 +38,7 @@ abstract class DeliveryMultiInputSubscription<O: Serializable>(
             }
 
             if (senderQueues.all { queue -> queue.value.size > 0 }) {
-                val values = SerializableMap<String, Serializable>(senders.associateWith { sender -> pop(sender) })
+                val values = SerializableMap(senders.associateWith { sender -> pop(sender) })
                 val result = runEvent(cloudMessage.size, cloudMessage.sender, values)
 
                 if (result != null)
