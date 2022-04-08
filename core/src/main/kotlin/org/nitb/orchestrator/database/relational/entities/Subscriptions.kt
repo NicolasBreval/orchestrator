@@ -5,6 +5,9 @@ import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.javatime.datetime
 import java.time.LocalDateTime
 
+/**
+ * Class related to SUBSCRIPTION database table to operate using DSL.
+ */
 class SubscriptionEntry(
     val name: String,
     val content: ByteArray,
@@ -25,6 +28,9 @@ class SubscriptionEntry(
     )
 }
 
+/**
+ * Table object to specify ORM table schema.
+ */
 object Subscriptions: Table("SUBSCRIPTIONS") {
     val id = long("ID").autoIncrement()
     val name = varchar("NAME", 300)

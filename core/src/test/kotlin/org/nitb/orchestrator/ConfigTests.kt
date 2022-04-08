@@ -482,7 +482,7 @@ class ConfigTests {
 
     @Test
     fun existingBigDecimalProperties() {
-        assertEquals(ConfigManager.getBigInts("bigdecimal.list", "-").size, 2)
+        assertEquals(ConfigManager.getBigDecimals("bigdecimal.list", "-").size, 2)
     }
 
     @Test

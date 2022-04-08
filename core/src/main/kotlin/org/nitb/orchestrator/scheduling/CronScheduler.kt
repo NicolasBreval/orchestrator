@@ -13,6 +13,13 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
+/**
+ * Scheduler object used to run a task periodically, based on cron expression.
+ *
+ * @property cronExpression String with cron expression to define period of task execution.
+ * @property cronType Cron type for cron expression.
+ * @param timeout Maximum time that scheduler can execute task.
+ */
 abstract class CronScheduler(
     private val cronExpression: String,
     private val cronType: CronType = CronType.UNIX,
@@ -44,6 +51,9 @@ abstract class CronScheduler(
         }, delay, TimeUnit.MILLISECONDS)
     }
 
+    /**
+     * Cron parser used to calculate elapsed time for next execution
+     */
     private val cron by lazy { CronParser(CronDefinitionBuilder.instanceDefinitionFor(cronType)).parse(cronExpression) }
 
     init {

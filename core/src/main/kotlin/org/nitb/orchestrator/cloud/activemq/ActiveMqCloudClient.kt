@@ -18,16 +18,37 @@ import java.util.function.Consumer
 import javax.jms.*
 import javax.jms.Message
 
+/**
+ * [CloudClient] based on ActiveMQ protocol.
+ *
+ * @param name Name of queue related to this client.
+ * @param consumerCountListener If is true, client listen for an AdvisorySupport topic to check if main node queue
+ *  (specified by [ConfigNames.PRIMARY_NAME]]) contains a consumer. This is needed to don't create two consumers for main node listening to same queue.
+ * @constructor Creates a client based on ActiveMQ protocol, and can be used to send messages a declared consumers to queue with same name as [name].
+ * @see CloudClient
+ */
 class ActiveMqCloudClient<T: Serializable>(
     name: String,
     consumerCountListener: Boolean = false
 ): CloudClient<T>(name), MessageListener {
 
+    // region STATIC
+
     companion object {
+
+        // region PRIVATE PROPERTIES
+
+        /**
+         * Object used to create connections with same configuration, obtained from properties.
+         */
         private val connectionFactory: ActiveMQConnectionFactory = ActiveMQConnectionFactory(
             ConfigManager.getProperty(ConfigNames.ACTIVEMQ_USERNAME, ConfigNames.ACTIVEMQ_DEFAULT_USERNAME),
             ConfigManager.getProperty(ConfigNames.ACTIVEMQ_PASSWORD, ConfigNames.ACTIVEMQ_DEFAULT_PASSWORD),
             ConfigManager.getProperty(ConfigNames.ACTIVEMQ_BROKER_URL, RuntimeException("Needed property doesn't exists: ${ConfigNames.ACTIVEMQ_USERNAME}")))
+
+        // endregion
+
+        // region INIT
 
         init {
             if (ConfigManager.getBoolean(ConfigNames.CLOUD_SHOW_LOGS)) {
@@ -52,7 +73,13 @@ class ActiveMqCloudClient<T: Serializable>(
                 LoggingManager.setLoggerLevel("org.apache.activemq.ActiveMQConnection", Level.OFF)
             }
         }
+
+        // endregion
     }
+
+    // endregion
+
+    // region PUBLIC METHODS
 
     override fun <M: Serializable> send(receiver: String, message: M) {
         try {
@@ -118,6 +145,7 @@ class ActiveMqCloudClient<T: Serializable>(
 
     override fun close() {
         cancelConsumer()
+        advisoryConsumer.close()
         session.close()
         connection.close()
     }
@@ -126,6 +154,10 @@ class ActiveMqCloudClient<T: Serializable>(
         return masterConsumersCount.get() > 0
     }
 
+    /**
+     * Method used to process advisory messages and allows checking if main queue contains any consumer.
+     * @param message Message received with information about main queue
+     */
     override fun onMessage(message: Message?) {
         val source = message?.jmsDestination
 
@@ -136,26 +168,75 @@ class ActiveMqCloudClient<T: Serializable>(
         message?.acknowledge()
     }
 
+    // endregion
+
+    // region PRIVATE PROPERTIES
+
+    /**
+     * Logger object used to show information to developer and client.
+     */
     private val logger = LoggingManager.getLogger(this::class.java)
+
+    /**
+     * Connection object used to send and receive data from ActiveMQ queues.
+     * @see ActiveMQConnection
+     */
     private val connection: ActiveMQConnection = connectionFactory.createConnection() as ActiveMQConnection
+
+    /**
+     * Session object used to send and receive data from ActiveMQ queues. It's created from [connection] object.
+     * @see ActiveMQSession
+     */
     private val session: ActiveMQSession by lazy { connection.createSession(false, Session.CLIENT_ACKNOWLEDGE) as ActiveMQSession }
+
+    /**
+     * Consumer object used to define a consumer to process received messages. In ActiveMQ is possible to create multiple consumers,
+     * but in this project is needed to keep only a consumer per queue, so this object allows checking if queue contains any consumer before their creation
+     */
     private lateinit var consumer: ActiveMQMessageConsumer
+
+    /**
+     * Consumer object used to update information about master node queue.
+     */
+    private lateinit var advisoryConsumer: ActiveMQMessageConsumer
+
+    /**
+     * Queue used for main queue monitoring
+     */
     private val monitored: Destination by lazy { declareQueue(ConfigManager.getProperty(ConfigNames.PRIMARY_NAME, RuntimeException("Mandatory property not found ${ConfigNames.PRIMARY_NAME}"))) }
+
+    /**
+     * Variable used for main queue checking, if this value is greater than 1, is a bad signal, because main node queue only must contain a consumer
+     */
     private var masterConsumersCount: AtomicInteger = AtomicInteger(0)
 
+    // endregion
+
+    // region PRIVATE METHODS
+
+    /**
+     * Creates a queue for this client. All queues are created as exclusive, to ensure that,
+     * if several consumers were created by mistake, only the first one would be operational
+     * @param name Name of queue to be created
+     */
     private fun declareQueue(name: String): Destination {
         return session.createQueue("$name?consumer.exclusive=true")
     }
+
+    // endregion
+
+    // region INIT
 
     init {
         if (consumerCountListener) {
             val destination = session.createTopic(AdvisorySupport.getConsumerAdvisoryTopic(monitored).physicalName
                     + "," + AdvisorySupport.getProducerAdvisoryTopic(monitored).physicalName)
-            val advisoryConsumer = session.createConsumer(destination)
+            advisoryConsumer = session.createConsumer(destination) as ActiveMQMessageConsumer
             advisoryConsumer.messageListener = this
         }
 
         connection.start()
     }
 
+    // endregion
 }

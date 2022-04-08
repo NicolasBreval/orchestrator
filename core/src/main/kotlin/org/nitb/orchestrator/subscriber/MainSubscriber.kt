@@ -21,7 +21,6 @@ import java.io.Serializable
 import java.lang.RuntimeException
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
 
 class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, CloudSender {
 
@@ -50,19 +49,32 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
                             } else {
                                 "Error uploading subscriptions"
                             },
-                            requestResult?.parent
+                            requestResult?.id
                         )
                     }
                 }
                 is RemoveSubscriptionRequest -> {
                     logger.debug("Remove subscriptions request received from ${message.sender}")
-
-
+                    removeSubscriptions(message.message.subscriptions, message.message.id)
                 }
                 is RemoveSubscriptionResponse -> {
                     logger.debug("Remove subscriptions response received from ${message.sender}")
 
-
+                    waitingRemoveRequests[message.message.id].let { requestResult ->
+                        waitingRemoveRequests[message.message.id] = RequestResult(
+                            if (message.message.status == ResponseStatus.OK) {
+                                RequestStatus.OK
+                            } else {
+                                RequestStatus.ERROR
+                            },
+                            if (message.message.status == ResponseStatus.OK) {
+                                "Subscriptions has been successfully removed"
+                            } else {
+                                "Error removing subscriptions"
+                            },
+                            requestResult?.id
+                        )
+                    }
                 }
                 else -> logger.error("Unrecognized message type has been received. Type: ${message::class.java.name}")
             }
@@ -90,28 +102,18 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
     }
 
     fun subscriptionUploadResult(id: String): RequestResult {
-        return if (!waitingUploadRequests.containsKey(id)) {
-            val countPerStatus = RequestStatus.values().associateWith { AtomicInteger(0) }
-
-            waitingUploadRequests.filter { (_, value) -> value.parent == id }.forEach { (_, value) ->
-                countPerStatus[value.status]?.incrementAndGet()
-            }
-
-            if ((countPerStatus[RequestStatus.WAITING]?.get() ?: 0) > 0) {
-                RequestResult(RequestStatus.WAITING)
-            } else if ((countPerStatus[RequestStatus.ERROR]?.get() ?: 0) > 0) {
-                RequestResult(RequestStatus.ERROR)
-            } else if ((countPerStatus[RequestStatus.OK]?.get() ?: 0) > 0) {
-                RequestResult(RequestStatus.OK)
-            } else {
-                RequestResult(RequestStatus.DELETED)
-            }
-        } else {
-            waitingUploadRequests[id] ?: RequestResult(RequestStatus.DELETED)
-        }
+        return waitingUploadRequests[id] ?: waitingUploadRequests
+            .filter { (_, value) -> value.id == id }
+            .map { it.value }
+            .reduce { acc, requestResult -> RequestResult.mergeResults(acc, requestResult) }
     }
 
-    
+    fun subscriptionRemoveResult(id: String): RequestResult {
+        return waitingRemoveRequests[id] ?: waitingUploadRequests
+            .filter { (_, value) -> value.id == id }
+            .map { it.value }
+            .reduce { acc, requestResult -> RequestResult.mergeResults(acc, requestResult) }
+    }
 
     // endregion
 
@@ -280,13 +282,23 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
             subscriptions.withIndex().groupBy { (index, _) ->
                 ranking[index % ranking.size]
             }.forEach { (subscriber, subscriptions) ->
-                sendMessage(UploadSubscriptionsRequest(subscriptions.map { it.value }, subscriber, id), client, subscriber)
                 val childId = UUID.randomUUID().toString()
-                waitingUploadRequests[childId] = RequestResult(RequestStatus.WAITING, parent=id)
+                sendMessage(UploadSubscriptionsRequest(subscriptions.map { it.value }, subscriber, childId), client, subscriber)
+                waitingUploadRequests[childId] = RequestResult(RequestStatus.WAITING, id=id)
             }
         }
     }
 
+    private fun removeSubscriptions(subscriptions: List<String>, id: String) {
+        subscriptions.groupBy { subscriptionName ->
+            subscribers.firstNotNullOf { (name, infos) -> if (infos.subscriptions.containsKey(subscriptionName)) name else null }
+        }.forEach { (subscriber, subscriptions) ->
+            val childId = UUID.randomUUID().toString()
+            sendMessage(RemoveSubscriptionRequest(subscriptions, childId), client, subscriber)
+            waitingUploadRequests[UUID.randomUUID().toString()] = RequestResult(RequestStatus.WAITING, id = id)
+        }
+
+    }
 
     // endregion
 

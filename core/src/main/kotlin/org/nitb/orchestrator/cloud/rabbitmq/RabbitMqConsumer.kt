@@ -8,12 +8,22 @@ import org.nitb.orchestrator.serialization.json.JSONSerializer
 import java.io.Serializable
 import java.util.function.Consumer
 
+/**
+ * Consumer object used to define a consumer for a RabbitMQ queue. A consumer receives all messages sent to a queue and process them.
+ *
+ * @property name Name of queue to consume their messages.
+ * @param channel Channel used to declare consumer.
+ * @property onReceive Function which receives a variable of type [CloudMessage] and process it.
+ * @property onShutdown Function used when consumer receives a shutdown message from server.
+ */
 class RabbitMqConsumer<T: Serializable>(
     private val name: String,
     channel: Channel,
     private val onReceive: Consumer<CloudMessage<T>>,
     private val onShutdown: Runnable
 ): DefaultConsumer(channel) {
+
+    // region PUBLIC METHODS
 
     @Suppress("UNCHECKED_CAST")
     override fun handleDelivery(
@@ -52,5 +62,14 @@ class RabbitMqConsumer<T: Serializable>(
         }
     }
 
+    // endregion
+
+    // region PRIVATE PROPERTIES
+
+    /**
+     * Logger object used to show information to developer
+     */
     private val logger = LoggingManager.getLogger(name)
+
+    // endregion
 }

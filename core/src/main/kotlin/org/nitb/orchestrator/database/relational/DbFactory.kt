@@ -11,10 +11,16 @@ import org.nitb.orchestrator.logging.LoggingManager
 import java.lang.RuntimeException
 import java.sql.Connection
 
+/**
+ * Factory object used to create database connections.
+ */
 object DbFactory {
 
     // region PUBLIC PROPERTIES
 
+    /**
+     * Method used to connect
+     */
     fun connect() {
         TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
         Database.connect(createHikariDataSource())

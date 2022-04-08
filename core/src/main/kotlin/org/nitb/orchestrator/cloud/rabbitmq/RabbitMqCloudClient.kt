@@ -13,11 +13,23 @@ import java.io.Serializable
 import java.lang.RuntimeException
 import java.util.function.Consumer
 
+/**
+ * [CloudClient] object based on RabbitMQ protocol.
+ *
+ * @param name Name of queue related to this client.
+ * @see CloudClient
+ */
 class RabbitMqCloudClient<T: Serializable>(
     name: String
 ): CloudClient<T>(name) {
 
+    // region STATIC
+
     companion object {
+
+        /**
+         * Object used to create connections with same configuration, obtained from properties.
+         */
         private val connectionFactory: ConnectionFactory = ConnectionFactory()
 
         init {
@@ -27,6 +39,10 @@ class RabbitMqCloudClient<T: Serializable>(
             connectionFactory.password = ConfigManager.getProperty(ConfigNames.RABBITMQ_PASSWORD, ConfigNames.RABBITMQ_DEFAULT_PASSWORD)
         }
     }
+
+    // endregion
+
+    // region PUBLIC METHODS
 
     override fun <M: Serializable> send(receiver: String, message: M) {
        try {
@@ -73,13 +89,41 @@ class RabbitMqCloudClient<T: Serializable>(
         return channel.queueDeclare(ConfigManager.getProperty(ConfigNames.PRIMARY_NAME), true, true, false, null).consumerCount > 0
     }
 
+    // endregion
+
+    // region PRIVATE PROPERTIES
+
+    /**
+     * Connection object used to send and receive data from queues.
+     */
+    private val connection = connectionFactory.newConnection()
+
+    /**
+     * Channel object used to send and receive data from queues. It's created from [connection] object.
+     */
+    private val channel = connection.createChannel()
+
+    /**
+     * Logger object used to show information to developer and client.
+     */
+    private val logger = LoggingManager.getLogger(this::class.java)
+
+    /**
+     * Identifier of consumer. When RabbitMQ client creates new consumer for a client, returns a tag to identify the consumer.
+     * This tag is used to check if client already contains a consumer, because in this project clients must contain only a consumer per queue.
+     */
+    private lateinit var consumerTag: String
+
+    // endregion
+
+    // region PRIVATE METHODS
+
+    /**
+     * Method used to create a new queue for this client. All queues are exclusive by default
+     */
     private fun declareQueue() {
         channel.queueDeclare(name, true, true, false, null)
     }
 
-    private val connection = connectionFactory.newConnection()
-    private val channel = connection.createChannel()
-    private val logger = LoggingManager.getLogger(this::class.java)
-    private lateinit var consumerTag: String
-
+    // endregion
 }

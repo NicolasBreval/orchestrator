@@ -16,10 +16,18 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.lang.RuntimeException
 
+/**
+ * Util class used to create logger objects.
+ */
 object LoggingManager {
 
     // region PUBLIC METHODS
 
+    /**
+     * Creates a new logger object from a name.
+     * @param loggerName Name of logger to create.
+     * @return New logger object.
+     */
     fun getLogger(loggerName: String): LoggerWrapper {
         val logger = context.getLogger(loggerName)
 
@@ -28,6 +36,11 @@ object LoggingManager {
         return LoggerWrapper(logger, logger.level)
     }
 
+    /**
+     * Creates a new logger object from a class.
+     * @param loggerClass Class used as name of logger to create.
+     * @return New logger object.
+     */
     fun getLogger(loggerClass: Class<*>): LoggerWrapper {
         val logger = context.getLogger(loggerClass)
 
@@ -36,6 +49,11 @@ object LoggingManager {
         return LoggerWrapper(logger, logger.level)
     }
 
+    /**
+     * Sets level of a logger with specified name.
+     * @param loggerName Name of logger to set level.
+     * @param level Level to set in logger.
+     */
     fun setLoggerLevel(loggerName: String, level: Level = commonLoggerLevel) {
         val logger = context.getLogger(loggerName)
         logger.level = level
@@ -45,20 +63,60 @@ object LoggingManager {
 
     // region PRIVATE PROPERTIES
 
+    /**
+     * Logger level obtained from properties file.
+     */
     private val commonLoggerLevel = levelPropertyToLevel()
+
+    /**
+     * Name of rolling file appender
+     */
     private const val rollingAppenderName = "FILE_ROLLING_APPENDER"
+
+    /**
+     * Name of fluentd appender
+     */
     private const val fluentdAppenderName = "FLUENTD_APPENDER"
+
+    /**
+     * Context to create logger objects.
+     */
     private val context = LoggerFactory.getILoggerFactory() as LoggerContext
+
+    /**
+     * Folder used to store log files.
+     */
     private val loggingFolder = ConfigManager.getProperty(ConfigNames.LOGGING_FOLDER, ConfigNames.LOGGING_FOLDER_DEFAULT)
+
+    /**
+     * Pattern used to write logs.
+     */
     private val loggingPattern = ConfigManager.getProperty(ConfigNames.LOGGING_PATTERN, ConfigNames.LOGGING_PATTERN_DEFAULT)
+
+    /**
+     * Date pattern used to name logger files with rolling date appender.
+     */
     private val loggingDatePattern = ConfigManager.getProperty(ConfigNames.LOGGING_DATE_PATTERN, ConfigNames.LOGGING_DATE_PATTERN_DEFAULT)
+
+    /**
+     * Max allowed size of a logging file.
+     */
     private val loggingMaxSize = ConfigManager.getProperty(ConfigNames.LOGGING_MAX_FILE_SIZE, ConfigNames.LOGGING_MAX_FILE_SIZE_DEFAULT)
+
+    /**
+     * If is true, creates Fluentd appender to logs.
+     */
     private val fluentdEnabled = ConfigManager.getBoolean(ConfigNames.LOGGING_FLUENTD_ENABLED)
 
     // endregion
 
     // region PRIVATE METHODS
 
+    /**
+     * Transforms string level from property to a valid Level object. If string property is not a valid level name, throws
+     * RuntimeException.
+     * @return [Level] parsed from string property.
+     */
     private fun levelPropertyToLevel(): Level {
         return when (val strLevel = ConfigManager.getProperty(ConfigNames.LOGGING_LEVEL, ConfigNames.LOGGING_LEVEL_DEFAULT)) {
             "OFF" -> Level.OFF
@@ -72,6 +130,10 @@ object LoggingManager {
         }
     }
 
+    /**
+     * Initializes a new [Logger] object, if it was not created before.
+     * @param logger Logger object to initialize
+     */
     private fun initializeLogger(logger: Logger) {
         if (logger.getAppender(rollingAppenderName) == null) {
             logger.detachAndStopAllAppenders()

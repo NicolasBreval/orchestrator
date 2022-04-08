@@ -6,6 +6,13 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
+/**
+ * Scheduler object used to run a task periodically, based on period time, in milliseconds.
+ *
+ * @property delay Time, in milliseconds, to wait between two executions of task.
+ * @property initialDelay Time, in milliseconds, to wait before first execution of task.
+ * @param timeout Maximum time that scheduler can execute task.
+ */
 abstract class PeriodicalScheduler(
     private val delay: Long,
     private val initialDelay: Long = 0,

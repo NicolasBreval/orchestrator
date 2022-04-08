@@ -14,6 +14,10 @@ object DbController {
 
     // region PUBLIC METHODS
 
+    /**
+     * Obtains last subscriptions registered to a subscriber.
+     * @param subscriber Name of subscriber to search subscriptions.
+     */
     fun getLastActiveSubscriptionsBySubscriber(subscriber: String): List<SubscriptionEntry> {
         return transaction {
             Subscriptions
@@ -24,6 +28,11 @@ object DbController {
         }
     }
 
+    /**
+     * Obtains all subscriptions with specified name.
+     * @param subscriptionName Name of subscription to search.
+     * @param onlyActive If is true, obtains only active subscriptions
+     */
     fun getSubscriptionsByName(subscriptionName: String, onlyActive: Boolean = false): List<SubscriptionEntry> {
         return transaction {
             val filters: Op<Boolean> = when {
@@ -37,6 +46,10 @@ object DbController {
         }
     }
 
+    /**
+     * Inserts new subscriptions to database.
+     * @param subscriptions List of subscriptions to update
+     */
     fun insertSubscriptions(subscriptions: List<SubscriptionEntry>) {
         transaction {
             Subscriptions.batchInsert(subscriptions) { entry ->
@@ -54,13 +67,19 @@ object DbController {
 
     // region INTERNAL METHODS
 
-    fun checkTablesAreCreated(): Boolean {
+    /**
+     * Checks if tables are created or not. This method is used only in tests.
+     */
+    internal fun checkTablesAreCreated(): Boolean {
         return transaction {
             Subscriptions.exists()
         }
     }
 
-    fun clearSubscriptions() {
+    /**
+     * Remove all subscriptions from table. This method is used only in tests.
+     */
+    internal fun clearSubscriptions() {
         transaction {
             Subscriptions.deleteAll()
         }
@@ -70,6 +89,9 @@ object DbController {
 
     // region PRIVATE PROPERTIES
 
+    /**
+     * Logger object used to show logs to developer.
+     */
     val logger = LoggingManager.getLogger(this::class.java)
 
     // endregion

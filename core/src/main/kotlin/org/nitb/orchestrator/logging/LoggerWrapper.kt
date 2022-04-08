@@ -4,10 +4,17 @@ import ch.qos.logback.classic.Level
 import org.slf4j.Logger
 import org.slf4j.Marker
 
+/**
+ * Custom logger object based in SLF4J logger.
+ * @param logger Original logger on which it is based.
+ * @param level Level related to logger.
+ */
 class LoggerWrapper(
     private val logger: Logger,
     val level: Level
 ): Logger {
+
+    // region PUBLIC METHODS
 
     override fun getName(): String {
         return logger.name
@@ -252,5 +259,7 @@ class LoggerWrapper(
     override fun error(p0: Marker?, p1: String?, p2: Throwable?) {
         return logger.error(p0, p1, p2)
     }
+
+    // endregion
 
 }

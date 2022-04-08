@@ -8,6 +8,10 @@ import org.nitb.orchestrator.config.ConfigNames
 import java.lang.RuntimeException
 import java.net.InetAddress
 
+/**
+ * Appender object to send automatically logs to fluentd server.
+ * @param loggerName Name of logger who sends log.
+ */
 class FluentdAppender(
     loggerName: String
 ): AppenderBase<ILoggingEvent>() {
@@ -18,9 +22,24 @@ class FluentdAppender(
 
         // region PRIVATE
 
+        /**
+         * Hostname used to connect with Fluentd server.
+         */
         private val fluentdHost = ConfigManager.getProperty(ConfigNames.LOGGING_FLUENTD_HOST, RuntimeException("Mandatory property not found: ${ConfigNames.LOGGING_FLUENTD_HOST}"))
+
+        /**
+         * Port used to connect with Fluentd server.
+         */
         private val fluentdPort = ConfigManager.getInt(ConfigNames.LOGGING_FLUENTD_PORT, ConfigNames.LOGGING_FLUENTD_DEFAULT_PORT)
+
+        /**
+         * Tag prefix used to send logs to Fluentd server.
+         */
         private val fluentdTagPrefix = ConfigManager.getProperty(ConfigNames.LOGGING_FLUENTD_TAG_PREFIX, RuntimeException("Mandatory property not found: ${ConfigNames.LOGGING_FLUENTD_TAG_PREFIX}"))
+
+        /**
+         * FluentLogger object used to connect with Fluentd server.
+         */
         private val fluentLogger = FluentLogger.getLogger(fluentdTagPrefix, fluentdHost, fluentdPort)
 
         // endregion
@@ -48,6 +67,9 @@ class FluentdAppender(
 
     // region PRIVATE
 
+    /**
+     * Tag used to send logs to Fluentd server.
+     */
     private val fluentdTag = ConfigManager.getProperty(ConfigNames.LOGGING_FLUENTD_TAG, RuntimeException("Mandatory property not found: ${ConfigNames.LOGGING_FLUENTD_TAG}")) + ".$loggerName"
 
     // endregion
