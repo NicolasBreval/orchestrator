@@ -349,7 +349,7 @@ object ConfigNames {
     /**
      * Default value for [SUBSCRIBER_SEND_INFO_PERIOD], if is not set.
      */
-    const val SECONDARY_SEND_INFO_PERIOD_DEFAULT = 5000L
+    const val SECONDARY_SEND_INFO_PERIOD_DEFAULT = 1000L
 
     /**
      * Default value for [SUBSCRIBER_SEND_INFO_TIMEOUT], if is not set.
