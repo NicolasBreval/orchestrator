@@ -120,7 +120,7 @@ abstract class Subscription<I, O>(
     private val content: String by lazy { JSONSerializer.serializeWithClassName(this) }
 
     @get:JsonIgnore
-    val info: SubscriptionInfo get() = SubscriptionInfo(name, creation, status, inputVolume, outputVolume, starts, stops, success, error, lastExecution, schema, content)
+    val info: SubscriptionInfo get() = SubscriptionInfo(name, status, creation, inputVolume, outputVolume, starts, stops, success, error, lastExecution, schema, content)
 
     // endregion
 

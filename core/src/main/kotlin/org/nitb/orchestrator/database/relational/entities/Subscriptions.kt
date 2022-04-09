@@ -3,6 +3,8 @@ package org.nitb.orchestrator.database.relational.entities
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.javatime.datetime
+import org.jetbrains.exposed.sql.statements.BatchInsertStatement
+import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import java.time.LocalDateTime
 
 /**
@@ -10,10 +12,10 @@ import java.time.LocalDateTime
  */
 class SubscriptionEntry(
     val name: String,
-    val content: ByteArray,
+    var content: ByteArray,
     var subscriber: String,
-    val stopped: Boolean,
-    val active: Boolean,
+    var stopped: Boolean,
+    var active: Boolean,
     val creationDate: LocalDateTime = LocalDateTime.now(),
     val id: Long? = null
 ) {
@@ -26,6 +28,15 @@ class SubscriptionEntry(
         resultRow[Subscriptions.creationDate],
         resultRow[Subscriptions.id]
     )
+
+    fun onBatchInsert(batchInsertStatement: BatchInsertStatement) {
+        batchInsertStatement[Subscriptions.name] = name
+        batchInsertStatement[Subscriptions.content] = ExposedBlob(content)
+        batchInsertStatement[Subscriptions.subscriber] = subscriber
+        batchInsertStatement[Subscriptions.active] = active
+        batchInsertStatement[Subscriptions.stopped] = stopped
+        batchInsertStatement[Subscriptions.creationDate] = creationDate
+    }
 }
 
 /**

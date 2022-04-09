@@ -16,14 +16,23 @@ import java.sql.Connection
  */
 object DbFactory {
 
-    // region PUBLIC PROPERTIES
+    // region PUBLIC METHODS
 
     /**
      * Method used to connect
      */
     fun connect() {
         TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
-        Database.connect(createHikariDataSource())
+
+        while (!firstConnection) {
+            try {
+                Database.connect(createHikariDataSource())
+                firstConnection = true
+            } catch (e: Exception) {
+                System.currentTimeMillis()
+            }
+            Thread.sleep(1000)
+        }
     }
 
     // endregion
@@ -36,6 +45,7 @@ object DbFactory {
     private val password = ConfigManager.getProperty(ConfigNames.DATABASE_PASSWORD, RuntimeException("No mandatory property found: ${ConfigNames.DATABASE_PASSWORD}"))
     private val maxPoolSize = ConfigManager.getInt(ConfigNames.DATABASE_MAX_POOL_SIZE, ConfigNames.DATABASE_MAX_POOL_SIZE_DEFAULT)
     private val maxLifeTime = ConfigManager.getLong(ConfigNames.DATABASE_MAX_LIFE_TIME, ConfigNames.DATABASE_MAX_LIFE_TIME_DEFAULT)
+    private var firstConnection = false
 
     // endregion
 

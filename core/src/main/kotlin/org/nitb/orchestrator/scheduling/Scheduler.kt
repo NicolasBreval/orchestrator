@@ -9,7 +9,8 @@ import java.util.concurrent.*
  * @param timeout Maximum time the scheduler can be running its task. If this property is less than zero, task hasn't timeout.
  */
 abstract class Scheduler(
-    private val timeout: Long = -1
+    private val timeout: Long = -1,
+    name: String? = null
 ) {
 
     // region PUBLIC PROPERTIES
@@ -81,7 +82,7 @@ abstract class Scheduler(
     /**
      * Logger object to show logs to developer.
      */
-    protected val logger = LoggingManager.getLogger(this::class.java)
+    protected val logger = if (name == null) LoggingManager.getLogger(this::class.java) else LoggingManager.getLogger(name)
 
     /**
      * [ExecutorService] object used to run task periodically.

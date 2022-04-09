@@ -16,8 +16,9 @@ import java.util.concurrent.TimeUnit
 abstract class PeriodicalScheduler(
     private val delay: Long,
     private val initialDelay: Long = 0,
-    timeout: Long = -1
-): Scheduler(timeout) {
+    timeout: Long = -1,
+    name: String? = null
+): Scheduler(timeout, name) {
 
     override fun createExecutor(): ScheduledExecutorService {
         return Executors.newSingleThreadScheduledExecutor()

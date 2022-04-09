@@ -145,7 +145,11 @@ class ActiveMqCloudClient<T: Serializable>(
 
     override fun close() {
         cancelConsumer()
-        advisoryConsumer.close()
+
+        if (this::advisoryConsumer.isInitialized) {
+            advisoryConsumer.close()
+        }
+
         session.close()
         connection.close()
     }

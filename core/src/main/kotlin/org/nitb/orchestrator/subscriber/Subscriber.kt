@@ -74,13 +74,13 @@ class Subscriber(
     /**
      * Main subscriber instance to use if this subscriber has main node role
      */
-    private val mainSubscriber = MainSubscriber()
+    private val mainSubscriber = MainSubscriber(name)
 
     /**
      * This scheduler sends slave information continuously to master
      */
     private val sendInformationScheduler by lazy {
-        object : PeriodicalScheduler(slaveSendInfoPeriod, 0, slaveSendInfoTimeout) {
+        object : PeriodicalScheduler(slaveSendInfoPeriod, 0, slaveSendInfoTimeout, name = name) {
             override fun onCycle() {
                 client.send(masterName, SubscriberInfo(name,
                     subscriptionsPool.values.associate { subscription ->
@@ -99,7 +99,7 @@ class Subscriber(
      * tries to take main node's role
      */
     private val checkMainNodeExistsScheduler by lazy {
-        object : PeriodicalScheduler(checkMainNodeExistPeriod, 0, checkMainNodeExistsTimeout) {
+        object : PeriodicalScheduler(checkMainNodeExistPeriod, 0, checkMainNodeExistsTimeout, name = name) {
             override fun onCycle() {
                 if (!masterConsuming(client)) {
                     logger.info("Master node is fallen, obtaining master role")

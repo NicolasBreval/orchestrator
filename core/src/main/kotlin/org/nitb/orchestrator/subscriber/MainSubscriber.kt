@@ -6,6 +6,8 @@ import org.nitb.orchestrator.cloud.CloudSender
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.database.relational.DbController
+import org.nitb.orchestrator.database.relational.entities.operations.OperationType
+import org.nitb.orchestrator.database.relational.entities.operations.SubscriptionDatabaseOperation
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.scheduling.PeriodicalScheduler
 import org.nitb.orchestrator.subscriber.entities.subscribers.AllocationStrategy
@@ -17,19 +19,54 @@ import org.nitb.orchestrator.subscriber.entities.subscriptions.remove.RemoveSubs
 import org.nitb.orchestrator.subscriber.entities.subscriptions.remove.RemoveSubscriptionResponse
 import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionResponse
 import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionsRequest
+import org.nitb.orchestrator.subscription.SubscriptionStatus
 import java.io.Serializable
 import java.lang.RuntimeException
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
-class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, CloudSender {
+class MainSubscriber(
+    private val subscriberName: String
+): CloudManager<Serializable>, CloudConsumer<Serializable>, CloudSender {
 
     // region PUBLIC METHODS
 
     fun start() {
         registerConsumer(client) { message ->
             when (message.message) {
-                is SubscriberInfo -> subscribers[message.sender] = message.message
+                is SubscriberInfo -> {
+                    val oldSubscriptionsCopy = subscribers[message.sender]?.subscriptions?.toMap() ?: mapOf()
+
+                    val allNames = oldSubscriptionsCopy.keys.toSet() + message.message.subscriptions.keys.toSet()
+
+                    val subscriptionsOperations = mutableListOf<SubscriptionDatabaseOperation>()
+
+                    for (name in allNames) {
+                        if (oldSubscriptionsCopy.containsKey(name) && message.message.subscriptions.containsKey(name)) {
+                            if (oldSubscriptionsCopy[name]?.content != message.message.subscriptions[name]?.content) {
+                                subscriptionsOperations.add(SubscriptionDatabaseOperation(OperationType.UPDATE_CONTENT, name,
+                                    message.sender, message.message.subscriptions[name]?.content, message.message.subscriptions[name]?.status == SubscriptionStatus.STOPPED))
+                            }
+
+                            if (oldSubscriptionsCopy[name]?.status?.isStoppedStatus != message.message.subscriptions[name]?.status?.isStoppedStatus) {
+                                when (message.message.subscriptions[name]?.status) {
+                                    SubscriptionStatus.STOPPED -> subscriptionsOperations.add(SubscriptionDatabaseOperation(OperationType.STOP, name, message.sender))
+                                    SubscriptionStatus.IDLE, SubscriptionStatus.RUNNING -> subscriptionsOperations.add(SubscriptionDatabaseOperation(OperationType.START, name, message.sender))
+                                    else -> { /* Do nothing */ }
+                                }
+                            }
+                        } else if (oldSubscriptionsCopy.containsKey(name) && !message.message.subscriptions.containsKey(name)) {
+                            subscriptionsOperations.add(SubscriptionDatabaseOperation(OperationType.REMOVE, name, message.sender))
+                        } else if (!oldSubscriptionsCopy.containsKey(name) && message.message.subscriptions.containsKey(name)) {
+                            subscriptionsOperations.add(SubscriptionDatabaseOperation(OperationType.ADD, name, message.sender, message.message.subscriptions[name]?.content, false))
+                        }
+                    }
+
+                    subscribers[message.sender] = message.message
+
+                    if (subscriptionsOperations.isNotEmpty())
+                        DbController.addOperationsToWaitingList(message.sender, subscriptionsOperations)
+                }
                 is UploadSubscriptionsRequest -> {
                     logger.debug("Upload subscriptions request received from ${message.sender}")
                     uploadSubscriptions(message.message.subscriptions, message.message.subscriber, message.message.id)
@@ -80,6 +117,21 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
             }
         }
 
+        Thread {
+            val lastSubscriptions = DbController.getLastActiveSubscriptions()
+
+            if (allocationStrategy == AllocationStrategy.FIXED) {
+                lastSubscriptions.groupBy { it.subscriber }.forEach { (subscriber, subscriptions) ->
+                    fallenSubscriptionsBySubscriber[subscriber] = subscriptions.map { String(it.content) }
+                    fallenSubscriptionsNeedToSend[subscriber] = true
+                }
+            } else {
+                fallenSubscriptionsBySubscriber[""] = lastSubscriptions.map { String(it.content) }
+                fallenSubscriptionsNeedToSend[""] = true
+            }
+
+        }.start()
+
         checkNodesScheduler.start()
         checkWaitingSubscriptionsToUploadScheduler.start()
         checkCompletedRequestsScheduler.start()
@@ -120,40 +172,39 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
     // region PRIVATE PROPERTIES
 
     /**
-     * Name of master node, obtaining from properties
+     * Name of master node, obtaining from properties.
      */
     private val name = ConfigManager.getProperty(ConfigNames.PRIMARY_NAME, RuntimeException("Needed property doesn't exists: ${ConfigNames.PRIMARY_NAME}"))
 
     /**
-     * Logger object used to print logs
+     * Logger object used to print logs.
      */
     private val logger = LoggingManager.getLogger(name)
 
     /**
-     * Time between two secondary nodes checking
+     * Time between two secondary nodes checking.
      */
     private val checkSecondaryNodesPeriod = ConfigManager.getLong(ConfigNames.SUBSCRIBER_CHECK_SECONDARY_NODES_UP_PERIOD, ConfigNames.SUBSCRIBER_CHECK_SECONDARY_NODES_UP_PERIOD_DEFAULT)
 
     /**
-     * Maximum time when subscriber can take thread used to check secondary nodes. If this thread is running more than these milliseconds, task is cleared and another task is thrown
+     * Maximum time when subscriber can take thread used to check secondary nodes. If this thread is running more than these milliseconds, task is cleared and another task is thrown.
      */
     private val checkSecondaryNodesTimeout = ConfigManager.getLong(ConfigNames.SUBSCRIBER_CHECK_SECONDARY_NODES_UP_TIMEOUT, ConfigNames.SUBSCRIBER_CHECK_SECONDARY_NODES_UP_TIMEOUT_DEFAULT)
 
     /**
-     * Maximum time during which a node may not send information to the head node
+     * Maximum time during which a node may not send information to the head node.
      */
     private val maxSecondaryNodeInactivityTime = ConfigManager.getLong(ConfigNames.SUBSCRIBER_SECONDARY_NODE_MAX_INACTIVITY_TIME, ConfigNames.SUBSCRIBER_SECONDARY_NODE_MAX_INACTIVITY_TIME_DEFAULT)
 
     /**
-     * Time between two checks of subscriptions that are waiting to be re-allocated to same or another subscriber
+     * Time between two checks of subscriptions that are waiting to be re-allocated to same or another subscriber.
      */
     private val checkSubscriptionsToUploadPeriod = ConfigManager.getLong(ConfigNames.SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_UPLOAD_PERIOD, ConfigNames.SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_UPLOAD_PERIOD_DEFAULT)
 
     /**
-     * Maximum time when subscriber can take thread used to check waiting subscriptions to be uploaded. If this thread is running more than these milliseconds, task is cleared and another task is thrown
+     * Maximum time when subscriber can take thread used to check waiting subscriptions to be uploaded. If this thread is running more than these milliseconds, task is cleared and another task is thrown.
      */
     private val checkSubscriptionsToUploadTimeout = ConfigManager.getLong(ConfigNames.SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_UPLOAD_TIMEOUT, ConfigNames.SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_UPLOAD_TIMEOUT_DEFAULT)
-
 
     /**
      * Type of allocation strategy to send subscriptions to secondary subscribers
@@ -184,7 +235,7 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
     /**
      * Scheduler used to check if any secondary node is down
      */
-    private val checkNodesSchedulerDelegate = lazy { object : PeriodicalScheduler(checkSecondaryNodesPeriod, 0, checkSecondaryNodesTimeout) {
+    private val checkNodesSchedulerDelegate = lazy { object : PeriodicalScheduler(checkSecondaryNodesPeriod, 0, checkSecondaryNodesTimeout, name = subscriberName) {
         override fun onCycle() {
             val currentTime = System.currentTimeMillis()
             val downSubscribers = mutableListOf<String>()
@@ -201,19 +252,18 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
     } }
     private val checkNodesScheduler by checkNodesSchedulerDelegate
 
-    private val checkWaitingSubscriptionsToUploadSchedulerDelegate = lazy { object : PeriodicalScheduler(checkSubscriptionsToUploadPeriod, 0, checkSubscriptionsToUploadTimeout) {
+    private val checkWaitingSubscriptionsToUploadSchedulerDelegate = lazy { object : PeriodicalScheduler(checkSubscriptionsToUploadPeriod, 0, checkSubscriptionsToUploadTimeout, name = subscriberName) {
         override fun onCycle() {
             for ((subscriber, subscriptions) in fallenSubscriptionsBySubscriber) {
                 if (fallenSubscriptionsNeedToSend[subscriber] == true) {
                     uploadSubscriptions(subscriptions, subscriber, UUID.randomUUID().toString(), true)
                 }
-                fallenSubscriptionsNeedToSend[subscriber] = false
             }
         }
     } }
     private val checkWaitingSubscriptionsToUploadScheduler by checkWaitingSubscriptionsToUploadSchedulerDelegate
 
-    private val removeCompletedRequestsSchedulerDelegate = lazy { object : PeriodicalScheduler(3600000, 0, 3600000) {
+    private val removeCompletedRequestsSchedulerDelegate = lazy { object : PeriodicalScheduler(3600000, 0, 3600000, name = subscriberName) {
         override fun onCycle() {
             val current = System.currentTimeMillis()
 
@@ -279,12 +329,18 @@ class MainSubscriber: CloudManager<Serializable>, CloudConsumer<Serializable>, C
         } else {
             val ranking = makeRanking()
 
-            subscriptions.withIndex().groupBy { (index, _) ->
-                ranking[index % ranking.size]
-            }.forEach { (subscriber, subscriptions) ->
-                val childId = UUID.randomUUID().toString()
-                sendMessage(UploadSubscriptionsRequest(subscriptions.map { it.value }, subscriber, childId), client, subscriber)
-                waitingUploadRequests[childId] = RequestResult(RequestStatus.WAITING, id=id)
+            if (ranking.isNotEmpty()) {
+                subscriptions.withIndex().groupBy { (index, _) ->
+                    ranking[index % ranking.size]
+                }.forEach { (subscriber, subscriptions) ->
+                    val childId = UUID.randomUUID().toString()
+                    sendMessage(UploadSubscriptionsRequest(subscriptions.map { it.value }, subscriber, childId), client, subscriber)
+                    waitingUploadRequests[childId] = RequestResult(RequestStatus.WAITING, id=id)
+                }
+
+                fallenSubscriptionsNeedToSend[""] = false
+            } else if (fromFallenSubscriber && subscriber == "") {
+                fallenSubscriptionsNeedToSend[""] = true
             }
         }
     }
