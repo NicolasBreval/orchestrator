@@ -84,13 +84,6 @@ object DbController {
         }
     }
 
-    /**
-     * Check if database is accessible
-     */
-    fun checkConnection() {
-
-    }
-
     // endregion
 
     // region INTERNAL METHODS

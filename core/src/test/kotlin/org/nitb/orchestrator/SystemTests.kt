@@ -6,6 +6,8 @@ import org.nitb.orchestrator.cloud.CloudManager
 import org.nitb.orchestrator.cloud.CloudSender
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
+import org.nitb.orchestrator.database.relational.DbController
+import org.nitb.orchestrator.database.relational.entities.SubscriptionEntry
 import org.nitb.orchestrator.serialization.json.JSONSerializer
 import org.nitb.orchestrator.subscriber.Subscriber
 import org.nitb.orchestrator.subscriber.entities.subscribers.AllocationStrategy
@@ -13,9 +15,13 @@ import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubs
 import org.nitb.orchestrator.subscription.SubscriptionReceiver
 import org.nitb.orchestrator.subscription.consumer.ConsumerSubscription
 import org.nitb.orchestrator.subscription.delivery.*
+import org.nitb.orchestrator.subscription.detached.DetachedPeriodicalSubscription
 import java.io.Serializable
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.pow
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 abstract class Sender(
     name: String
@@ -92,6 +98,20 @@ class NumberPrinter(
     }
 }
 
+class HelloWorld(
+    name: String,
+    delay: Long
+): DetachedPeriodicalSubscription(name, delay) {
+    companion object {
+        val executions = ConcurrentHashMap<String, Boolean>()
+    }
+
+    override fun onEvent(sender: String, input: Unit) {
+        logger.info("Hello world!")
+        executions[name] = true
+    }
+}
+
 class SystemTests {
 
     companion object {
@@ -106,14 +126,14 @@ class SystemTests {
                 ConfigNames.ACTIVEMQ_BROKER_URL to "failover:tcp://localhost:61616",
                 ConfigNames.ACTIVEMQ_USERNAME to "admin",
                 ConfigNames.ACTIVEMQ_PASSWORD to "admin",
-                ConfigNames.PRIMARY_NAME to "master.name",
-                ConfigNames.ALLOCATION_STRATEGY to AllocationStrategy.OCCUPATION.name
+                ConfigNames.PRIMARY_NAME to "master.name"
             ))
         }
     }
 
     @Test(timeout = 10000)
     fun systemTest() {
+        ConfigManager.setProperties(mapOf(ConfigNames.ALLOCATION_STRATEGY to AllocationStrategy.OCCUPATION.name))
 
         val sender = object : Sender("test") {}
 
@@ -140,4 +160,94 @@ class SystemTests {
         assertEquals(NumberPrinter.lastResult, 900)
     }
 
+    @Test
+    fun databaseStartupFixedAllSubscribersExistsTest() {
+        ConfigManager.setProperties(mapOf(ConfigNames.ALLOCATION_STRATEGY to AllocationStrategy.FIXED.name))
+
+        DbController.clearSubscriptions()
+
+        DbController.insertSubscriptions(listOf(
+            SubscriptionEntry("helloworld-1", JSONSerializer.serializeWithClassName(HelloWorld("helloworld-1", 1000)).toByteArray(), "subscriber-1", true, true),
+            SubscriptionEntry("helloworld-2", JSONSerializer.serializeWithClassName(HelloWorld("helloworld-2", 1000)).toByteArray(), "subscriber-2", true, true),
+            SubscriptionEntry("helloworld-3", JSONSerializer.serializeWithClassName(HelloWorld("helloworld-3", 1000)).toByteArray(), "subscriber-3", true, true),
+            SubscriptionEntry("helloworld-4", JSONSerializer.serializeWithClassName(HelloWorld("helloworld-4", 1000)).toByteArray(), "subscriber-4", true, true)
+        ))
+
+        val subscribers = listOf(
+            Subscriber("subscriber-1"),
+            Subscriber("subscriber-2"),
+            Subscriber("subscriber-3"),
+            Subscriber("subscriber-4"),
+        )
+
+        Thread.sleep(10000)
+
+        subscribers.forEach { it.stop() }
+
+        for (i in 1..4) {
+            assertTrue(HelloWorld.executions["helloworld-$i"] ?: false)
+        }
+    }
+
+    @Test
+    fun databaseStartupFixedOneSubscriberNotExistsTest() {
+        ConfigManager.setProperties(mapOf(ConfigNames.ALLOCATION_STRATEGY to AllocationStrategy.FIXED.name))
+
+        DbController.clearSubscriptions()
+
+        DbController.insertSubscriptions(listOf(
+            SubscriptionEntry("helloworld-1", JSONSerializer.serializeWithClassName(HelloWorld("helloworld-1", 1000)).toByteArray(), "subscriber-1", true, true),
+            SubscriptionEntry("helloworld-2", JSONSerializer.serializeWithClassName(HelloWorld("helloworld-2", 1000)).toByteArray(), "subscriber-2", true, true),
+            SubscriptionEntry("helloworld-3", JSONSerializer.serializeWithClassName(HelloWorld("helloworld-3", 1000)).toByteArray(), "subscriber-3", true, true),
+            SubscriptionEntry("helloworld-4", JSONSerializer.serializeWithClassName(HelloWorld("helloworld-4", 1000)).toByteArray(), "subscriber-4", true, true)
+        ))
+
+        val subscribers = listOf(
+            Subscriber("subscriber-1"),
+            Subscriber("subscriber-2"),
+            Subscriber("subscriber-3")
+        )
+
+        Thread.sleep(10000)
+
+        subscribers.forEach { it.stop() }
+
+        for (i in 1..4) {
+            val executed = HelloWorld.executions["helloworld-$i"] ?: false
+
+            if (i < 4)
+                assertTrue(executed)
+            else
+                assertFalse(executed)
+        }
+    }
+
+    @Test
+    fun databaseStartupNonFixed() {
+        ConfigManager.setProperties(mapOf(ConfigNames.ALLOCATION_STRATEGY to AllocationStrategy.FIXED.name))
+
+        DbController.clearSubscriptions()
+
+        DbController.insertSubscriptions(listOf(
+            SubscriptionEntry("helloworld-1", JSONSerializer.serializeWithClassName(HelloWorld("helloworld-1", 1000)).toByteArray(), "subscriber-1", true, true),
+            SubscriptionEntry("helloworld-2", JSONSerializer.serializeWithClassName(HelloWorld("helloworld-2", 1000)).toByteArray(), "subscriber-2", true, true),
+            SubscriptionEntry("helloworld-3", JSONSerializer.serializeWithClassName(HelloWorld("helloworld-3", 1000)).toByteArray(), "subscriber-3", true, true),
+            SubscriptionEntry("helloworld-4", JSONSerializer.serializeWithClassName(HelloWorld("helloworld-4", 1000)).toByteArray(), "subscriber-4", true, true)
+        ))
+
+        val subscribers = listOf(
+            Subscriber("subscriber-1"),
+            Subscriber("subscriber-2"),
+            Subscriber("subscriber-3"),
+            Subscriber("subscriber-4"),
+        )
+
+        Thread.sleep(10000)
+
+        subscribers.forEach { it.stop() }
+
+        for (i in 1..4) {
+            assertTrue(HelloWorld.executions["helloworld-$i"] ?: false)
+        }
+    }
 }
