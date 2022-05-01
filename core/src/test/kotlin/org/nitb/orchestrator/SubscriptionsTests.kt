@@ -5,6 +5,7 @@ import org.junit.Test
 import org.nitb.orchestrator.cloud.*
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
+import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.subscription.SubscriptionReceiver
 import org.nitb.orchestrator.subscription.consumer.ConsumerSubscription
 import org.nitb.orchestrator.subscription.delivery.*
@@ -17,6 +18,8 @@ abstract class SenderAndConsumer<T: Serializable>(
     name: String
 ): CloudManager<T>, CloudSender, CloudConsumer<T> {
     private val client by lazy { createClient(name) }
+
+    protected val logger = LoggingManager.getLogger(name)
 
     fun start() {
         registerConsumer(client) { cloudMessage ->

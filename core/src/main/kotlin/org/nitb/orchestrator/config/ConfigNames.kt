@@ -342,6 +342,11 @@ object ConfigNames {
      */
     const val ALLOCATION_STRATEGY = "subscriber.primary.allocation.strategy"
 
+    /**
+     * Port used for Subscriber API
+     */
+    const val HTTP_PORT = "subscriber.http.port"
+
     // endregion
 
     // region SECONDARY SUBSCRIBER DEFAULTS
@@ -391,6 +396,10 @@ object ConfigNames {
      */
     const val SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_UPLOAD_TIMEOUT_DEFAULT = 4000L
 
+    /**
+     * Default value for [HTTP_PORT], if is not set
+     */
+    const val HTTP_PORT_DEFAULT = 80
 
     // endregion
 
@@ -406,9 +415,9 @@ object ConfigNames {
     // region CONTROLLER
 
     /**
-     * Name used for controller node. Controller node is the node to communicate user with cluster.
+     * Name used for controller node. Display node is the node to communicate user with cluster.
      */
-    const val CONTROLLER_NAME = "subscriber.controller.name"
+    const val DISPLAY_NODE_NAME = "display.node.name"
 
     // endregion
 }

@@ -551,7 +551,7 @@ object ConfigManager {
      * Adds new properties to [ConfigManager].
      * @param properties New pairs of key, value to be inserted in [ConfigManager]
      */
-    internal fun setProperties(properties: Map<String, String>) {
+    fun setProperties(properties: Map<String, String>) {
         for ((key, value) in properties) {
             this.properties.setProperty(key, value)
         }
@@ -669,7 +669,7 @@ object ConfigManager {
         val isEnv = System.getProperty("config-env") == "true"
         val configFile = System.getProperty("config-file")
             ?.let { if (isEnv) System.getenv("config-file") else it }
-            ?.let { ConfigManager::class.java.classLoader.getResource(System.getProperty("config-resource-path"))?.path }
+            ?: System.getProperty("config-resource-path")?.let { ConfigManager::class.java.classLoader.getResource(it)?.path }
             ?: "config.properties"
 
         if (File(configFile).exists()) {

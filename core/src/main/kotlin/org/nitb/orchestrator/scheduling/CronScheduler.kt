@@ -24,8 +24,9 @@ abstract class CronScheduler(
     private val cronExpression: String,
     private val cronType: CronType = CronType.UNIX,
     timeout: Long = -1,
-    name: String? = null
-): Scheduler(timeout, name) {
+    name: String? = null,
+    vararg params: Any = arrayOf()
+): Scheduler(timeout, name, params) {
 
     override fun createExecutor(): ScheduledExecutorService {
         return Executors.newSingleThreadScheduledExecutor()

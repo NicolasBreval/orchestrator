@@ -1,0 +1,1 @@
+gmvn clean install -DskipTests

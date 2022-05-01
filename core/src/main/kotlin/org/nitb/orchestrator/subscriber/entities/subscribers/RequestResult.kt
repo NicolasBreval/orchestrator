@@ -1,5 +1,8 @@
 package org.nitb.orchestrator.subscriber.entities.subscribers
 
+import org.nitb.orchestrator.annotations.NoArgsConstructor
+import java.io.Serializable
+
 /**
  * Object used to check result of a request sent from a subscriber to another
  *
@@ -8,12 +11,14 @@ package org.nitb.orchestrator.subscriber.entities.subscribers
  * @param id Identifier of request.
  * @param creation Timestamp where request where created.
  */
+@NoArgsConstructor
 class RequestResult (
     val status: RequestStatus,
+    val sender: String,
     val message: String? = null,
     val id: String? = null,
     val creation: Long = System.currentTimeMillis()
-) {
+): Serializable {
     companion object {
 
         /**
@@ -34,7 +39,7 @@ class RequestResult (
                 RequestStatus.OK
             }
 
-            return RequestResult(status, messages[status], a.id)
+            return RequestResult(status, a.sender, messages[status], a.id)
         }
     }
 }

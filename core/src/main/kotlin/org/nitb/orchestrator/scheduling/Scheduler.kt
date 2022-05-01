@@ -10,7 +10,8 @@ import java.util.concurrent.*
  */
 abstract class Scheduler(
     private val timeout: Long = -1,
-    name: String? = null
+    name: String? = null,
+    protected val params: Array<out Any> = arrayOf()
 ) {
 
     // region PUBLIC PROPERTIES

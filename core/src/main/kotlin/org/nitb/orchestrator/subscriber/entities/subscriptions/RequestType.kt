@@ -1,5 +1,5 @@
 package org.nitb.orchestrator.subscriber.entities.subscriptions
 
-enum class ResponseStatus {
-    OK, ERROR
+enum class RequestType {
+    UPLOAD, REMOVE, SET
 }

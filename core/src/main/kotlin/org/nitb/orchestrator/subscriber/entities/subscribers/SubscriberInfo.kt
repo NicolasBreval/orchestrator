@@ -17,6 +17,7 @@ class SubscriberInfo(
     val timestamp: Long = System.currentTimeMillis(),
     val hostname: String = InetAddress.getLocalHost().hostName,
     val ipAddress: String = InetAddress.getLocalHost().hostAddress,
+    val httpPort: Int? = ConfigManager.getInt(ConfigNames.HTTP_PORT),
     val totalMemory: Long = Runtime.getRuntime().totalMemory(),
     val freeMemory: Long = Runtime.getRuntime().freeMemory(),
     val cpuUsage: Double = (ManagementFactory.getOperatingSystemMXBean() as OperatingSystemMXBean).processCpuLoad

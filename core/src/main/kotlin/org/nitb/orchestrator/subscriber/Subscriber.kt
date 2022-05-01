@@ -10,11 +10,9 @@ import org.nitb.orchestrator.scheduling.PeriodicalScheduler
 import org.nitb.orchestrator.serialization.json.JSONSerializer
 import org.nitb.orchestrator.subscriber.entities.subscribers.AllocationStrategy
 import org.nitb.orchestrator.subscriber.entities.subscribers.SubscriberInfo
-import org.nitb.orchestrator.subscriber.entities.subscriptions.ResponseStatus
-import org.nitb.orchestrator.subscriber.entities.subscriptions.remove.RemoveSubscriptionRequest
-import org.nitb.orchestrator.subscriber.entities.subscriptions.remove.RemoveSubscriptionResponse
-import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionResponse
-import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionsRequest
+import org.nitb.orchestrator.subscriber.entities.subscriptions.RequestType
+import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
+import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResponse
 import org.nitb.orchestrator.subscription.Subscription
 import java.io.Serializable
 import java.lang.RuntimeException
@@ -28,6 +26,115 @@ class Subscriber(
     else UUID.randomUUID().toString()
 ): CloudManager<Serializable>, CloudConsumer<Serializable>, CloudSender {
 
+
+    // region PUBLIC PROPERTIES
+
+    /**
+     * Flag to check if subscriber has master role
+     */
+    var isMainNode: Boolean = false
+
+    // endregion
+
+    // region PUBLIC METHODS
+
+    fun stop() {
+        subscriptionsPool.forEach { (name, subscription) ->
+            logger.info("Deleting subscription $name due to a stop invocation")
+            subscription.stop()
+        }
+
+        sendInformationScheduler.stop()
+        checkMainNodeExistsScheduler.stop()
+        mainSubscriber.stop()
+
+        client.close()
+    }
+
+    fun start() {
+        sendInformationScheduler.start()
+        checkMainNodeExistsScheduler.start()
+    }
+
+    fun uploadSubscriptions(subscriptions: List<String>, subscriber: String? = null): SubscriptionOperationResponse {
+        return try {
+            if (isMainNode) {
+                mainSubscriber.uploadSubscriptions(subscriptions, subscriber)
+            } else {
+                subscriptions
+                    .map { subscription -> JSONSerializer.deserializeWithClassName(subscription) as Subscription<*, *> }
+                    .filter { subscription -> subscriptionsPool[subscription.name]?.info?.content != subscription.info.content }
+                    .forEach { subscription ->
+                        subscriptionsPool[subscription.name] = subscription
+                        subscription.start()
+                    }
+
+                return SubscriptionOperationResponse(RequestType.UPLOAD, "All subscriptions has been uploading", subscriptions)
+            }
+        } catch (e: Exception) {
+            logger.error("Unexpected error during subscriptions uploading", e)
+            return SubscriptionOperationResponse(RequestType.UPLOAD, "Unexpected error during subscriptions uploading", listOf(), subscriptions)
+        }
+    }
+
+    fun removeSubscriptions(subscriptions: List<String>): SubscriptionOperationResponse {
+        return try {
+            if (isMainNode) {
+                mainSubscriber.removeSubscriptions(subscriptions)
+            } else {
+                subscriptions.forEach { subscriptionName ->
+                    subscriptionsPool[subscriptionName]?.stop()
+                    subscriptionsPool.remove(subscriptionName)
+                }
+
+                return SubscriptionOperationResponse(RequestType.REMOVE, "All subscriptions has been removed", subscriptions)
+            }
+        } catch (e: Exception) {
+            logger.error("Unexpected error during subscriptions removing", e)
+            return SubscriptionOperationResponse(RequestType.REMOVE, "Unexpected error during subscriptions removing", listOf(), subscriptions)
+        }
+    }
+
+    fun setSubscriptions(subscriptions: List<String>, stop: Boolean): SubscriptionOperationResponse {
+        return try {
+            if (isMainNode) {
+                mainSubscriber.setSubscriptions(subscriptions, stop)
+            } else {
+                subscriptions.forEach { subscriptionName -> subscriptionsPool[subscriptionName]?.let { if (stop) it.stop() else it.start() } }
+
+                return SubscriptionOperationResponse(RequestType.REMOVE, "All subscriptions has been set", subscriptions)
+            }
+        } catch (e: Exception) {
+            logger.error("Unexpected error during subscriptions set", e)
+            return SubscriptionOperationResponse(RequestType.REMOVE, "Unexpected error during subscriptions set", listOf(), subscriptions)
+        }
+    }
+
+    fun listSubscribers(): Map<String, SubscriberInfo> {
+        if (isMainNode) {
+            return mainSubscriber.listSubscribers()
+        } else {
+            throw IllegalAccessException("INVALID REQUEST - This node is not the main node.")
+        }
+    }
+
+    fun listSubscriptions(): List<SubscriptionInfo> {
+        if (isMainNode) {
+            return mainSubscriber.listSubscriptions()
+        } else {
+            throw IllegalAccessException("INVALID REQUEST - This node is not the main node.")
+        }
+    }
+
+    fun getSubscriptionInfo(name: String): SubscriptionInfo? {
+        if (isMainNode) {
+            return mainSubscriber.getSubscriptionInfo(name)
+        } else {
+            throw IllegalAccessException("INVALID REQUEST - This node is not the main node.")
+        }
+    }
+
+    // endregion
 
     // region PRIVATE PROPERTIES
 
@@ -44,12 +151,12 @@ class Subscriber(
     /**
      * Time between two data transmissions to the head node
      */
-    private val slaveSendInfoPeriod = ConfigManager.getLong(ConfigNames.SUBSCRIBER_SEND_INFO_PERIOD, ConfigNames.SECONDARY_SEND_INFO_PERIOD_DEFAULT)
+    private val subscriberSendInfoPeriod = ConfigManager.getLong(ConfigNames.SUBSCRIBER_SEND_INFO_PERIOD, ConfigNames.SECONDARY_SEND_INFO_PERIOD_DEFAULT)
 
     /**
      * Maximum time when subscriber can take thread used to send information to head node. If this thread is running more than these milliseconds, task is cleared and another task is thrown
      */
-    private val slaveSendInfoTimeout = ConfigManager.getLong(ConfigNames.SUBSCRIBER_SEND_INFO_TIMEOUT, ConfigNames.SECONDARY_SEND_INFO_TIMEOUT_DEFAULT)
+    private val subscriberSendInfoTimeout = ConfigManager.getLong(ConfigNames.SUBSCRIBER_SEND_INFO_TIMEOUT, ConfigNames.SECONDARY_SEND_INFO_TIMEOUT_DEFAULT)
 
     /**
      * Time between two verification of the existence of the main node
@@ -74,13 +181,13 @@ class Subscriber(
     /**
      * Main subscriber instance to use if this subscriber has main node role
      */
-    private val mainSubscriber = MainSubscriber(name)
+    private val mainSubscriber = MainSubscriber(this, name)
 
     /**
      * This scheduler sends slave information continuously to master
      */
     private val sendInformationScheduler by lazy {
-        object : PeriodicalScheduler(slaveSendInfoPeriod, 0, slaveSendInfoTimeout, name = name) {
+        object : PeriodicalScheduler(subscriberSendInfoPeriod, 0, subscriberSendInfoTimeout, name = name) {
             override fun onCycle() {
                 client.send(masterName, SubscriberInfo(name,
                     subscriptionsPool.values.associate { subscription ->
@@ -103,7 +210,7 @@ class Subscriber(
             override fun onCycle() {
                 if (!masterConsuming(client)) {
                     logger.info("Master node is fallen, obtaining master role")
-                    isMaster = true
+                    isMainNode = true
                     mainSubscriber.start()
                 }
             }
@@ -112,86 +219,6 @@ class Subscriber(
 
     // endregion
 
-    // region PRIVATE METHODS
-
-    private fun uploadSubscriptions(request: UploadSubscriptionsRequest) {
-        try {
-            val subscriptionInfos = request.subscriptions
-                .map { subscription ->
-                    JSONSerializer.deserializeWithClassName(subscription) as Subscription<*, *>
-                }
-                .filter { subscription -> !subscriptionsPool.containsKey(subscription.name)
-                        || subscriptionsPool[subscription.name]?.info?.content == subscription.info.content }
-                .onEach { subscription ->
-                    subscriptionsPool[subscription.name]?.stop()
-                    subscriptionsPool[subscription.name] = subscription
-                    subscription.start()
-                }.map { it.info }
-
-            sendMessage(UploadSubscriptionResponse(ResponseStatus.OK, subscriptionInfos, request.id), client, masterName)
-        } catch (e: Exception) {
-            logger.error("Query ${request.id} fails. Unable to upload subscriptions", e)
-            sendMessage(UploadSubscriptionResponse(ResponseStatus.ERROR, listOf(), request.id), client, masterName)
-        }
-    }
-
-    private fun removeSubscriptions(request: RemoveSubscriptionRequest) {
-        var responseStatus = ResponseStatus.OK
-
-        try {
-            request.subscriptions.forEach { subscriptionsName ->
-                subscriptionsPool[subscriptionsName]?.stop()
-                subscriptionsPool.remove(subscriptionsName)
-            }
-
-        } catch (e: Exception) {
-            logger.error("Query ${request.id} fails. Unable to remove subscriptions", e)
-            responseStatus = ResponseStatus.ERROR
-        }
-
-        sendMessage(RemoveSubscriptionResponse(responseStatus, request.id), client, masterName)
-    }
-
-    // endregion
-
-    // region PUBLIC PROPERTIES
-
-    /**
-     * Flag to check if subscriber has master role
-     */
-    var isMaster: Boolean = false
-
-    // endregion
-
-    // region PUBLIC METHODS
-
-    fun stop() {
-        subscriptionsPool.forEach { (name, subscription) ->
-            logger.info("Deleting subscription $name due to a stop invocation")
-            subscription.stop()
-        }
-
-        sendInformationScheduler.stop()
-        checkMainNodeExistsScheduler.stop()
-        mainSubscriber.stop()
-
-        client.close()
-    }
-
-    fun start() {
-        registerConsumer(client) { message ->
-            when (message.message) {
-                is UploadSubscriptionsRequest -> uploadSubscriptions(message.message)
-                is RemoveSubscriptionRequest -> removeSubscriptions(message.message)
-                else -> logger.error("Unrecognized message type has been received. Type: ${message::class.java.name}")
-            }
-        }
-
-        sendInformationScheduler.start()
-        checkMainNodeExistsScheduler.start()
-    }
-
-    // endregion
 
     // region INIT
 

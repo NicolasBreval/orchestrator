@@ -35,6 +35,11 @@ object DbFactory {
         }
     }
 
+    fun localConnect(databaseName: String) {
+        TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
+        createHikariDataSource()
+    }
+
     // endregion
 
     // region PRIVATE PROPERTIES
@@ -83,6 +88,27 @@ object DbFactory {
         config.transactionIsolation = "TRANSACTION_REPEATABLE_READ"
         config.validate()
         return HikariDataSource(config)
+    }
+
+    private fun createHikariLocalDataSource(databaseName: String): HikariDataSource {
+        LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.PoolBase", Level.OFF)
+        LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.HikariPool", Level.OFF)
+        LoggingManager.setLoggerLevel("com.zaxxer.hikari.HikariDataSource", Level.OFF)
+        LoggingManager.setLoggerLevel("com.zaxxer.hikari.HikariConfig", Level.OFF)
+        LoggingManager.setLoggerLevel("com.zaxxer.hikari.util.DriverDataSource", Level.OFF)
+        LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.ProxyConnection", Level.OFF)
+        LoggingManager.setLoggerLevel("Exposed", Level.OFF)
+
+        val config = HikariConfig()
+        config.driverClassName = driverClassname
+        config.jdbcUrl = "jdbc:sqlite:$databaseName"
+        config.maximumPoolSize = maxPoolSize
+        config.maxLifetime = maxLifeTime
+        config.isAutoCommit = false
+        config.transactionIsolation = "TRANSACTION_REPEATABLE_READ"
+        config.validate()
+        return HikariDataSource(config)
+
     }
 
     // endregion

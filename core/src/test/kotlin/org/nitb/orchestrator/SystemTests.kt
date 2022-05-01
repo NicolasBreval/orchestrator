@@ -11,17 +11,15 @@ import org.nitb.orchestrator.database.relational.entities.SubscriptionEntry
 import org.nitb.orchestrator.serialization.json.JSONSerializer
 import org.nitb.orchestrator.subscriber.Subscriber
 import org.nitb.orchestrator.subscriber.entities.subscribers.AllocationStrategy
-import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionsRequest
 import org.nitb.orchestrator.subscription.SubscriptionReceiver
 import org.nitb.orchestrator.subscription.consumer.ConsumerSubscription
 import org.nitb.orchestrator.subscription.delivery.*
 import org.nitb.orchestrator.subscription.detached.DetachedPeriodicalSubscription
+import org.slf4j.event.Level
 import java.io.Serializable
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.pow
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 abstract class Sender(
     name: String
@@ -126,38 +124,10 @@ class SystemTests {
                 ConfigNames.ACTIVEMQ_BROKER_URL to "failover:tcp://localhost:61616",
                 ConfigNames.ACTIVEMQ_USERNAME to "admin",
                 ConfigNames.ACTIVEMQ_PASSWORD to "admin",
-                ConfigNames.PRIMARY_NAME to "master.name"
+                ConfigNames.PRIMARY_NAME to "master.name",
+                ConfigNames.LOGGING_LEVEL to Level.DEBUG.name
             ))
         }
-    }
-
-    @Test(timeout = 10000)
-    fun systemTest() {
-        ConfigManager.setProperties(mapOf(ConfigNames.ALLOCATION_STRATEGY to AllocationStrategy.OCCUPATION.name))
-
-        val sender = object : Sender("test") {}
-
-        val subscribers = (0..2).map { Subscriber() }
-
-        val subscriptions = listOf(
-            NumberGeneratorPeriodical("numberGeneratorPeriodical", 1000, 1000, listOf(SubscriptionReceiver("numbersAdder")), 10),
-            NumberGeneratorCron("numberGeneratorCron", "* * * * * ?", listOf(SubscriptionReceiver("numbersAdder")), 20),
-            NumbersAdder("numbersAdder", listOf(SubscriptionReceiver("numberPower")), listOf("numberGeneratorPeriodical", "numberGeneratorCron")),
-            NumberPower("numberPower", listOf(SubscriptionReceiver("numberPrinter")), 2),
-            NumberPrinter("numberPrinter")
-        )
-
-        sender.send(UploadSubscriptionsRequest(subscriptions.map { JSONSerializer.serializeWithClassName(it) }), ConfigManager.getProperty(ConfigNames.PRIMARY_NAME)!!)
-
-        while (NumberPrinter.lastResult == null) {
-            Thread.sleep(100)
-        }
-
-        subscribers.forEach { it.stop() }
-
-        sender.close()
-
-        assertEquals(NumberPrinter.lastResult, 900)
     }
 
     @Test
@@ -180,7 +150,7 @@ class SystemTests {
             Subscriber("subscriber-4"),
         )
 
-        Thread.sleep(10000)
+        Thread.sleep(10000000)
 
         subscribers.forEach { it.stop() }
 
@@ -224,7 +194,7 @@ class SystemTests {
 
     @Test
     fun databaseStartupNonFixed() {
-        ConfigManager.setProperties(mapOf(ConfigNames.ALLOCATION_STRATEGY to AllocationStrategy.FIXED.name))
+        ConfigManager.setProperties(mapOf(ConfigNames.ALLOCATION_STRATEGY to AllocationStrategy.OCCUPATION.name))
 
         DbController.clearSubscriptions()
 
@@ -249,5 +219,11 @@ class SystemTests {
         for (i in 1..4) {
             assertTrue(HelloWorld.executions["helloworld-$i"] ?: false)
         }
+    }
+
+    @Test
+    fun checkOperations() {
+
+
     }
 }

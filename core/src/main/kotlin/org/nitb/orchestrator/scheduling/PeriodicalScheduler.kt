@@ -17,8 +17,9 @@ abstract class PeriodicalScheduler(
     private val delay: Long,
     private val initialDelay: Long = 0,
     timeout: Long = -1,
-    name: String? = null
-): Scheduler(timeout, name) {
+    name: String? = null,
+    vararg params: Any = arrayOf()
+): Scheduler(timeout, name, params) {
 
     override fun createExecutor(): ScheduledExecutorService {
         return Executors.newSingleThreadScheduledExecutor()

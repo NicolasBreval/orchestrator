@@ -52,7 +52,7 @@ abstract class DeliveryMultiInputSubscription<O: Serializable>(
     }
 
     private fun push(input: Serializable): String {
-        val uuid = UUID.randomUUID().toString()
+        val uuid = System.nanoTime().toString()
         val path = Paths.get("queues/$name/$uuid")
 
         Files.createDirectories(path.parent)

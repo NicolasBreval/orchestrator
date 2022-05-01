@@ -11,6 +11,7 @@ import org.nitb.orchestrator.database.relational.entities.operations.Subscriptio
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.scheduling.PeriodicalScheduler
 import java.lang.RuntimeException
+import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingDeque
 
 object DbController {
@@ -60,13 +61,6 @@ object DbController {
     }
 
     /**
-     * Adds set of operations in queue to be processed later.
-     */
-    fun addOperationsToWaitingList(subscriber: String, subscriptionOperations: List<SubscriptionDatabaseOperation>) {
-        enqueuedOperations.add(Pair(subscriber, subscriptionOperations))
-    }
-
-    /**
      * Obtains all active subscriptions registered on database.
      */
     fun getLastActiveSubscriptions(): List<SubscriptionEntry> {
@@ -81,6 +75,18 @@ object DbController {
 
             Join(Subscriptions).join(lastSubscriptions, JoinType.INNER, lastSubscriptions[maxId], Subscriptions.id)
             .selectAll().map { resultRow -> SubscriptionEntry(resultRow) }
+        }
+    }
+
+    /**
+     * Inserts a list of subscriptions concurrently inside an ExecutorService
+     */
+    fun uploadSubscriptionsConcurrently(subscriptions: Map<String, String>, subscriber: String, stopped: Boolean? = null, active: Boolean? = null) {
+        executor.submit {
+            val lastSubscriptions = getLastActiveSubscriptionsBySubscriber(subscriber).associateBy { it.name }
+
+            insertSubscriptions(subscriptions.map { (name, content) -> SubscriptionEntry(name, content.toByteArray(), subscriber,
+                stopped ?: (lastSubscriptions[name]?.stopped ?: false), active ?: (lastSubscriptions[name]?.active ?: true)) })
         }
     }
 
@@ -110,105 +116,7 @@ object DbController {
 
     // region PRIVATE PROPERTIES
 
-    /**
-     * Operations waiting to be processed
-     */
-    private val enqueuedOperations = LinkedBlockingDeque<Pair<String, List<SubscriptionDatabaseOperation>>>()
-
-    /**
-     * Scheduler object used to obtain a new update operation from [enqueuedOperations] and process it.
-     */
-    private val updater by lazy { object : PeriodicalScheduler(100) {
-        override fun onCycle() {
-            if (enqueuedOperations.size > 0) {
-                val last = enqueuedOperations.poll()
-                updateSubscriptions(last.first, last.second)
-            }
-        }
-    } }
-
-    // endregion
-
-    // region PRIVATE METHODS
-
-    /**
-     * Updates all subscriptions in [subscriptionOperations] for [subscriber] on database. To keep historical for each subscription,
-     * when you change it, new register is inserted in table, no register is deleted.
-     * @param subscriber Name of subscriber related to subscriptions to update.
-     * @param subscriptionOperations Each operation to process in database.
-     */
-    @Synchronized
-    private fun updateSubscriptions(subscriber: String, subscriptionOperations: List<SubscriptionDatabaseOperation>) {
-        transaction {
-            val maxId = Subscriptions.id.max().alias("maxId")
-            val lastSubscriptions =
-                Subscriptions
-                    .slice(Subscriptions.name, maxId)
-                    .select { Subscriptions.subscriber eq subscriber }
-                    .groupBy(Subscriptions.name)
-                    .alias("maxIdBySub")
-
-            val joined = Join(Subscriptions).join(lastSubscriptions, JoinType.INNER, lastSubscriptions[maxId], Subscriptions.id)
-                .selectAll().map { resultRow -> SubscriptionEntry(resultRow) }.toMutableList()
-
-            val operations = subscriptionOperations.groupBy { it.name }
-
-            val changedSubscriptions = mutableListOf<String>()
-
-            for (subscriptionEntry in joined) {
-                for (operation in operations[subscriptionEntry.name] ?: listOf()) {
-                    var changed = false
-
-                    when (operation.operationType) {
-                        OperationType.UPDATE_CONTENT -> {
-                            if (!operation.content?.toByteArray().contentEquals(subscriptionEntry.content)) {
-                                subscriptionEntry.content = operation.content?.toByteArray() ?: subscriptionEntry.content
-                                changed = true
-                            }
-                        }
-                        OperationType.REMOVE -> {
-                            if (subscriptionEntry.active) {
-                                subscriptionEntry.active = false
-                                changed = true
-                            }
-
-                        }
-                        OperationType.ADD -> {
-                            if (!subscriptionEntry.active) {
-                                subscriptionEntry.active = true
-                                changed = true
-                            }
-                        }
-                        OperationType.START -> {
-                            if (subscriptionEntry.stopped) {
-                                subscriptionEntry.stopped = false
-                                changed = true
-                            }
-                        }
-                        OperationType.STOP -> {
-                            if (!subscriptionEntry.stopped) {
-                                subscriptionEntry.stopped = true
-                                changed = true
-                            }
-                        }
-                    }
-
-                    if (changed) {
-                       changedSubscriptions.add(subscriptionEntry.name)
-                    }
-                }
-            }
-
-            operations.flatMap { it.value }.filter { operation -> operation.operationType == OperationType.ADD && joined.none { it.name == operation.name } }.forEach { operation ->
-                joined.add(SubscriptionEntry(operation.name, operation.content?.toByteArray() ?: ByteArray(0), subscriber, operation.stopped, true))
-                changedSubscriptions.add(operation.name)
-            }
-
-            if (joined.isNotEmpty()) {
-                Subscriptions.batchInsert(joined.filter { changedSubscriptions.contains(it.name) }) { entry -> entry.onBatchInsert(this) }
-            }
-        }
-    }
+    private val executor = Executors.newSingleThreadExecutor()
 
     // endregion
 
@@ -217,8 +125,6 @@ object DbController {
     init {
         try {
             DbFactory.connect()
-
-            updater.start()
 
             if (ConfigManager.getBoolean(ConfigNames.DATABASE_CREATE_SCHEMAS_ON_STARTUP)) {
                 transaction {

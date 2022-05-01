@@ -6,26 +6,26 @@ import org.nitb.orchestrator.cloud.CloudSender
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.database.relational.DbController
-import org.nitb.orchestrator.database.relational.entities.operations.OperationType
-import org.nitb.orchestrator.database.relational.entities.operations.SubscriptionDatabaseOperation
+import org.nitb.orchestrator.http.HttpClient
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.scheduling.PeriodicalScheduler
+import org.nitb.orchestrator.serialization.json.JSONSerializer
 import org.nitb.orchestrator.subscriber.entities.subscribers.AllocationStrategy
-import org.nitb.orchestrator.subscriber.entities.subscribers.RequestResult
-import org.nitb.orchestrator.subscriber.entities.subscribers.RequestStatus
 import org.nitb.orchestrator.subscriber.entities.subscribers.SubscriberInfo
-import org.nitb.orchestrator.subscriber.entities.subscriptions.ResponseStatus
-import org.nitb.orchestrator.subscriber.entities.subscriptions.remove.RemoveSubscriptionRequest
-import org.nitb.orchestrator.subscriber.entities.subscriptions.remove.RemoveSubscriptionResponse
-import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionResponse
-import org.nitb.orchestrator.subscriber.entities.subscriptions.upload.UploadSubscriptionsRequest
-import org.nitb.orchestrator.subscription.SubscriptionStatus
+import org.nitb.orchestrator.subscriber.entities.subscriptions.RequestType
+import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
+import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResponse
+import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResult
+import org.nitb.orchestrator.subscription.Subscription
 import java.io.Serializable
+import java.lang.Exception
+import java.lang.IllegalStateException
 import java.lang.RuntimeException
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 class MainSubscriber(
+    private val parentSubscriber: Subscriber,
     private val subscriberName: String
 ): CloudManager<Serializable>, CloudConsumer<Serializable>, CloudSender {
 
@@ -35,83 +35,8 @@ class MainSubscriber(
         registerConsumer(client) { message ->
             when (message.message) {
                 is SubscriberInfo -> {
-                    val oldSubscriptionsCopy = subscribers[message.sender]?.subscriptions?.toMap() ?: mapOf()
-
-                    val allNames = oldSubscriptionsCopy.keys.toSet() + message.message.subscriptions.keys.toSet()
-
-                    val subscriptionsOperations = mutableListOf<SubscriptionDatabaseOperation>()
-
-                    for (name in allNames) {
-                        if (oldSubscriptionsCopy.containsKey(name) && message.message.subscriptions.containsKey(name)) {
-                            if (oldSubscriptionsCopy[name]?.content != message.message.subscriptions[name]?.content) {
-                                subscriptionsOperations.add(SubscriptionDatabaseOperation(OperationType.UPDATE_CONTENT, name,
-                                    message.sender, message.message.subscriptions[name]?.content, message.message.subscriptions[name]?.status == SubscriptionStatus.STOPPED))
-                            }
-
-                            if (oldSubscriptionsCopy[name]?.status?.isStoppedStatus != message.message.subscriptions[name]?.status?.isStoppedStatus) {
-                                when (message.message.subscriptions[name]?.status) {
-                                    SubscriptionStatus.STOPPED -> subscriptionsOperations.add(SubscriptionDatabaseOperation(OperationType.STOP, name, message.sender))
-                                    SubscriptionStatus.IDLE, SubscriptionStatus.RUNNING -> subscriptionsOperations.add(SubscriptionDatabaseOperation(OperationType.START, name, message.sender))
-                                    else -> { /* Do nothing */ }
-                                }
-                            }
-                        } else if (oldSubscriptionsCopy.containsKey(name) && !message.message.subscriptions.containsKey(name)) {
-                            subscriptionsOperations.add(SubscriptionDatabaseOperation(OperationType.REMOVE, name, message.sender))
-                        } else if (!oldSubscriptionsCopy.containsKey(name) && message.message.subscriptions.containsKey(name)) {
-                            subscriptionsOperations.add(SubscriptionDatabaseOperation(OperationType.ADD, name, message.sender, message.message.subscriptions[name]?.content, false))
-                        }
-                    }
-
                     subscribers[message.sender] = message.message
-
-                    if (subscriptionsOperations.isNotEmpty())
-                        DbController.addOperationsToWaitingList(message.sender, subscriptionsOperations)
-                }
-                is UploadSubscriptionsRequest -> {
-                    logger.debug("Upload subscriptions request received from ${message.sender}")
-                    uploadSubscriptions(message.message.subscriptions, message.message.subscriber, message.message.id)
-                }
-                is UploadSubscriptionResponse -> {
-                    logger.debug("Upload subscriptions response received from ${message.sender}")
-
-                    waitingUploadRequests[message.message.id].let { requestResult ->
-                        waitingUploadRequests[message.message.id] = RequestResult(
-                            if (message.message.status == ResponseStatus.OK) {
-                                RequestStatus.OK
-                            } else {
-                                RequestStatus.ERROR
-                            },
-                            if (message.message.status == ResponseStatus.OK) {
-                                "Subscriptions has been successfully uploaded"
-                            } else {
-                                "Error uploading subscriptions"
-                            },
-                            requestResult?.id
-                        )
-                    }
-                }
-                is RemoveSubscriptionRequest -> {
-                    logger.debug("Remove subscriptions request received from ${message.sender}")
-                    removeSubscriptions(message.message.subscriptions, message.message.id)
-                }
-                is RemoveSubscriptionResponse -> {
-                    logger.debug("Remove subscriptions response received from ${message.sender}")
-
-                    waitingRemoveRequests[message.message.id].let { requestResult ->
-                        waitingRemoveRequests[message.message.id] = RequestResult(
-                            if (message.message.status == ResponseStatus.OK) {
-                                RequestStatus.OK
-                            } else {
-                                RequestStatus.ERROR
-                            },
-                            if (message.message.status == ResponseStatus.OK) {
-                                "Subscriptions has been successfully removed"
-                            } else {
-                                "Error removing subscriptions"
-                            },
-                            requestResult?.id
-                        )
-                    }
+                    lastSubscriberInfoReceptionTime = System.currentTimeMillis()
                 }
                 else -> logger.error("Unrecognized message type has been received. Type: ${message::class.java.name}")
             }
@@ -122,22 +47,28 @@ class MainSubscriber(
 
             if (allocationStrategy == AllocationStrategy.FIXED) {
                 lastSubscriptions.groupBy { it.subscriber }.forEach { (subscriber, subscriptions) ->
-                    fallenSubscriptionsBySubscriber[subscriber] = subscriptions.map { String(it.content) }
+                    fallenSubscriptionsBySubscriber[subscriber] = subscriptions.associate { Pair(it.name, String(it.content)) }
                     fallenSubscriptionsNeedToSend[subscriber] = true
                 }
             } else {
-                fallenSubscriptionsBySubscriber[""] = lastSubscriptions.map { String(it.content) }
+                fallenSubscriptionsBySubscriber[""] = lastSubscriptions.associate { Pair(it.name, String(it.content)) }
                 fallenSubscriptionsNeedToSend[""] = true
             }
-
         }.start()
 
+        checkMasterRoleScheduler.start()
         checkNodesScheduler.start()
         checkWaitingSubscriptionsToUploadScheduler.start()
-        checkCompletedRequestsScheduler.start()
+
+        if (displayNodeName != null)
+            sendInfoToDisplayNodeScheduler.start()
     }
 
     fun stop() {
+        if (checkMasterRoleSchedulerDelegate.isInitialized()) {
+            checkMasterRoleScheduler.stop()
+        }
+
         if (checkNodesSchedulerDelegate.isInitialized()) {
             checkNodesScheduler.stop()
         }
@@ -146,25 +77,148 @@ class MainSubscriber(
             checkWaitingSubscriptionsToUploadScheduler.stop()
         }
 
-        if (removeCompletedRequestsSchedulerDelegate.isInitialized()) {
-            checkCompletedRequestsScheduler.stop()
+        if (sendInfoToDisplayNodeSchedulerDelegate.isInitialized()) {
+            sendInfoToDisplayNodeScheduler.stop()
         }
 
         client.close()
     }
 
-    fun subscriptionUploadResult(id: String): RequestResult {
-        return waitingUploadRequests[id] ?: waitingUploadRequests
-            .filter { (_, value) -> value.id == id }
-            .map { it.value }
-            .reduce { acc, requestResult -> RequestResult.mergeResults(acc, requestResult) }
+    fun uploadSubscriptions(subscriptions: List<String>, subscriber: String? = null): SubscriptionOperationResponse {
+        if (allocationStrategy == AllocationStrategy.FIXED && (subscriber == null || !subscribers.containsKey(subscriber))) {
+            return SubscriptionOperationResponse(RequestType.UPLOAD, "Unable to upload subscriptions for a FIXED strategy without a valid subscriber name", notModified = subscriptions)
+        }
+
+        if (allocationStrategy != AllocationStrategy.FIXED && subscribers.isEmpty()) {
+            return SubscriptionOperationResponse(RequestType.UPLOAD, "There are no subscribers available at this moment", notModified = subscriptions)
+        }
+
+        val uploaded = mutableListOf<String>()
+        val notUploaded = mutableListOf<String>()
+
+        if (allocationStrategy == AllocationStrategy.FIXED) {
+            mapOf(subscriber!! to subscriptions)
+        } else {
+            val ranking = makeRanking()
+            subscriptions.withIndex().groupBy({ (i, _) -> ranking[i % ranking.size] }, { (_, subscription) -> subscription })
+        }.entries.parallelStream().forEach { (subscriber, subscriptions) ->
+            if (subscriber == subscriberName) {
+                parentSubscriber.uploadSubscriptions(subscriptions)
+            } else {
+                val info = subscribers[subscriber]
+                val url = "http://${info?.hostname}:${info?.httpPort}/subscriptions/upload" // TODO: Check for HTTPS option
+
+                try {
+                    val response = HttpClient(url).jsonRequest("PUT", subscriptions, SubscriptionOperationResponse::class.java)
+                    uploaded.addAll(response.modified)
+                    notUploaded.addAll(response.notModified)
+                } catch (e: IllegalStateException) {
+                    notUploaded.addAll(subscriptions)
+                }
+
+                DbController.uploadSubscriptionsConcurrently(subscriptions.associateBy { (JSONSerializer.deserializeWithClassName(it) as Subscription<*, *>).name }, subscriber)
+            }
+        }
+
+        val message = if (notUploaded.isEmpty()) {
+            "All subscriptions has been successfully uploaded"
+        } else if (uploaded.isNotEmpty() && notUploaded.isNotEmpty()) {
+            "Some subscriptions could not be uploaded"
+        } else {
+            "Operation revoked"
+        }
+
+        return SubscriptionOperationResponse(RequestType.UPLOAD, message, uploaded, notUploaded)
     }
 
-    fun subscriptionRemoveResult(id: String): RequestResult {
-        return waitingRemoveRequests[id] ?: waitingUploadRequests
-            .filter { (_, value) -> value.id == id }
-            .map { it.value }
-            .reduce { acc, requestResult -> RequestResult.mergeResults(acc, requestResult) }
+    fun removeSubscriptions(subscriptions: List<String>): SubscriptionOperationResponse {
+        val removed = mutableListOf<String>()
+        val notRemoved = mutableListOf<String>()
+
+        val groupedSubscriptions = subscriptionsBySubscriber(subscriptions)
+        notRemoved.addAll(groupedSubscriptions[Optional.empty()] ?: listOf())
+
+        groupedSubscriptions.entries.parallelStream().forEach { (subscriber, subscriptions) ->
+            if (subscriber.isPresent) {
+                if (subscriber.get() == subscriberName) {
+                    parentSubscriber.removeSubscriptions(subscriptions)
+                } else {
+                    val info = subscribers[subscriber.get()]
+                    val url = "http://${info?.hostname}:${info?.httpPort}/subscriptions/remove" // TODO: Check for HTTPS option
+
+                    try {
+                        val response = HttpClient(url).jsonRequest("PUT", subscriptions, SubscriptionOperationResponse::class.java)
+                        removed.addAll(response.modified)
+                        notRemoved.addAll(response.notModified)
+                    } catch (e: IllegalStateException) {
+                        notRemoved.addAll(subscriptions)
+                    }
+
+                    DbController.uploadSubscriptionsConcurrently(subscriptions.associateBy { (JSONSerializer.deserializeWithClassName(it) as Subscription<*, *>).name }, subscriber.get(), active = false)
+                }
+            }
+        }
+
+        val message = if (notRemoved.isEmpty()) {
+            "All subscriptions has been successfully uploaded"
+        } else if (removed.isNotEmpty() && notRemoved.isNotEmpty()) {
+            "Some subscriptions could not be uploaded"
+        } else {
+            "Operation revoked"
+        }
+
+        return SubscriptionOperationResponse(RequestType.REMOVE, message, removed, notRemoved)
+    }
+
+    fun setSubscriptions(subscriptions: List<String>, stop: Boolean): SubscriptionOperationResponse {
+        val set = mutableListOf<String>()
+        val notSet = mutableListOf<String>()
+
+        val groupedSubscriptions = subscriptionsBySubscriber(subscriptions)
+        notSet.addAll(groupedSubscriptions[Optional.empty()] ?: listOf())
+
+        groupedSubscriptions.entries.parallelStream().forEach { (subscriber, subscriptions) ->
+            if (subscriber.isPresent) {
+                if (subscriber.get() == subscriberName) {
+                    parentSubscriber.removeSubscriptions(subscriptions)
+                } else {
+                    val info = subscribers[subscriber.get()]
+                    val url = "http://${info?.hostname}:${info?.httpPort}/subscriptions/${if (stop) "stop" else "start"}" // TODO: Check for HTTPS option
+
+                    try {
+                        val response = HttpClient(url).jsonRequest("PUT", subscriptions, SubscriptionOperationResponse::class.java)
+                        set.addAll(response.modified)
+                        notSet.addAll(response.notModified)
+                    } catch (e: IllegalStateException) {
+                        notSet.addAll(subscriptions)
+                    }
+
+                    DbController.uploadSubscriptionsConcurrently(subscriptions.associateBy { (JSONSerializer.deserializeWithClassName(it) as Subscription<*, *>).name }, subscriber.get(), stopped = stop)
+                }
+            }
+        }
+
+        val message = if (notSet.isEmpty()) {
+            "All subscriptions has been successfully ${if (stop) "stopped" else "started"}"
+        } else if (set.isNotEmpty() && notSet.isNotEmpty()) {
+            "Some subscriptions could not be ${if (stop) "stopped" else "started"}"
+        } else {
+            "Operation revoked"
+        }
+
+        return SubscriptionOperationResponse(RequestType.SET, message, set, notSet)
+    }
+
+    fun listSubscribers(): Map<String, SubscriberInfo> {
+        return subscribers
+    }
+
+    fun listSubscriptions(): List<SubscriptionInfo> {
+        return subscribers.flatMap { it.value.subscriptions.values }
+    }
+
+    fun getSubscriptionInfo(name: String): SubscriptionInfo? {
+        return subscribers.flatMap { it.value.subscriptions.values }.filter { it.name == name }.firstOrNull()
     }
 
     // endregion
@@ -175,6 +229,11 @@ class MainSubscriber(
      * Name of master node, obtaining from properties.
      */
     private val name = ConfigManager.getProperty(ConfigNames.PRIMARY_NAME, RuntimeException("Needed property doesn't exists: ${ConfigNames.PRIMARY_NAME}"))
+
+    /**
+     * Name of display node used to show information to users
+     */
+    private val displayNodeName = ConfigManager.getProperty(ConfigNames.DISPLAY_NODE_NAME)
 
     /**
      * Logger object used to print logs.
@@ -207,6 +266,16 @@ class MainSubscriber(
     private val checkSubscriptionsToUploadTimeout = ConfigManager.getLong(ConfigNames.SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_UPLOAD_TIMEOUT, ConfigNames.SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_UPLOAD_TIMEOUT_DEFAULT)
 
     /**
+     * Time between two data transmissions to the display node
+     */
+    private val sendInfoToDisplayNodePeriod = ConfigManager.getLong(ConfigNames.SUBSCRIBER_SEND_INFO_PERIOD, ConfigNames.SECONDARY_SEND_INFO_PERIOD_DEFAULT)
+
+    /**
+     * Maximum time when subscriber can take thread used to send information to display node. If this thread is running more than these milliseconds, task is cleared and another task is thrown
+     */
+    private val sendInfoToDisplayNodeTimeout = ConfigManager.getLong(ConfigNames.SUBSCRIBER_SEND_INFO_TIMEOUT, ConfigNames.SECONDARY_SEND_INFO_TIMEOUT_DEFAULT)
+
+    /**
      * Type of allocation strategy to send subscriptions to secondary subscribers
      */
     private val allocationStrategy = ConfigManager.getEnumProperty(ConfigNames.ALLOCATION_STRATEGY, AllocationStrategy::class.java, ConfigNames.ALLOCATION_STRATEGY_DEFAULT)
@@ -219,13 +288,9 @@ class MainSubscriber(
     /**
      * List of subscriptions to reallocate due to node crash
      */
-    private val fallenSubscriptionsBySubscriber = ConcurrentHashMap<String, List<String>>()
+    private val fallenSubscriptionsBySubscriber = ConcurrentHashMap<String, Map<String, String>>()
 
     private val fallenSubscriptionsNeedToSend = ConcurrentHashMap<String, Boolean>()
-
-    private val waitingUploadRequests = ConcurrentHashMap<String, RequestResult>()
-
-    private val waitingRemoveRequests = ConcurrentHashMap<String, RequestResult>()
 
     /**
      * Client used for communication with another subscribers
@@ -256,31 +321,43 @@ class MainSubscriber(
         override fun onCycle() {
             for ((subscriber, subscriptions) in fallenSubscriptionsBySubscriber) {
                 if (fallenSubscriptionsNeedToSend[subscriber] == true) {
-                    uploadSubscriptions(subscriptions, subscriber, UUID.randomUUID().toString(), true)
+                    val response = if (allocationStrategy == AllocationStrategy.FIXED) {
+                        uploadSubscriptions(subscriptions.values.toList(), subscriber)
+                    } else {
+                        uploadSubscriptions(subscriptions.values.toList())
+                    }
+
+                    if (response.result == SubscriptionOperationResult.PARTIAL) {
+                        fallenSubscriptionsBySubscriber[subscriber] = subscriptions.filter { subscription -> subscription.value in response.notModified }
+                    } else if (response.result == SubscriptionOperationResult.TOTAL) {
+                        fallenSubscriptionsBySubscriber.remove(subscriber)
+                        fallenSubscriptionsNeedToSend.remove(subscriber)
+                    }
                 }
             }
         }
     } }
     private val checkWaitingSubscriptionsToUploadScheduler by checkWaitingSubscriptionsToUploadSchedulerDelegate
 
-    private val removeCompletedRequestsSchedulerDelegate = lazy { object : PeriodicalScheduler(3600000, 0, 3600000, name = subscriberName) {
+    private val sendInfoToDisplayNodeSchedulerDelegate = lazy { object : PeriodicalScheduler(sendInfoToDisplayNodePeriod, 0, sendInfoToDisplayNodeTimeout, name = subscriberName) {
         override fun onCycle() {
-            val current = System.currentTimeMillis()
-
-            for ((id, request) in waitingUploadRequests) {
-                if (current - request.creation > 3600000) {
-                    waitingUploadRequests.remove(id)
-                }
-            }
-
-            for ((id, request) in waitingRemoveRequests) {
-                if (current - request.creation > 3600000) {
-                    waitingRemoveRequests.remove(id)
-                }
+            for ((_, subscriberInfo) in subscribers) {
+                client.send(displayNodeName!!, subscriberInfo)
             }
         }
     } }
-    private val checkCompletedRequestsScheduler by removeCompletedRequestsSchedulerDelegate
+    private val sendInfoToDisplayNodeScheduler by sendInfoToDisplayNodeSchedulerDelegate
+
+    private var lastSubscriberInfoReceptionTime = System.currentTimeMillis()
+    private val checkMasterRoleSchedulerDelegate = lazy { object: PeriodicalScheduler(1000, 0, 1000, name = subscriberName, this) {
+        override fun onCycle() {
+            if (subscribers.isNotEmpty() && (System.currentTimeMillis() - lastSubscriberInfoReceptionTime) > maxSecondaryNodeInactivityTime) {
+                logger.info("A main node already exists, stopping this...")
+                (this.params[0] as MainSubscriber).stop()
+            }
+        }
+    }}
+    private val checkMasterRoleScheduler by checkMasterRoleSchedulerDelegate
 
     // endregion
 
@@ -292,7 +369,7 @@ class MainSubscriber(
         }
 
         subscribers.forEach { subscriber ->
-            val subscriptionsForSubscriber = DbController.getLastActiveSubscriptionsBySubscriber(subscriber).map { String(it.content) }
+            val subscriptionsForSubscriber = DbController.getLastActiveSubscriptionsBySubscriber(subscriber).associate { Pair(it.name, String(it.content)) }
             fallenSubscriptionsBySubscriber[subscriber] = subscriptionsForSubscriber
             fallenSubscriptionsNeedToSend[subscriber] = true
         }
@@ -309,51 +386,8 @@ class MainSubscriber(
         }
     }
 
-    private fun uploadSubscriptions(subscriptions: List<String>, subscriber: String? = null, id: String, fromFallenSubscriber: Boolean = false) {
-        if (allocationStrategy == AllocationStrategy.FIXED && subscriber != null) {
-            if (!subscribers.containsKey(subscriber)) {
-                if (!fromFallenSubscriber) {
-                    waitingUploadRequests[id] = RequestResult(RequestStatus.ERROR, "Unable to upload subscriptions to a non-exists subscriber when allocation type is FIXED")
-                } else {
-                    fallenSubscriptionsNeedToSend[subscriber] = true
-                }
-            } else {
-                sendMessage(UploadSubscriptionsRequest(subscriptions, subscriber, id), client, subscriber)
-
-                if (fromFallenSubscriber) {
-                    fallenSubscriptionsNeedToSend[subscriber] = false
-                }
-
-                waitingUploadRequests[id] = RequestResult(RequestStatus.WAITING)
-            }
-        } else {
-            val ranking = makeRanking()
-
-            if (ranking.isNotEmpty()) {
-                subscriptions.withIndex().groupBy { (index, _) ->
-                    ranking[index % ranking.size]
-                }.forEach { (subscriber, subscriptions) ->
-                    val childId = UUID.randomUUID().toString()
-                    sendMessage(UploadSubscriptionsRequest(subscriptions.map { it.value }, subscriber, childId), client, subscriber)
-                    waitingUploadRequests[childId] = RequestResult(RequestStatus.WAITING, id=id)
-                }
-
-                fallenSubscriptionsNeedToSend[""] = false
-            } else if (fromFallenSubscriber && subscriber == "") {
-                fallenSubscriptionsNeedToSend[""] = true
-            }
-        }
-    }
-
-    private fun removeSubscriptions(subscriptions: List<String>, id: String) {
-        subscriptions.groupBy { subscriptionName ->
-            subscribers.firstNotNullOf { (name, infos) -> if (infos.subscriptions.containsKey(subscriptionName)) name else null }
-        }.forEach { (subscriber, subscriptions) ->
-            val childId = UUID.randomUUID().toString()
-            sendMessage(RemoveSubscriptionRequest(subscriptions, childId), client, subscriber)
-            waitingUploadRequests[UUID.randomUUID().toString()] = RequestResult(RequestStatus.WAITING, id = id)
-        }
-
+    private fun subscriptionsBySubscriber(subscriptions: List<String>): Map<Optional<String>, List<String>> {
+        return subscriptions.groupBy { subscription -> subscribers.filter { (_, info) -> info.subscriptions.any { (name, _) -> name == subscription } }.map { Optional.of(it.key) }.firstOrNull() ?: Optional.empty<String>() }
     }
 
     // endregion

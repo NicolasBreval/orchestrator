@@ -95,47 +95,6 @@ class DatabaseTests {
     }
 
     @Test
-    fun checkSubscriptionsUpdate() {
-        DbController.clearSubscriptions()
-
-        DbController.insertSubscriptions(listOf(
-            SubscriptionEntry("subscription 1", ByteArray(0), "subscriber1", true, true),
-            SubscriptionEntry("subscription 1", ByteArray(0), "subscriber1", true, true),
-            SubscriptionEntry("subscription 1", ByteArray(0), "subscriber1", true, true),
-            SubscriptionEntry("subscription 1", ByteArray(0), "subscriber1", true, true),
-            SubscriptionEntry("subscription 2", ByteArray(0), "subscriber1", true, true),
-            SubscriptionEntry("subscription 2", ByteArray(0), "subscriber1", true, true),
-            SubscriptionEntry("subscription 2", ByteArray(0), "subscriber1", true, false),
-            SubscriptionEntry("subscription 3", ByteArray(0), "subscriber1", true, true),
-            SubscriptionEntry("subscription 3", ByteArray(0), "subscriber1", true, true),
-            SubscriptionEntry("subscription 3", ByteArray(0), "subscriber1", true, true),
-            SubscriptionEntry("subscription 3", ByteArray(0), "subscriber1", false, true),
-        ))
-
-        val operations = listOf(
-            SubscriptionDatabaseOperation(OperationType.REMOVE, "subscription 1", "subscriber1"),
-            SubscriptionDatabaseOperation(OperationType.ADD, "subscription 2", "subscriber1"),
-            SubscriptionDatabaseOperation(OperationType.UPDATE_CONTENT, "subscription 3", "subscriber1", "New content"),
-            SubscriptionDatabaseOperation(OperationType.ADD, "subscription 4", "subscriber1", "New content"),
-            SubscriptionDatabaseOperation(OperationType.START, "subscription 1", "subscriber1"),
-            SubscriptionDatabaseOperation(OperationType.STOP, "subscription 3", "subscriber1")
-        )
-
-        DbController.addOperationsToWaitingList("subscriber1", operations)
-
-        Thread.sleep(200)
-
-        val lastSubscriptions = DbController.getLastActiveSubscriptionsBySubscriber("subscriber1").associateBy { it.name }
-
-        assertEquals(lastSubscriptions["subscription 1"]?.active, false)
-        assertEquals(lastSubscriptions["subscription 2"]?.active, true)
-        assertEquals(lastSubscriptions["subscription 3"]?.content?.let { String(it) }, "New content")
-        assertEquals(lastSubscriptions["subscription 4"]?.content?.let { String(it) }, "New content")
-        assertEquals(lastSubscriptions["subscription 1"]?.stopped, false)
-        assertEquals(lastSubscriptions["subscription 2"]?.stopped, true)
-    }
-
-    @Test
     fun checkLastActiveSubscriptions() {
         DbController.clearSubscriptions()
 
