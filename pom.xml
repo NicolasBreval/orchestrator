@@ -16,7 +16,6 @@
 
   <modules>
     <module>core</module>
-    <module>examples</module>
     <module>webapp</module>
   </modules>
   <properties>

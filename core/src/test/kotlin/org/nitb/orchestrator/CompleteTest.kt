@@ -4,7 +4,6 @@ import org.junit.Test
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.subscriber.entities.subscribers.AllocationStrategy
-import org.nitb.orchestrator.web.initializr.ApiInitializer
 import org.slf4j.event.Level
 
 class CompleteTest {
@@ -30,7 +29,6 @@ class CompleteTest {
 
     @Test
     fun test() {
-        ApiInitializer.initialize()
 
         Thread.sleep(Long.MAX_VALUE)
     }

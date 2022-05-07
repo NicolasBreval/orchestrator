@@ -2,6 +2,7 @@ package org.nitb.orchestrator.web.controllers
 
 import io.micronaut.context.annotation.Parameter
 import io.micronaut.http.annotation.*
+import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.subscriber.Subscriber
 import org.nitb.orchestrator.subscriber.entities.subscribers.SubscriberInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
@@ -46,6 +47,10 @@ class SubscriberController {
         return subscriber.removeSubscriptions(subscriptions)
     }
 
+    private val log = LoggingManager.getLogger("controller")
     private val subscriber = Subscriber()
 
+    init {
+        log.info("Controller initialized!!!")
+    }
 }
