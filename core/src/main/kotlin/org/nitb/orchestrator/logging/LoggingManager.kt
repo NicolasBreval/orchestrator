@@ -11,7 +11,7 @@ import ch.qos.logback.core.rolling.TimeBasedRollingPolicy
 import ch.qos.logback.core.util.FileSize
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
-import org.nitb.orchestrator.logging.appenders.FluentdAppender
+import org.reflections.Reflections
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.lang.RuntimeException
@@ -74,11 +74,6 @@ object LoggingManager {
     private const val rollingAppenderName = "FILE_ROLLING_APPENDER"
 
     /**
-     * Name of fluentd appender
-     */
-    private const val fluentdAppenderName = "FLUENTD_APPENDER"
-
-    /**
      * Context to create logger objects.
      */
     private val context = LoggerFactory.getILoggerFactory() as LoggerContext
@@ -104,9 +99,9 @@ object LoggingManager {
     private val loggingMaxSize = ConfigManager.getProperty(ConfigNames.LOGGING_MAX_FILE_SIZE, ConfigNames.LOGGING_MAX_FILE_SIZE_DEFAULT)
 
     /**
-     * If is true, creates Fluentd appender to logs.
+     * All additional appender found from dependencies
      */
-    private val fluentdEnabled = ConfigManager.getBoolean(ConfigNames.LOGGING_FLUENTD_ENABLED)
+    private val appenderClasses = mutableListOf<Class<out AppenderPlugin>>()
 
     // endregion
 
@@ -168,14 +163,15 @@ object LoggingManager {
             logger.addAppender(rollingFileAppender)
         }
 
-        if (fluentdEnabled && logger.getAppender(fluentdAppenderName) == null) {
-            val fluentdAppender = FluentdAppender(logger.name)
-            fluentdAppender.start()
-
-            logger.addAppender(fluentdAppender)
-        }
 
         logger.level = commonLoggerLevel
+    }
+
+    /**
+     * Searches for logger appender plugins and add to list. All appenders in this list will be added to all loggers created
+     */
+    private fun searchForAppenders() {
+        Reflections("org.nitb.logging.appenders").getSubTypesOf(AppenderPlugin::class.java).forEach { appenderClasses.add(it) }
     }
 
     // endregion
@@ -188,6 +184,8 @@ object LoggingManager {
         if (!loggingFolderFile.exists()) {
             loggingFolderFile.mkdir()
         }
+
+        searchForAppenders()
     }
 
     // endregion

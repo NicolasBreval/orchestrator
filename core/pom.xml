@@ -22,7 +22,6 @@
     <maven.compiler.target>17</maven.compiler.target>
     <slf4j.version>1.7.36</slf4j.version>
     <logback.version>1.2.11</logback.version>
-    <fluentd.version>0.3.4</fluentd.version>
     <exposed.version>0.38.2</exposed.version>
     <hikari.cp.version>5.0.1</hikari.cp.version>
     <kryo.version>5.3.0</kryo.version>
@@ -33,6 +32,7 @@
     <jackson.version>2.13.2</jackson.version>
     <okhttp.version>4.9.3</okhttp.version>
     <sqlite.version>3.36.0.3</sqlite.version>
+    <reflections.version>0.10.2</reflections.version>
   </properties>
 
   <dependencies>
@@ -50,11 +50,6 @@
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
       <version>${logback.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.fluentd</groupId>
-      <artifactId>fluent-logger</artifactId>
-      <version>${fluentd.version}</version>
     </dependency>
     <dependency>
       <groupId>org.jetbrains.exposed</groupId>
@@ -133,13 +128,13 @@
       <scope>test-runtime</scope>
     </dependency>
     <dependency>
-      <groupId>io.micronaut</groupId>
-      <artifactId>micronaut-http-client</artifactId>
-      <scope>compile</scope>
+      <groupId>org.reflections</groupId>
+      <artifactId>reflections</artifactId>
+      <version>${reflections.version}</version>
     </dependency>
     <dependency>
       <groupId>io.micronaut</groupId>
-      <artifactId>micronaut-runtime</artifactId>
+      <artifactId>micronaut-http-client</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>

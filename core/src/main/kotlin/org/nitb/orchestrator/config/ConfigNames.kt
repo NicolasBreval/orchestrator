@@ -32,11 +32,6 @@ object ConfigNames {
      */
     const val LOGGING_MAX_FILE_SIZE = "logging.max.file.size"
 
-    /**
-     * Allows specifying if fluentd appender is enabled to send log lines to a fluent server.
-     */
-    const val LOGGING_FLUENTD_ENABLED = "logging.fluentd.enabled"
-
     // endregion
 
     // region LOGGING DEFAULTS
@@ -65,42 +60,6 @@ object ConfigNames {
      * Default value used for log files' max size if is not set in [LOGGING_MAX_FILE_SIZE] property.
      */
     const val LOGGING_MAX_FILE_SIZE_DEFAULT = "512MB"
-
-    // endregion
-
-    // region FLUENTD
-
-    /**
-     * Hostname of Fluentd server used to send logs. This property is required when [LOGGING_FLUENTD_ENABLED] is true.
-     */
-    @RequiredProperty("Only if logging.fluentd.enabled is true", depends = true, dependency = "logging.fluentd.enabled", "true")
-    const val LOGGING_FLUENTD_HOST = "logging.fluentd.host"
-
-    /**
-     * Port of Fluentd server used to send logs. This property is required when [LOGGING_FLUENTD_ENABLED] is true.
-     */
-    const val LOGGING_FLUENTD_PORT = "logging.fluentd.port"
-
-    /**
-     * Tag used to send logs to Fluentd server. This property is required when [LOGGING_FLUENTD_ENABLED] is true.
-     */
-    @RequiredProperty("Only if logging.fluentd.enabled is true", depends = true, dependency = "logging.fluentd.enabled", "true")
-    const val LOGGING_FLUENTD_TAG = "logging.fluentd.tag"
-
-    /**
-     * Tag prefix used to send logs to Fluentd server. This property is required when [LOGGING_FLUENTD_ENABLED] is true.
-     */
-    @RequiredProperty("Only if logging.fluentd.enabled is true", depends = true, dependency = "logging.fluentd.enabled", "true")
-    const val LOGGING_FLUENTD_TAG_PREFIX = "logging.fluentd.tag.prefix"
-
-    // endregion
-
-    // region FLUENTD DEFAULTS
-
-    /**
-     * Default port used in Fluentd connection if is not set in [LOGGING_FLUENTD_PORT].
-     */
-    const val LOGGING_FLUENTD_DEFAULT_PORT = 24224
 
     // endregion
 
