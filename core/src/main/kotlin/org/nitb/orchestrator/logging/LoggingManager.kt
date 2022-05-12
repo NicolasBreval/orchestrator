@@ -6,8 +6,7 @@ import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.rolling.RollingFileAppender
-import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP
-import ch.qos.logback.core.rolling.TimeBasedRollingPolicy
+import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy
 import ch.qos.logback.core.util.FileSize
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
@@ -15,6 +14,7 @@ import org.reflections.Reflections
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.lang.RuntimeException
+import java.nio.file.Files
 
 /**
  * Util class used to create logger objects.
@@ -137,20 +137,15 @@ object LoggingManager {
             rollingFileAppender.name = rollingAppenderName
             rollingFileAppender.context = context
 
-            val timeBasedRollingPolicy = TimeBasedRollingPolicy<ILoggingEvent>()
-            timeBasedRollingPolicy.context = context
-            timeBasedRollingPolicy.maxHistory = 5
-            timeBasedRollingPolicy.fileNamePattern = File(loggingFolder, "${logger.name}-%d{$loggingDatePattern}.log").absolutePath
-            timeBasedRollingPolicy.setParent(rollingFileAppender)
-            timeBasedRollingPolicy.start()
+            val sizeAndTimeBasedRollingPolicy = SizeAndTimeBasedRollingPolicy<ILoggingEvent>()
+            sizeAndTimeBasedRollingPolicy.context = context
+            sizeAndTimeBasedRollingPolicy.setMaxFileSize(FileSize.valueOf(loggingMaxSize))
+            sizeAndTimeBasedRollingPolicy.maxHistory = 5
+            sizeAndTimeBasedRollingPolicy.fileNamePattern = File(loggingFolder, "${logger.name}-%d{$loggingDatePattern}.%i.log").absolutePath
+            sizeAndTimeBasedRollingPolicy.setParent(rollingFileAppender)
+            sizeAndTimeBasedRollingPolicy.start()
 
-            val sizeAndTimeBasedFNATP = SizeAndTimeBasedFNATP<ILoggingEvent>()
-            sizeAndTimeBasedFNATP.context = context
-            sizeAndTimeBasedFNATP.setMaxFileSize(FileSize.valueOf(loggingMaxSize))
-            sizeAndTimeBasedFNATP.setTimeBasedRollingPolicy(timeBasedRollingPolicy)
-            sizeAndTimeBasedFNATP.start()
-
-            rollingFileAppender.rollingPolicy = timeBasedRollingPolicy
+            rollingFileAppender.rollingPolicy = sizeAndTimeBasedRollingPolicy
 
             val patternLayoutEncoder = PatternLayoutEncoder()
             patternLayoutEncoder.context = context

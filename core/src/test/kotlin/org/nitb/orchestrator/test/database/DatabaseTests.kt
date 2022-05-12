@@ -1,20 +1,16 @@
-package org.nitb.orchestrator
+package org.nitb.orchestrator.test.database
 
-import org.junit.FixMethodOrder
-import org.junit.Test
-import org.junit.runners.MethodSorters
+import org.junit.jupiter.api.MethodOrderer
+import org.junit.jupiter.api.Order
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestMethodOrder
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.database.relational.DbController
 import org.nitb.orchestrator.database.relational.entities.SubscriptionEntry
-import org.nitb.orchestrator.database.relational.entities.operations.OperationType
-import org.nitb.orchestrator.database.relational.entities.operations.SubscriptionDatabaseOperation
-import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
-import org.nitb.orchestrator.subscription.SubscriptionStatus
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import org.junit.jupiter.api.Assertions.*
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class DatabaseTests {
 
     companion object {
@@ -31,11 +27,13 @@ class DatabaseTests {
     }
 
     @Test
+    @Order(0)
     fun checkDatabaseCreated() {
         assertTrue(DbController.checkTablesAreCreated())
     }
 
     @Test
+    @Order(1)
     fun checkDatabaseInserts() {
         DbController.clearSubscriptions()
 
@@ -64,6 +62,7 @@ class DatabaseTests {
     }
 
     @Test
+    @Order(2)
     fun checkDatabaseHistorical() {
         DbController.clearSubscriptions()
 
@@ -95,14 +94,15 @@ class DatabaseTests {
     }
 
     @Test
+    @Order(3)
     fun checkLastActiveSubscriptions() {
         DbController.clearSubscriptions()
 
         DbController.insertSubscriptions(listOf(
-            SubscriptionEntry("subscription 1", ByteArray(0), "subscriber1", true, true),
-            SubscriptionEntry("subscription 1", ByteArray(0), "subscriber2", true, false),
-            SubscriptionEntry("subscription 2", ByteArray(0), "subscriber3", true, true),
-            SubscriptionEntry("subscription 2", ByteArray(0), "subscriber1", true, true)
+            SubscriptionEntry("subscription 1", ByteArray(0), "subscriber1", stopped=true, active=true),
+            SubscriptionEntry("subscription 1", ByteArray(0), "subscriber2", stopped=true, active=false),
+            SubscriptionEntry("subscription 2", ByteArray(0), "subscriber3", stopped=true, active=true),
+            SubscriptionEntry("subscription 2", ByteArray(0), "subscriber1", stopped=true, active=true)
         ))
 
         val last = DbController.getLastActiveSubscriptions()

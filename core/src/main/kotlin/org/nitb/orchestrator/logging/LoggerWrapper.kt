@@ -29,43 +29,43 @@ class LoggerWrapper(
     }
 
     override fun trace(p0: String?) {
-        return logger.trace(p0)
+        logger.trace(p0)
     }
 
     override fun trace(p0: String?, p1: Any?) {
-        return logger.trace(p0, p1)
+        logger.trace(p0, p1)
     }
 
     override fun trace(p0: String?, p1: Any?, p2: Any?) {
-        return logger.trace(p0, p1, p2)
+        logger.trace(p0, p1, p2)
     }
 
     override fun trace(p0: String?, vararg p1: Any?) {
-        return logger.trace(p0, p1)
+        logger.trace(p0, p1)
     }
 
     override fun trace(p0: String?, p1: Throwable?) {
-        return logger.trace(p0, p1)
+        logger.trace(p0, p1)
     }
 
     override fun trace(p0: Marker?, p1: String?) {
-        return logger.trace(p0, p1)
+        logger.trace(p0, p1)
     }
 
     override fun trace(p0: Marker?, p1: String?, p2: Any?) {
-        return logger.trace(p0, p1, p2)
+        logger.trace(p0, p1, p2)
     }
 
     override fun trace(p0: Marker?, p1: String?, p2: Any?, p3: Any?) {
-        return logger.trace(p0, p1, p2)
+        logger.trace(p0, p1, p2)
     }
 
     override fun trace(p0: Marker?, p1: String?, vararg p2: Any?) {
-        return logger.trace(p0, p1, p2)
+        logger.trace(p0, p1, p2)
     }
 
     override fun trace(p0: Marker?, p1: String?, p2: Throwable?) {
-        return logger.trace(p0, p1, p2)
+        logger.trace(p0, p1, p2)
     }
 
     override fun isDebugEnabled(): Boolean {
@@ -77,43 +77,43 @@ class LoggerWrapper(
     }
 
     override fun debug(p0: String?) {
-        return logger.debug(p0)
+        logger.debug(p0)
     }
 
     override fun debug(p0: String?, p1: Any?) {
-        return logger.debug(p0, p1)
+        logger.debug(p0, p1)
     }
 
     override fun debug(p0: String?, p1: Any?, p2: Any?) {
-        return logger.debug(p0, p1, p2)
+        logger.debug(p0, p1, p2)
     }
 
     override fun debug(p0: String?, vararg p1: Any?) {
-        return logger.debug(p0, p1)
+        logger.debug(p0, p1)
     }
 
     override fun debug(p0: String?, p1: Throwable?) {
-        return logger.debug(p0, p1)
+        logger.debug(p0, p1)
     }
 
     override fun debug(p0: Marker?, p1: String?) {
-        return logger.debug(p0, p1)
+        logger.debug(p0, p1)
     }
 
     override fun debug(p0: Marker?, p1: String?, p2: Any?) {
-        return logger.debug(p0, p1)
+        logger.debug(p0, p1)
     }
 
     override fun debug(p0: Marker?, p1: String?, p2: Any?, p3: Any?) {
-        return logger.debug(p0, p1, p2, p3)
+        logger.debug(p0, p1, p2, p3)
     }
 
     override fun debug(p0: Marker?, p1: String?, vararg p2: Any?) {
-        return logger.debug(p0, p1, p2)
+        logger.debug(p0, p1, p2)
     }
 
     override fun debug(p0: Marker?, p1: String?, p2: Throwable?) {
-        return logger.debug(p0, p1, p2)
+        logger.debug(p0, p1, p2)
     }
 
     override fun isInfoEnabled(): Boolean {
@@ -125,43 +125,43 @@ class LoggerWrapper(
     }
 
     override fun info(p0: String?) {
-        return logger.info(p0)
+        logger.info(p0)
     }
 
     override fun info(p0: String?, p1: Any?) {
-        return logger.info(p0, p1)
+        logger.info(p0, p1)
     }
 
     override fun info(p0: String?, p1: Any?, p2: Any?) {
-        return logger.info(p0, p1, p2)
+        logger.info(p0, p1, p2)
     }
 
     override fun info(p0: String?, vararg p1: Any?) {
-        return logger.info(p0, p1)
+        logger.info(p0, p1)
     }
 
     override fun info(p0: String?, p1: Throwable?) {
-        return logger.info(p0, p1)
+        logger.info(p0, p1)
     }
 
     override fun info(p0: Marker?, p1: String?) {
-        return logger.info(p0, p1)
+        logger.info(p0, p1)
     }
 
     override fun info(p0: Marker?, p1: String?, p2: Any?) {
-        return logger.info(p0, p1, p2)
+        logger.info(p0, p1, p2)
     }
 
     override fun info(p0: Marker?, p1: String?, p2: Any?, p3: Any?) {
-        return logger.info(p0, p1, p2, p3)
+        logger.info(p0, p1, p2, p3)
     }
 
     override fun info(p0: Marker?, p1: String?, vararg p2: Any?) {
-        return logger.info(p0, p1, p2)
+        logger.info(p0, p1, p2)
     }
 
     override fun info(p0: Marker?, p1: String?, p2: Throwable?) {
-        return logger.info(p0, p1, p2)
+        logger.info(p0, p1, p2)
     }
 
     override fun isWarnEnabled(): Boolean {
@@ -173,43 +173,43 @@ class LoggerWrapper(
     }
 
     override fun warn(p0: String?) {
-        return logger.warn(p0)
+        logger.warn(p0)
     }
 
     override fun warn(p0: String?, p1: Any?) {
-        return logger.warn(p0, p1)
+        logger.warn(p0, p1)
     }
 
     override fun warn(p0: String?, vararg p1: Any?) {
-        return logger.warn(p0, p1)
+        logger.warn(p0, p1)
     }
 
     override fun warn(p0: String?, p1: Any?, p2: Any?) {
-        return logger.warn(p0, p1, p2)
+        logger.warn(p0, p1, p2)
     }
 
     override fun warn(p0: String?, p1: Throwable?) {
-        return logger.warn(p0, p1)
+        logger.warn(p0, p1)
     }
 
     override fun warn(p0: Marker?, p1: String?) {
-        return logger.warn(p0, p1)
+        logger.warn(p0, p1)
     }
 
     override fun warn(p0: Marker?, p1: String?, p2: Any?) {
-        return logger.warn(p0, p1, p2)
+        logger.warn(p0, p1, p2)
     }
 
     override fun warn(p0: Marker?, p1: String?, p2: Any?, p3: Any?) {
-        return logger.warn(p0, p1, p2, p3)
+        logger.warn(p0, p1, p2, p3)
     }
 
     override fun warn(p0: Marker?, p1: String?, vararg p2: Any?) {
-        return logger.warn(p0, p1, p2)
+        logger.warn(p0, p1, p2)
     }
 
     override fun warn(p0: Marker?, p1: String?, p2: Throwable?) {
-        return logger.warn(p0, p1, p2)
+        logger.warn(p0, p1, p2)
     }
 
     override fun isErrorEnabled(): Boolean {
@@ -221,15 +221,15 @@ class LoggerWrapper(
     }
 
     override fun error(p0: String?) {
-        return logger.error(p0)
+        logger.error(p0)
     }
 
     override fun error(p0: String?, p1: Any?) {
-        return logger.error(p0, p1)
+        logger.error(p0, p1)
     }
 
     override fun error(p0: String?, p1: Any?, p2: Any?) {
-        return logger.error(p0, p1, p2)
+        logger.error(p0, p1, p2)
     }
 
     override fun error(p0: String?, vararg p1: Any?) {
@@ -237,28 +237,130 @@ class LoggerWrapper(
     }
 
     override fun error(p0: String?, p1: Throwable?) {
-        return logger.error(p0, p1)
+        logger.error(p0, p1)
     }
 
     override fun error(p0: Marker?, p1: String?) {
-        return logger.error(p0, p1)
+        logger.error(p0, p1)
     }
 
     override fun error(p0: Marker?, p1: String?, p2: Any?) {
-        return logger.error(p0, p1, p2)
+        logger.error(p0, p1, p2)
     }
 
     override fun error(p0: Marker?, p1: String?, p2: Any?, p3: Any?) {
-        return logger.error(p0, p1, p2, p3)
+        logger.error(p0, p1, p2, p3)
     }
 
     override fun error(p0: Marker?, p1: String?, vararg p2: Any?) {
-        return logger.error(p0, p1, p2)
+        logger.error(p0, p1, p2)
     }
 
     override fun error(p0: Marker?, p1: String?, p2: Throwable?) {
-        return logger.error(p0, p1, p2)
+        logger.error(p0, p1, p2)
     }
+
+    fun log(level: org.slf4j.event.Level, p0: String?) {
+        when(level) {
+            org.slf4j.event.Level.ERROR -> logger.error(p0)
+            org.slf4j.event.Level.WARN -> logger.warn(p0)
+            org.slf4j.event.Level.INFO -> logger.info(p0)
+            org.slf4j.event.Level.DEBUG -> logger.debug(p0)
+            org.slf4j.event.Level.TRACE -> logger.trace(p0)
+        }
+    }
+
+    fun log(level: org.slf4j.event.Level, p0: String?, p1: Any?) {
+        when(level) {
+            org.slf4j.event.Level.ERROR -> logger.error(p0, p1)
+            org.slf4j.event.Level.WARN -> logger.warn(p0, p1)
+            org.slf4j.event.Level.INFO -> logger.info(p0, p1)
+            org.slf4j.event.Level.DEBUG -> logger.debug(p0, p1)
+            org.slf4j.event.Level.TRACE -> logger.trace(p0, p1)
+        }
+    }
+
+    fun log(level: org.slf4j.event.Level, p0: String?, p1: Any?, p2: Any?) {
+        when(level) {
+            org.slf4j.event.Level.ERROR -> logger.error(p0, p1, p2)
+            org.slf4j.event.Level.WARN -> logger.warn(p0, p1, p2)
+            org.slf4j.event.Level.INFO -> logger.info(p0, p1, p2)
+            org.slf4j.event.Level.DEBUG -> logger.debug(p0, p1, p2)
+            org.slf4j.event.Level.TRACE -> logger.trace(p0, p1, p2)
+        }
+    }
+
+    fun log(level: org.slf4j.event.Level, p0: String?, vararg p1: Any?) {
+        when(level) {
+            org.slf4j.event.Level.ERROR -> logger.error(p0, p1)
+            org.slf4j.event.Level.WARN -> logger.warn(p0, p1)
+            org.slf4j.event.Level.INFO -> logger.info(p0, p1)
+            org.slf4j.event.Level.DEBUG -> logger.debug(p0, p1)
+            org.slf4j.event.Level.TRACE -> logger.trace(p0, p1)
+        }
+    }
+
+    fun log(level: org.slf4j.event.Level, p0: String?, p1: Throwable?) {
+        when(level) {
+            org.slf4j.event.Level.ERROR -> logger.error(p0, p1)
+            org.slf4j.event.Level.WARN -> logger.warn(p0, p1)
+            org.slf4j.event.Level.INFO -> logger.info(p0, p1)
+            org.slf4j.event.Level.DEBUG -> logger.debug(p0, p1)
+            org.slf4j.event.Level.TRACE -> logger.trace(p0, p1)
+        }
+    }
+
+    fun log(level: org.slf4j.event.Level, p0: Marker?, p1: String?) {
+        when(level) {
+            org.slf4j.event.Level.ERROR -> logger.error(p0, p1)
+            org.slf4j.event.Level.WARN -> logger.warn(p0, p1)
+            org.slf4j.event.Level.INFO -> logger.info(p0, p1)
+            org.slf4j.event.Level.DEBUG -> logger.debug(p0, p1)
+            org.slf4j.event.Level.TRACE -> logger.trace(p0, p1)
+        }
+    }
+
+    fun log(level: org.slf4j.event.Level, p0: Marker?, p1: String?, p2: Any?) {
+        when(level) {
+            org.slf4j.event.Level.ERROR -> logger.error(p0, p1, p2)
+            org.slf4j.event.Level.WARN -> logger.warn(p0, p1, p2)
+            org.slf4j.event.Level.INFO -> logger.info(p0, p1, p2)
+            org.slf4j.event.Level.DEBUG -> logger.debug(p0, p1, p2)
+            org.slf4j.event.Level.TRACE -> logger.trace(p0, p1, p2)
+        }
+    }
+
+    fun log(level: org.slf4j.event.Level, p0: Marker?, p1: String?, p2: Any?, p3: Any?) {
+        when(level) {
+            org.slf4j.event.Level.ERROR -> logger.error(p0, p1, p2, p3)
+            org.slf4j.event.Level.WARN -> logger.warn(p0, p1, p2, p3)
+            org.slf4j.event.Level.INFO -> logger.info(p0, p1, p2, p3)
+            org.slf4j.event.Level.DEBUG -> logger.debug(p0, p1, p2, p3)
+            org.slf4j.event.Level.TRACE -> logger.trace(p0, p1, p2, p3)
+        }
+    }
+
+    fun log(level: org.slf4j.event.Level, p0: Marker?, p1: String?, vararg p2: Any?) {
+        when(level) {
+            org.slf4j.event.Level.ERROR -> logger.error(p0, p1, p2)
+            org.slf4j.event.Level.WARN -> logger.warn(p0, p1, p2)
+            org.slf4j.event.Level.INFO -> logger.info(p0, p1, p2)
+            org.slf4j.event.Level.DEBUG -> logger.debug(p0, p1, p2)
+            org.slf4j.event.Level.TRACE -> logger.trace(p0, p1, p2)
+        }
+    }
+
+    fun log(level: org.slf4j.event.Level, p0: Marker?, p1: String?, p2: Throwable?) {
+        when(level) {
+            org.slf4j.event.Level.ERROR -> logger.error(p0, p1, p2)
+            org.slf4j.event.Level.WARN -> logger.warn(p0, p1, p2)
+            org.slf4j.event.Level.INFO -> logger.info(p0, p1, p2)
+            org.slf4j.event.Level.DEBUG -> logger.debug(p0, p1, p2)
+            org.slf4j.event.Level.TRACE -> logger.trace(p0, p1, p2)
+        }
+    }
+
+
 
     // endregion
 

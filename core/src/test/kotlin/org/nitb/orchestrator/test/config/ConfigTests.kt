@@ -1,11 +1,11 @@
-package org.nitb.orchestrator
+package org.nitb.orchestrator.test.config
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.nitb.orchestrator.config.ConfigManager
 import java.math.BigDecimal
 import java.math.BigInteger
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
+import org.junit.jupiter.api.Assertions.*
 
 enum class TestEnum {
     ONE,TWO,THREE,FOUR,FIVE
@@ -73,9 +73,9 @@ class ConfigTests {
         assertEquals(ConfigManager.getProperty("non-exists", "default"), "default")
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun throwableStringProperty() {
-        ConfigManager.getProperty("non-exists", IllegalArgumentException())
+        assertThrows(IllegalArgumentException::class.java) { ConfigManager.getProperty("non-exists", IllegalArgumentException()) }
     }
 
     // endregion
@@ -92,9 +92,9 @@ class ConfigTests {
         assertEquals(ConfigManager.getBoolean("non-exists", true), true)
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun throwableBooleanProperty() {
-        ConfigManager.getBoolean("non-exists", IllegalArgumentException())
+        assertThrows<IllegalArgumentException> { ConfigManager.getBoolean("non-exists", IllegalArgumentException()) }
     }
 
     // endregion
@@ -129,9 +129,9 @@ class ConfigTests {
         assertEquals(ConfigManager.getByte("non-exists", 0x34), 0x34)
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun throwableByteProperty() {
-        ConfigManager.getByte("non-exists", IllegalArgumentException())
+        assertThrows<IllegalArgumentException> { ConfigManager.getByte("non-exists", IllegalArgumentException()) }
     }
 
     // endregion
@@ -163,9 +163,9 @@ class ConfigTests {
         assertEquals(ConfigManager.getShort("non-exists", 0x34), 0x34)
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun throwableShortProperty() {
-        ConfigManager.getShort("non-exists", IllegalArgumentException())
+        assertThrows<IllegalArgumentException> { ConfigManager.getShort("non-exists", IllegalArgumentException()) }
     }
 
     // endregion
@@ -197,9 +197,9 @@ class ConfigTests {
         assertEquals(ConfigManager.getInt("non-exists", 0x34), 0x34)
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun throwableIntProperty() {
-        ConfigManager.getInt("non-exists", IllegalArgumentException())
+        assertThrows<IllegalArgumentException> { ConfigManager.getInt("non-exists", IllegalArgumentException()) }
     }
 
     // endregion
@@ -231,9 +231,9 @@ class ConfigTests {
         assertEquals(ConfigManager.getLong("non-exists", 0x34), 0x34)
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun throwableLongProperty() {
-        ConfigManager.getLong("non-exists", IllegalArgumentException())
+        assertThrows<IllegalArgumentException> { ConfigManager.getLong("non-exists", IllegalArgumentException()) }
     }
 
     // endregion
@@ -260,9 +260,9 @@ class ConfigTests {
         assertEquals(ConfigManager.getFloat("non-exists", 23.4f), 23.4f)
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun throwableFloatProperty() {
-        ConfigManager.getFloat("non-exists", IllegalArgumentException())
+        assertThrows<IllegalArgumentException> { ConfigManager.getFloat("non-exists", IllegalArgumentException()) }
     }
 
     // endregion
@@ -289,9 +289,9 @@ class ConfigTests {
         assertEquals(ConfigManager.getDouble("non-exists", 23.4), 23.4)
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun throwableDoubleProperty() {
-        ConfigManager.getDouble("non-exists", IllegalArgumentException())
+        assertThrows<IllegalArgumentException> { ConfigManager.getDouble("non-exists", IllegalArgumentException()) }
     }
 
     // endregion
@@ -318,9 +318,9 @@ class ConfigTests {
         assertEquals(ConfigManager.getBigInt("non-exists", BigInteger("8594865")), BigInteger("8594865"))
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun throwableBigIntProperty() {
-        ConfigManager.getBigInt("non-exists", IllegalArgumentException())
+        assertThrows<IllegalArgumentException> { ConfigManager.getBigInt("non-exists", IllegalArgumentException()) }
     }
 
     // endregion
@@ -342,9 +342,9 @@ class ConfigTests {
         assertEquals(ConfigManager.getBigDecimal("non-exists", BigDecimal("8594865.3455433")), BigDecimal("8594865.3455433"))
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun throwableBigDecimalProperty() {
-        ConfigManager.getBigDecimal("non-exists", IllegalArgumentException())
+        assertThrows<IllegalArgumentException> { ConfigManager.getBigDecimal("non-exists", IllegalArgumentException()) }
     }
 
     // endregion
@@ -368,9 +368,9 @@ class ConfigTests {
         assertEquals(ConfigManager.getEnumProperty("non-exists", TestEnum::class.java, TestEnum.FIVE), TestEnum.FIVE)
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun throwableEnumProperty() {
-        ConfigManager.getEnumProperty("non-exists", TestEnum::class.java, IllegalArgumentException())
+        assertThrows<IllegalArgumentException> { ConfigManager.getEnumProperty("non-exists", TestEnum::class.java, IllegalArgumentException()) }
     }
 
     // endregion

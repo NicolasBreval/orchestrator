@@ -1,7 +1,7 @@
-package org.nitb.orchestrator
+package org.nitb.orchestrator.test.serialization
 
 import com.cronutils.model.CronType
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.nitb.orchestrator.serialization.binary.BinarySerializer
 import org.nitb.orchestrator.serialization.json.JSONSerializer
 import org.nitb.orchestrator.subscription.SubscriptionReceiver
@@ -10,7 +10,7 @@ import org.nitb.orchestrator.subscription.delivery.*
 import org.nitb.orchestrator.subscription.detached.DetachedCronSubscription
 import org.nitb.orchestrator.subscription.detached.DetachedPeriodicalSubscription
 import java.io.Serializable
-import kotlin.test.*
+import org.junit.jupiter.api.Assertions.*
 
 class SerializableDetachedPeriodicalSubscription(
     name: String,

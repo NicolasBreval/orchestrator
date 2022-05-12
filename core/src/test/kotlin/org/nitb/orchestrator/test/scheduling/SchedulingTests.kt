@@ -1,10 +1,10 @@
-package org.nitb.orchestrator
+package org.nitb.orchestrator.test.scheduling
 
 import com.cronutils.model.CronType
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.nitb.orchestrator.scheduling.CronScheduler
 import org.nitb.orchestrator.scheduling.PeriodicalScheduler
-import kotlin.test.assertEquals
+import org.junit.jupiter.api.Assertions.*
 
 class SchedulingTests {
 
