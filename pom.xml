@@ -17,7 +17,7 @@
   <modules>
     <module>core</module>
     <module>webapp</module>
-      <module>logging-fluentd-plugin</module>
+    <module>logging-fluentd-plugin</module>
   </modules>
   <properties>
     <kotlin.version>1.6.10</kotlin.version>

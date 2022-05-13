@@ -1,13 +1,11 @@
 package org.nitb.orchestrator.database.relational
 
-import ch.qos.logback.classic.Level
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
-import org.nitb.orchestrator.logging.LoggingManager
 import java.lang.RuntimeException
 import java.sql.Connection
 
@@ -57,26 +55,6 @@ object DbFactory {
     // region PRIVATE METHODS
 
     private fun createHikariDataSource(): HikariDataSource {
-        if (ConfigManager.getBoolean(ConfigNames.DATABASE_SHOW_LOGS)) {
-            LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.PoolBase")
-            LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.HikariPool")
-            LoggingManager.setLoggerLevel("com.zaxxer.hikari.HikariDataSource")
-            LoggingManager.setLoggerLevel("com.zaxxer.hikari.HikariConfig")
-            LoggingManager.setLoggerLevel("com.zaxxer.hikari.util.DriverDataSource")
-            LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.ProxyConnection")
-        } else {
-            LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.PoolBase", Level.OFF)
-            LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.HikariPool", Level.OFF)
-            LoggingManager.setLoggerLevel("com.zaxxer.hikari.HikariDataSource", Level.OFF)
-            LoggingManager.setLoggerLevel("com.zaxxer.hikari.HikariConfig", Level.OFF)
-            LoggingManager.setLoggerLevel("com.zaxxer.hikari.util.DriverDataSource", Level.OFF)
-            LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.ProxyConnection", Level.OFF)
-        }
-
-        if (!ConfigManager.getBoolean(ConfigNames.DATABASE_SHOW_SQL_QUERIES)) {
-            LoggingManager.setLoggerLevel("Exposed", Level.OFF)
-        }
-
         val config = HikariConfig()
         config.driverClassName = driverClassname
         config.jdbcUrl = jdbcUrl
@@ -88,27 +66,6 @@ object DbFactory {
         config.transactionIsolation = "TRANSACTION_REPEATABLE_READ"
         config.validate()
         return HikariDataSource(config)
-    }
-
-    private fun createHikariLocalDataSource(databaseName: String): HikariDataSource {
-        LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.PoolBase", Level.OFF)
-        LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.HikariPool", Level.OFF)
-        LoggingManager.setLoggerLevel("com.zaxxer.hikari.HikariDataSource", Level.OFF)
-        LoggingManager.setLoggerLevel("com.zaxxer.hikari.HikariConfig", Level.OFF)
-        LoggingManager.setLoggerLevel("com.zaxxer.hikari.util.DriverDataSource", Level.OFF)
-        LoggingManager.setLoggerLevel("com.zaxxer.hikari.pool.ProxyConnection", Level.OFF)
-        LoggingManager.setLoggerLevel("Exposed", Level.OFF)
-
-        val config = HikariConfig()
-        config.driverClassName = driverClassname
-        config.jdbcUrl = "jdbc:sqlite:$databaseName"
-        config.maximumPoolSize = maxPoolSize
-        config.maxLifetime = maxLifeTime
-        config.isAutoCommit = false
-        config.transactionIsolation = "TRANSACTION_REPEATABLE_READ"
-        config.validate()
-        return HikariDataSource(config)
-
     }
 
     // endregion

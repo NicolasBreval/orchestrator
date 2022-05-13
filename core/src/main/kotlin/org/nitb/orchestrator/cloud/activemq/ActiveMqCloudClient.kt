@@ -1,6 +1,5 @@
 package org.nitb.orchestrator.cloud.activemq
 
-import ch.qos.logback.classic.Level
 import org.apache.activemq.*
 import org.apache.activemq.advisory.AdvisorySupport
 import org.nitb.orchestrator.cloud.CloudClient
@@ -45,34 +44,6 @@ class ActiveMqCloudClient<T: Serializable>(
             ConfigManager.getProperty(ConfigNames.ACTIVEMQ_USERNAME, ConfigNames.ACTIVEMQ_DEFAULT_USERNAME),
             ConfigManager.getProperty(ConfigNames.ACTIVEMQ_PASSWORD, ConfigNames.ACTIVEMQ_DEFAULT_PASSWORD),
             ConfigManager.getProperty(ConfigNames.ACTIVEMQ_BROKER_URL, RuntimeException("Needed property doesn't exists: ${ConfigNames.ACTIVEMQ_USERNAME}")))
-
-        // endregion
-
-        // region INIT
-
-        init {
-            if (ConfigManager.getBoolean(ConfigNames.CLOUD_SHOW_LOGS)) {
-                LoggingManager.setLoggerLevel("org.apache.activemq.thread.TaskRunnerFactory")
-                LoggingManager.setLoggerLevel("org.apache.activemq.transport.failover.FailoverTransport")
-                LoggingManager.setLoggerLevel("org.apache.activemq.transport.WireFormatNegotiator")
-                LoggingManager.setLoggerLevel("org.apache.activemq.transport.InactivityMonitor")
-                LoggingManager.setLoggerLevel("org.apache.activemq.util.ThreadPoolUtils")
-                LoggingManager.setLoggerLevel("org.apache.activemq.transport.tcp.TcpTransport")
-                LoggingManager.setLoggerLevel("org.apache.activemq.ActiveMQMessageConsumer")
-                LoggingManager.setLoggerLevel("org.apache.activemq.transport.AbstractInactivityMonitor")
-                LoggingManager.setLoggerLevel("org.apache.activemq.ActiveMQConnection")
-            } else {
-                LoggingManager.setLoggerLevel("org.apache.activemq.thread.TaskRunnerFactory", Level.OFF)
-                LoggingManager.setLoggerLevel("org.apache.activemq.transport.failover.FailoverTransport", Level.OFF)
-                LoggingManager.setLoggerLevel("org.apache.activemq.transport.WireFormatNegotiator", Level.OFF)
-                LoggingManager.setLoggerLevel("org.apache.activemq.transport.InactivityMonitor", Level.OFF)
-                LoggingManager.setLoggerLevel("org.apache.activemq.util.ThreadPoolUtils", Level.OFF)
-                LoggingManager.setLoggerLevel("org.apache.activemq.transport.tcp.TcpTransport", Level.OFF)
-                LoggingManager.setLoggerLevel("org.apache.activemq.ActiveMQMessageConsumer", Level.OFF)
-                LoggingManager.setLoggerLevel("org.apache.activemq.transport.AbstractInactivityMonitor", Level.OFF)
-                LoggingManager.setLoggerLevel("org.apache.activemq.ActiveMQConnection", Level.OFF)
-            }
-        }
 
         // endregion
     }

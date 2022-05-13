@@ -5,6 +5,7 @@ import java.io.FileInputStream
 import java.lang.reflect.InvocationTargetException
 import java.math.BigDecimal
 import java.math.BigInteger
+import java.nio.file.Paths
 import java.util.*
 
 /**
@@ -557,6 +558,13 @@ object ConfigManager {
         }
     }
 
+    /**
+     * Used to get properties file
+     */
+    fun getPropertiesFileLocation(): String {
+        return propertiesFile
+    }
+
     // endregion
 
     // region PRIVATE PROPERTIES
@@ -565,6 +573,14 @@ object ConfigManager {
      * [Properties] object with all properties obtained from config file.
      */
     private val properties = Properties()
+
+    /**
+     * Path of loaded properties file
+     */
+    private val propertiesFile: String = Paths.get(System.getProperty("config-file")
+        ?.let { if (System.getProperty("config-env") == "true") System.getenv("config-file") else it }
+        ?: System.getProperty("config-resource-path")?.let { ConfigManager::class.java.classLoader.getResource(it)?.path }
+        ?: "config.properties").toAbsolutePath().toString()
 
     // endregion
 
@@ -666,14 +682,8 @@ object ConfigManager {
     // region INIT
 
     init {
-        val isEnv = System.getProperty("config-env") == "true"
-        val configFile = System.getProperty("config-file")
-            ?.let { if (isEnv) System.getenv("config-file") else it }
-            ?: System.getProperty("config-resource-path")?.let { ConfigManager::class.java.classLoader.getResource(it)?.path }
-            ?: "config.properties"
-
-        if (File(configFile).exists()) {
-            FileInputStream(File(configFile)).use { fileInputStream ->
+        if (File(propertiesFile).exists()) {
+            FileInputStream(File(propertiesFile)).use { fileInputStream ->
                 properties.load(fileInputStream)
             }
         }

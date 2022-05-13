@@ -18,7 +18,6 @@ import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOpera
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResult
 import org.nitb.orchestrator.subscription.Subscription
 import java.io.Serializable
-import java.lang.Exception
 import java.lang.IllegalStateException
 import java.lang.RuntimeException
 import java.util.*
@@ -28,6 +27,12 @@ class MainSubscriber(
     private val parentSubscriber: Subscriber,
     private val subscriberName: String
 ): CloudManager<Serializable>, CloudConsumer<Serializable>, CloudSender {
+
+    // region PUBLIC PROPERTIES
+
+    var isStarted = false
+
+    // endregion
 
     // region PUBLIC METHODS
 
@@ -82,6 +87,8 @@ class MainSubscriber(
         }
 
         client.close()
+
+        isStarted = false
     }
 
     fun uploadSubscriptions(subscriptions: List<String>, subscriber: String? = null): SubscriptionOperationResponse {
@@ -388,6 +395,10 @@ class MainSubscriber(
 
     private fun subscriptionsBySubscriber(subscriptions: List<String>): Map<Optional<String>, List<String>> {
         return subscriptions.groupBy { subscription -> subscribers.filter { (_, info) -> info.subscriptions.any { (name, _) -> name == subscription } }.map { Optional.of(it.key) }.firstOrNull() ?: Optional.empty<String>() }
+    }
+
+    private fun takeMaster() {
+
     }
 
     // endregion
