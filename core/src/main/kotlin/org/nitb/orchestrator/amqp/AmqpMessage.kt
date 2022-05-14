@@ -1,4 +1,4 @@
-package org.nitb.orchestrator.cloud
+package org.nitb.orchestrator.amqp
 
 import org.nitb.orchestrator.annotations.NoArgsConstructor
 import java.io.Serializable
@@ -13,7 +13,7 @@ import java.math.BigInteger
  * @property size Size of message, in bytes
  */
 @NoArgsConstructor
-data class CloudMessage<T: Serializable>(
+data class AmqpMessage<T: Serializable>(
     val sender: String,
     val message: T,
     val timestamp: Long = System.currentTimeMillis(),

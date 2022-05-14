@@ -1,8 +1,8 @@
 package org.nitb.orchestrator.subscriber
 
-import org.nitb.orchestrator.cloud.CloudConsumer
-import org.nitb.orchestrator.cloud.CloudManager
-import org.nitb.orchestrator.cloud.CloudSender
+import org.nitb.orchestrator.amqp.AmqpConsumer
+import org.nitb.orchestrator.amqp.AmqpManager
+import org.nitb.orchestrator.amqp.AmqpSender
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.database.relational.DbController
@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap
 class MainSubscriber(
     private val parentSubscriber: Subscriber,
     private val subscriberName: String
-): CloudManager<Serializable>, CloudConsumer<Serializable>, CloudSender {
+): AmqpManager<Serializable>, AmqpConsumer<Serializable>, AmqpSender {
 
     // region PUBLIC PROPERTIES
 

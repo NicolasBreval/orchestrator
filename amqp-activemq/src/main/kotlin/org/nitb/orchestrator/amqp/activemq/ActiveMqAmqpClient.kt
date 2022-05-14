@@ -1,9 +1,10 @@
-package org.nitb.orchestrator.cloud.activemq
+package org.nitb.orchestrator.amqp.activemq
 
 import org.apache.activemq.*
 import org.apache.activemq.advisory.AdvisorySupport
-import org.nitb.orchestrator.cloud.CloudClient
-import org.nitb.orchestrator.cloud.CloudMessage
+import org.nitb.orchestrator.amqp.AmqpClient
+import org.nitb.orchestrator.amqp.AmqpMessage
+import org.nitb.orchestrator.amqp.AmqpType
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.logging.LoggingManager
@@ -18,18 +19,18 @@ import javax.jms.*
 import javax.jms.Message
 
 /**
- * [CloudClient] based on ActiveMQ protocol.
+ * [AmqpClient] based on ActiveMQ protocol.
  *
  * @param name Name of queue related to this client.
  * @param consumerCountListener If is true, client listen for an AdvisorySupport topic to check if main node queue
  *  (specified by [ConfigNames.PRIMARY_NAME]]) contains a consumer. This is needed to don't create two consumers for main node listening to same queue.
  * @constructor Creates a client based on ActiveMQ protocol, and can be used to send messages a declared consumers to queue with same name as [name].
- * @see CloudClient
+ * @see AmqpClient
  */
-class ActiveMqCloudClient<T: Serializable>(
-    name: String,
-    consumerCountListener: Boolean = false
-): CloudClient<T>(name), MessageListener {
+@AmqpType("activemq")
+class ActiveMqAmqpClient<T: Serializable>(
+    name: String
+): AmqpClient<T>(name), MessageListener {
 
     // region STATIC
 
@@ -54,8 +55,8 @@ class ActiveMqCloudClient<T: Serializable>(
 
     override fun <M: Serializable> send(receiver: String, message: M) {
         try {
-            val cloudMessage = CloudMessage(name, message)
-            val bytes = BinarySerializer.serialize(cloudMessage)
+            val amqpMessage = AmqpMessage(name, message)
+            val bytes = BinarySerializer.serialize(amqpMessage)
             val bytesMessage = session.createBytesMessage()
             bytesMessage.writeBytes(bytes)
             val producer = session.createProducer(declareQueue(receiver))
@@ -67,20 +68,20 @@ class ActiveMqCloudClient<T: Serializable>(
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun createConsumer(onConsume: Consumer<CloudMessage<T>>) {
+    override fun createConsumer(onConsume: Consumer<AmqpMessage<T>>) {
         consumer = session.createConsumer(declareQueue(name)) { message ->
 
             try {
-                val cloudMessage = when (message) {
+                val amqpMessage = when (message) {
                     is BytesMessage -> {
                         val bytes = ByteArray(message.bodyLength.toInt())
                         message.readBytes(bytes)
                         BinarySerializer.deserialize(bytes)
                     }
-                    is TextMessage -> JSONSerializer.deserialize(message.text, CloudMessage::class.java) as CloudMessage<T>
+                    is TextMessage -> JSONSerializer.deserialize(message.text, AmqpMessage::class.java) as AmqpMessage<T>
                     else -> throw IllegalArgumentException("Invalid input message type")
                 }
-                onConsume.accept(cloudMessage)
+                onConsume.accept(amqpMessage)
             } catch (e: Exception) {
                 if (e !is InterruptedException)
                     logger.error("Error consuming message", e)
@@ -203,13 +204,10 @@ class ActiveMqCloudClient<T: Serializable>(
     // region INIT
 
     init {
-        if (consumerCountListener) {
-            val destination = session.createTopic(AdvisorySupport.getConsumerAdvisoryTopic(monitored).physicalName
-                    + "," + AdvisorySupport.getProducerAdvisoryTopic(monitored).physicalName)
-            advisoryConsumer = session.createConsumer(destination) as ActiveMQMessageConsumer
-            advisoryConsumer.messageListener = this
-        }
-
+        val destination = session.createTopic(AdvisorySupport.getConsumerAdvisoryTopic(monitored).physicalName
+                + "," + AdvisorySupport.getProducerAdvisoryTopic(monitored).physicalName)
+        advisoryConsumer = session.createConsumer(destination) as ActiveMQMessageConsumer
+        advisoryConsumer.messageListener = this
         connection.start()
     }
 

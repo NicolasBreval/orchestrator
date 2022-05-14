@@ -2,7 +2,7 @@ package org.nitb.orchestrator
 
 import com.cronutils.model.CronType
 import org.junit.Test
-import org.nitb.orchestrator.cloud.*
+import org.nitb.orchestrator.amqp.*
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.logging.LoggingManager
@@ -16,7 +16,7 @@ import kotlin.test.assertEquals
 
 abstract class SenderAndConsumer<T: Serializable>(
     name: String
-): CloudManager<T>, CloudSender, CloudConsumer<T> {
+): AmqpManager<T>, AmqpSender, AmqpConsumer<T> {
     private val client by lazy { createClient(name) }
 
     protected val logger = LoggingManager.getLogger(name)
@@ -35,7 +35,7 @@ abstract class SenderAndConsumer<T: Serializable>(
         sendMessage(value, client, receiver)
     }
 
-    abstract fun onConsume(message: CloudMessage<T>)
+    abstract fun onConsume(message: AmqpMessage<T>)
 
 }
 
@@ -114,7 +114,7 @@ class SubscriptionsTests {
         val senderAndConsumer = object : SenderAndConsumer<Int>("test.delivery.subscription") {
             var count = 0
 
-            override fun onConsume(message: CloudMessage<Int>) {
+            override fun onConsume(message: AmqpMessage<Int>) {
                 count += message.message
             }
         }
@@ -154,7 +154,7 @@ class SubscriptionsTests {
         val senderAndConsumer = object : SenderAndConsumer<Int>("test.delivery.subscription") {
             var count = 0
 
-            override fun onConsume(message: CloudMessage<Int>) {
+            override fun onConsume(message: AmqpMessage<Int>) {
                 count += message.message
             }
         }
@@ -186,7 +186,7 @@ class SubscriptionsTests {
         val senderAndConsumer = object : SenderAndConsumer<Int>("test.delivery.subscription") {
             var count = 0
 
-            override fun onConsume(message: CloudMessage<Int>) {
+            override fun onConsume(message: AmqpMessage<Int>) {
                 count += message.message
             }
         }
@@ -215,21 +215,21 @@ class SubscriptionsTests {
         }
 
         val first = object : SenderAndConsumer<Int>("first") {
-            override fun onConsume(message: CloudMessage<Int>) {}
+            override fun onConsume(message: AmqpMessage<Int>) {}
         }
 
         val second = object : SenderAndConsumer<Int>("second") {
-            override fun onConsume(message: CloudMessage<Int>) {}
+            override fun onConsume(message: AmqpMessage<Int>) {}
         }
 
         val third = object : SenderAndConsumer<Int>("third") {
-            override fun onConsume(message: CloudMessage<Int>) {}
+            override fun onConsume(message: AmqpMessage<Int>) {}
         }
 
         val consumer = object : SenderAndConsumer<Int>("test.delivery.subscription") {
             var count = 0
 
-            override fun onConsume(message: CloudMessage<Int>) {
+            override fun onConsume(message: AmqpMessage<Int>) {
                 count += message.message
             }
         }
@@ -271,7 +271,7 @@ class SubscriptionsTests {
         }
 
         val sender = object : SenderAndConsumer<Int>("sender") {
-            override fun onConsume(message: CloudMessage<Int>) {
+            override fun onConsume(message: AmqpMessage<Int>) {
                 // do nothing
             }
         }

@@ -2,8 +2,8 @@ package org.nitb.orchestrator
 
 import com.cronutils.model.CronType
 import org.junit.Test
-import org.nitb.orchestrator.cloud.CloudManager
-import org.nitb.orchestrator.cloud.CloudSender
+import org.nitb.orchestrator.amqp.AmqpManager
+import org.nitb.orchestrator.amqp.AmqpSender
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.database.relational.DbController
@@ -23,7 +23,7 @@ import kotlin.test.*
 
 abstract class Sender(
     name: String
-): CloudManager<Serializable>, CloudSender {
+): AmqpManager<Serializable>, AmqpSender {
 
     private val client by lazy { createClient(name) }
 

@@ -1,10 +1,10 @@
 package org.nitb.orchestrator.subscription.delivery
 
 import org.nitb.orchestrator.annotations.HeritableSubscription
-import org.nitb.orchestrator.cloud.CloudClient
-import org.nitb.orchestrator.cloud.CloudConsumer
-import org.nitb.orchestrator.cloud.CloudManager
-import org.nitb.orchestrator.cloud.CloudSender
+import org.nitb.orchestrator.amqp.AmqpClient
+import org.nitb.orchestrator.amqp.AmqpConsumer
+import org.nitb.orchestrator.amqp.AmqpManager
+import org.nitb.orchestrator.amqp.AmqpSender
 import org.nitb.orchestrator.subscription.Subscription
 import org.nitb.orchestrator.subscription.SubscriptionReceiver
 import java.io.Serializable
@@ -15,10 +15,10 @@ abstract class DeliverySubscription<I: Serializable, O: Serializable>(
     private val receivers: List<SubscriptionReceiver> = listOf(),
     timeout: Long = -1,
     description: String? = null
-): Subscription<I, O>(name, timeout, description), CloudManager<I>, CloudConsumer<I>, CloudSender {
+): Subscription<I, O>(name, timeout, description), AmqpManager<I>, AmqpConsumer<I>, AmqpSender {
 
     @delegate:Transient
-    protected val client: CloudClient<I> by lazy { createClient(name) }
+    protected val client: AmqpClient<I> by lazy { createClient(name) }
 
     override fun initialize() {
         client.createConsumer() { cloudMessage ->

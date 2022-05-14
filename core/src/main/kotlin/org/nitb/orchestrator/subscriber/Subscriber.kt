@@ -1,8 +1,8 @@
 package org.nitb.orchestrator.subscriber
 
-import org.nitb.orchestrator.cloud.CloudConsumer
-import org.nitb.orchestrator.cloud.CloudManager
-import org.nitb.orchestrator.cloud.CloudSender
+import org.nitb.orchestrator.amqp.AmqpConsumer
+import org.nitb.orchestrator.amqp.AmqpManager
+import org.nitb.orchestrator.amqp.AmqpSender
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.logging.LoggingManager
@@ -24,7 +24,7 @@ class Subscriber(
     private val name: String = if (ConfigManager.getEnumProperty(ConfigNames.ALLOCATION_STRATEGY, AllocationStrategy::class.java, ConfigNames.ALLOCATION_STRATEGY_DEFAULT) == AllocationStrategy.FIXED)
         ConfigManager.getProperty(ConfigNames.SECONDARY_NAME, RuntimeException("${ConfigNames.SECONDARY_NAME} property is required when allocation type is ${AllocationStrategy.FIXED}"))
     else UUID.randomUUID().toString()
-): CloudManager<Serializable>, CloudConsumer<Serializable>, CloudSender {
+): AmqpManager<Serializable>, AmqpConsumer<Serializable>, AmqpSender {
 
 
     // region PUBLIC PROPERTIES

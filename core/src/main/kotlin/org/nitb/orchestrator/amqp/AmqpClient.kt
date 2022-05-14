@@ -1,4 +1,4 @@
-package org.nitb.orchestrator.cloud
+package org.nitb.orchestrator.amqp
 
 import java.io.Serializable
 import java.util.function.Consumer
@@ -8,7 +8,7 @@ import java.util.function.Consumer
  *
  * @property name Name of queue to be defined
  */
-abstract class CloudClient<T: Serializable>(
+abstract class AmqpClient<T: Serializable>(
     protected val name: String
 ) {
 
@@ -25,7 +25,7 @@ abstract class CloudClient<T: Serializable>(
      * Creates a new consumer to listen for queue's input messages.
      * @param onConsume Function to be processed on message input.
      */
-    abstract fun createConsumer(onConsume: Consumer<CloudMessage<T>>)
+    abstract fun createConsumer(onConsume: Consumer<AmqpMessage<T>>)
 
     /**
      * Removes consumer, so client stops listening messages.

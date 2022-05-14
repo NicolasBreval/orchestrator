@@ -1,4 +1,4 @@
-package org.nitb.logging.appenders
+package org.nitb.orchestrator.logging.appenders
 
 class FluentdConfigNames {
 

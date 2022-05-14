@@ -1,16 +1,15 @@
 package org.nitb.orchestrator.subscription.delivery
 
 import org.nitb.orchestrator.annotations.HeritableSubscription
-import org.nitb.orchestrator.cloud.CloudClient
-import org.nitb.orchestrator.cloud.CloudConsumer
-import org.nitb.orchestrator.cloud.CloudManager
-import org.nitb.orchestrator.cloud.CloudSender
+import org.nitb.orchestrator.amqp.AmqpClient
+import org.nitb.orchestrator.amqp.AmqpConsumer
+import org.nitb.orchestrator.amqp.AmqpManager
+import org.nitb.orchestrator.amqp.AmqpSender
 import org.nitb.orchestrator.serialization.binary.BinarySerializer
 import org.nitb.orchestrator.subscription.Subscription
 import org.nitb.orchestrator.subscription.SubscriptionReceiver
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.util.*
 import java.util.concurrent.LinkedBlockingDeque
 import java.io.Serializable
 
@@ -22,13 +21,13 @@ abstract class DeliveryMultiInputSubscription<O: Serializable>(
     private val limit: Int = Int.MAX_VALUE,
     timeout: Long = -1,
     description: String? = null
-): Subscription<SerializableMap<String, Serializable>, O>(name, timeout, description), CloudManager<Serializable>, CloudConsumer<Serializable>, CloudSender {
+): Subscription<SerializableMap<String, Serializable>, O>(name, timeout, description), AmqpManager<Serializable>, AmqpConsumer<Serializable>, AmqpSender {
 
     @Transient
     private val senderQueues = senders.associateWith { LinkedBlockingDeque<String>(limit) }
 
     @delegate:Transient
-    private val client: CloudClient<Serializable> by lazy { createClient(name) }
+    private val client: AmqpClient<Serializable> by lazy { createClient(name) }
 
     override fun initialize() {
         client.createConsumer() { cloudMessage ->

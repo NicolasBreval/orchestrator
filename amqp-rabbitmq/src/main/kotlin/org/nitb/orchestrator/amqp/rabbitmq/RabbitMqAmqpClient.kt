@@ -1,9 +1,10 @@
-package org.nitb.orchestrator.cloud.rabbitmq
+package org.nitb.orchestrator.amqp.rabbitmq
 
 import com.rabbitmq.client.AlreadyClosedException
 import com.rabbitmq.client.ConnectionFactory
-import org.nitb.orchestrator.cloud.CloudClient
-import org.nitb.orchestrator.cloud.CloudMessage
+import org.nitb.orchestrator.amqp.AmqpClient
+import org.nitb.orchestrator.amqp.AmqpMessage
+import org.nitb.orchestrator.amqp.AmqpType
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.logging.LoggingManager
@@ -14,14 +15,15 @@ import java.lang.RuntimeException
 import java.util.function.Consumer
 
 /**
- * [CloudClient] object based on RabbitMQ protocol.
+ * [AmqpClient] object based on RabbitMQ protocol.
  *
  * @param name Name of queue related to this client.
- * @see CloudClient
+ * @see AmqpClient
  */
-class RabbitMqCloudClient<T: Serializable>(
+@AmqpType("rabbitmq")
+class RabbitMqAmqpClient<T: Serializable>(
     name: String
-): CloudClient<T>(name) {
+): AmqpClient<T>(name) {
 
     // region STATIC
 
@@ -48,7 +50,7 @@ class RabbitMqCloudClient<T: Serializable>(
        try {
            declareQueue()
            channel.basicPublish("", receiver, null, BinarySerializer.serialize(
-               CloudMessage(
+               AmqpMessage(
                    name,
                    message
                )
@@ -58,7 +60,7 @@ class RabbitMqCloudClient<T: Serializable>(
        }
     }
 
-    override fun createConsumer(onConsume: Consumer<CloudMessage<T>>) {
+    override fun createConsumer(onConsume: Consumer<AmqpMessage<T>>) {
         try {
             declareQueue()
             consumerTag = channel.basicConsume(name,

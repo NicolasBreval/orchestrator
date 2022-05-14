@@ -10,11 +10,11 @@
     <version>1.0.1</version>
   </parent>
 
-  <groupId>org.nitb.orchestrator</groupId>
-  <artifactId>logging-fluentd-plugin</artifactId>
+  <groupId>org.nitb.orchestrator.amqp</groupId>
+  <artifactId>amqp-rabbitmq</artifactId>
   <version>1.0.1</version>
 
-  <name>logging-fluentd-plugin</name>
+  <name>amqp-rabbitmq</name>
   <!-- FIXME change it to the project's website -->
   <url>http://www.example.com</url>
 
@@ -22,19 +22,19 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
-    <fluentd.version>0.3.4</fluentd.version>
+    <rabbitmq.aqmp.version>5.14.2</rabbitmq.aqmp.version>
   </properties>
 
   <dependencies>
     <dependency>
-      <groupId>org.fluentd</groupId>
-      <artifactId>fluent-logger</artifactId>
-      <version>${fluentd.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.nitb.orchestrator</groupId>
       <artifactId>core</artifactId>
       <version>1.0.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.rabbitmq</groupId>
+      <artifactId>amqp-client</artifactId>
+      <version>${rabbitmq.aqmp.version}</version>
     </dependency>
   </dependencies>
 

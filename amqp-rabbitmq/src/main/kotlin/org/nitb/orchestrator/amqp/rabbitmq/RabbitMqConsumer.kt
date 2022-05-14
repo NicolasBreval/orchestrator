@@ -1,7 +1,7 @@
-package org.nitb.orchestrator.cloud.rabbitmq
+package org.nitb.orchestrator.amqp.rabbitmq
 
 import com.rabbitmq.client.*
-import org.nitb.orchestrator.cloud.CloudMessage
+import org.nitb.orchestrator.amqp.AmqpMessage
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.serialization.binary.BinarySerializer
 import org.nitb.orchestrator.serialization.json.JSONSerializer
@@ -13,13 +13,13 @@ import java.util.function.Consumer
  *
  * @property name Name of queue to consume their messages.
  * @param channel Channel used to declare consumer.
- * @property onReceive Function which receives a variable of type [CloudMessage] and process it.
+ * @property onReceive Function which receives a variable of type [AmqpMessage] and process it.
  * @property onShutdown Function used when consumer receives a shutdown message from server.
  */
 class RabbitMqConsumer<T: Serializable>(
     private val name: String,
     channel: Channel,
-    private val onReceive: Consumer<CloudMessage<T>>,
+    private val onReceive: Consumer<AmqpMessage<T>>,
     private val onShutdown: Runnable
 ): DefaultConsumer(channel) {
 
@@ -38,7 +38,7 @@ class RabbitMqConsumer<T: Serializable>(
             val message = try {
                 BinarySerializer.deserialize(body!!)
             } catch (e: Exception) {
-                JSONSerializer.deserialize(String(body!!), CloudMessage::class.java) as CloudMessage<T>
+                JSONSerializer.deserialize(String(body!!), AmqpMessage::class.java) as AmqpMessage<T>
             }
 
             onReceive.accept(message)

@@ -1,4 +1,4 @@
-package org.nitb.logging.appenders
+package org.nitb.orchestrator.logging.appenders
 
 import org.fluentd.logger.FluentLogger
 import org.nitb.orchestrator.annotations.AppenderName
