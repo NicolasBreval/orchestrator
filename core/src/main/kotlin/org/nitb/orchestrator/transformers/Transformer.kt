@@ -1,6 +1,8 @@
 package org.nitb.orchestrator.transformers
 
-abstract class Transformer<I, O> {
+import java.io.Serializable
+
+abstract class Transformer<I: Serializable, O: Serializable> {
 
     abstract fun transform(input: I): O
 
