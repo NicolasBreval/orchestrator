@@ -8,11 +8,12 @@
     <artifactId>orchestrator</artifactId>
     <groupId>org.nitb</groupId>
     <version>1.0.1</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <groupId>org.nitb.orchestrator.scripting</groupId>
   <artifactId>scripting-js</artifactId>
-  <version>1.0.1</version>
+  <version>${orchestrator.version}</version>
 
   <name>scripting</name>
   <!-- FIXME change it to the project's website -->
@@ -25,6 +26,11 @@
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>org.nitb.orchestrator</groupId>
+      <artifactId>core</artifactId>
+      <version>${orchestrator.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.graalvm.sdk</groupId>
       <artifactId>graal-sdk</artifactId>

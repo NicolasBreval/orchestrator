@@ -8,11 +8,12 @@
     <artifactId>orchestrator</artifactId>
     <groupId>org.nitb</groupId>
     <version>1.0.1</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <groupId>org.nitb.orchestrator.amqp</groupId>
   <artifactId>amqp-activemq</artifactId>
-  <version>1.0.1</version>
+  <version>${orchestrator.version}</version>
 
   <name>amqp-activemq</name>
   <url>http://www.example.com</url>
@@ -29,7 +30,7 @@
     <dependency>
       <groupId>org.nitb.orchestrator</groupId>
       <artifactId>core</artifactId>
-      <version>1.0.1</version>
+      <version>${orchestrator.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.geronimo.specs</groupId>

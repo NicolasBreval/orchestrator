@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.nitb</groupId>
   <artifactId>orchestrator</artifactId>
-  <version>1.0.1</version>
+  <version>${orchestrator.version}</version>
   <packaging>pom</packaging>
   <name>orchestrator</name>
 
@@ -27,7 +27,7 @@
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <orchestrator.version>1.0.0</orchestrator.version>
+    <orchestrator.version>1.0.1</orchestrator.version>
   </properties>
   <dependencies>
     <dependency>
