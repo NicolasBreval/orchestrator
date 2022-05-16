@@ -18,8 +18,9 @@
     <module>core</module>
     <module>webapp</module>
     <module>logging-fluentd-plugin</module>
-      <module>amqp-activemq</module>
+    <module>amqp-activemq</module>
     <module>amqp-rabbitmq</module>
+    <module>scripting-js</module>
   </modules>
   <properties>
     <kotlin.version>1.6.10</kotlin.version>
