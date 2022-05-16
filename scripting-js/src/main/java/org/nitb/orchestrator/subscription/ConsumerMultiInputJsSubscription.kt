@@ -11,7 +11,6 @@ class ConsumerMultiInputJsSubscription(
     limit: Int = Int.MAX_VALUE,
     timeout: Long = -1,
     description: String? = null,
-    private val resultClass: String,
     private val script: String,
     private val args: Array<Any?>
 ): ConsumerMultiInputSubscription(name, senders, limit, timeout, description) {
