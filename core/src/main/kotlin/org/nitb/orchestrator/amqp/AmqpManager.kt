@@ -15,8 +15,8 @@ interface AmqpManager<T: Serializable> {
      * Creates a new [AmqpClient] object with specified name.
      * @param name Name of queue related to client.
      */
-    fun createClient(name: String): AmqpClient<T> {
-        return ConfigManager.getProperty(ConfigNames.CLOUD_TYPE)?.let { AmqpBrowser.getAmqpClient(it, name) } ?: error("Required property ${ConfigNames.CLOUD_TYPE} doesn't exists")
+    fun createClient(name: String, consumers: Int = 1): AmqpClient<T> {
+        return ConfigManager.getProperty(ConfigNames.AMQP_TYPE)?.let { AmqpBrowser.getAmqpClient(it, name, consumers) } ?: error("Required property ${ConfigNames.AMQP_TYPE} doesn't exists")
     }
 
     /**

@@ -7,6 +7,7 @@ import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.serialization.binary.BinarySerializer
 import org.nitb.orchestrator.serialization.json.JSONSerializer
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
+import org.nitb.orchestrator.subscription.entities.DirectMessage
 import java.lang.Exception
 import java.math.BigInteger
 
@@ -39,27 +40,41 @@ abstract class Subscription<I, O>(
 
     @JsonIgnore
     private val creation: Long = System.currentTimeMillis()
+
     @JsonIgnore
     private var status: SubscriptionStatus = SubscriptionStatus.STOPPED
+
     @JsonIgnore
     private var inputVolume: BigInteger = BigInteger.ZERO
+
     @JsonIgnore
     private var outputVolume: BigInteger = BigInteger.ZERO
+
     @JsonIgnore
     private var starts: BigInteger = BigInteger.ZERO
+
     @JsonIgnore
     private var stops: BigInteger = BigInteger.ZERO
+
     @JsonIgnore
     private var success: BigInteger = BigInteger.ZERO
+
     @JsonIgnore
     private var error: BigInteger = BigInteger.ZERO
+
     @JsonIgnore
     private var lastExecution: Long = -1L
+
     @JsonIgnore
     private var schema: String? = JSONSerializer.getSchema(this::class.java)
+
     @JsonIgnore
     @Transient
     protected val logger: LoggerWrapper = LoggingManager.getLogger(name)
+
+    @JsonIgnore
+    @Transient
+    protected val messageHandlers: Map<String, (DirectMessage) -> Any?> = mapOf()
 
     // endregion
 
@@ -139,6 +154,10 @@ abstract class Subscription<I, O>(
 
     override fun hashCode(): Int {
         return schema?.hashCode() ?: 0
+    }
+
+    fun handleMessage(message: DirectMessage): Any? {
+        return this.messageHandlers[message.handler]?.invoke(message)
     }
 
     // endregion

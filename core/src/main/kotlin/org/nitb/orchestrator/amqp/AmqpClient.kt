@@ -9,7 +9,8 @@ import java.util.function.Consumer
  * @property name Name of queue to be defined
  */
 abstract class AmqpClient<T: Serializable>(
-    protected val name: String
+    protected val name: String,
+    protected val workers: Int
 ) {
 
     // region PUBLIC METHODS

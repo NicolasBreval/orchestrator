@@ -16,6 +16,7 @@ object BinarySerializer {
     fun serialize(message: Any): ByteArray {
         val output = Output(0, Int.MAX_VALUE)
         conf.get().writeClassAndObject(output, message)
+        output.flush()
         return output.toBytes()
     }
 

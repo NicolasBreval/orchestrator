@@ -34,7 +34,7 @@ object MicronautServerInitializer {
             LoggingManager.setLoggerLevel("Exposed", Level.OFF)
         }
 
-        if (ConfigManager.getBoolean(ConfigNames.CLOUD_SHOW_LOGS)) {
+        if (ConfigManager.getBoolean(ConfigNames.AMQP_SHOW_LOGS)) {
             LoggingManager.setLoggerLevel("org.apache.activemq.")
         } else {
             LoggingManager.setLoggerLevel("org.apache.activemq", Level.OFF)

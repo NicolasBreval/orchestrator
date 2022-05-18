@@ -20,14 +20,15 @@ abstract class DeliveryMultiInputSubscription<O: Serializable>(
     private val senders: List<String>,
     private val limit: Int = Int.MAX_VALUE,
     timeout: Long = -1,
-    description: String? = null
+    description: String? = null,
+    private val workers: Int = 1
 ): Subscription<SerializableMap<String, Serializable>, O>(name, timeout, description), AmqpManager<Serializable>, AmqpConsumer<Serializable>, AmqpSender {
 
     @Transient
     private val senderQueues = senders.associateWith { LinkedBlockingDeque<String>(limit) }
 
     @delegate:Transient
-    private val client: AmqpClient<Serializable> by lazy { createClient(name) }
+    private val client: AmqpClient<Serializable> by lazy { createClient(name, workers) }
 
     override fun initialize() {
         client.createConsumer() { cloudMessage ->

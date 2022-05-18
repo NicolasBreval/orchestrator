@@ -22,8 +22,9 @@ import java.util.function.Consumer
  */
 @AmqpType("rabbitmq")
 class RabbitMqAmqpClient<T: Serializable>(
-    name: String
-): AmqpClient<T>(name) {
+    name: String,
+    workers: Int
+): AmqpClient<T>(name, workers) {
 
     // region STATIC
 
@@ -63,18 +64,20 @@ class RabbitMqAmqpClient<T: Serializable>(
     override fun createConsumer(onConsume: Consumer<AmqpMessage<T>>) {
         try {
             declareQueue()
-            consumerTag = channel.basicConsume(name,
-                RabbitMqConsumer(name, channel, onConsume) {
-                    createConsumer(onConsume)
-                })
+            for (i in 0 until workers) {
+                consumerTags.add(channel.basicConsume(name,
+                    RabbitMqConsumer(name, channel, onConsume) {
+                        createConsumer(onConsume)
+                    }))
+            }
         } catch (e: IOException) {
             logger.error("RABBITMQ ERROR: Error creating new consumer for queue $name", e)
         }
     }
 
     override fun cancelConsumer() {
-        if (this::consumerTag.isInitialized)
-            channel.basicCancel(consumerTag)
+        consumerTags.forEach { channel.basicCancel(it) }
+        consumerTags.clear()
     }
 
     override fun purge() {
@@ -114,7 +117,7 @@ class RabbitMqAmqpClient<T: Serializable>(
      * Identifier of consumer. When RabbitMQ client creates new consumer for a client, returns a tag to identify the consumer.
      * This tag is used to check if client already contains a consumer, because in this project clients must contain only a consumer per queue.
      */
-    private lateinit var consumerTag: String
+    private val consumerTags: MutableList<String> = mutableListOf()
 
     // endregion
 
@@ -124,7 +127,7 @@ class RabbitMqAmqpClient<T: Serializable>(
      * Method used to create a new queue for this client. All queues are exclusive by default
      */
     private fun declareQueue() {
-        channel.queueDeclare(name, true, true, false, null)
+        channel.queueDeclare(name, true, workers > 1, false, null)
     }
 
     // endregion

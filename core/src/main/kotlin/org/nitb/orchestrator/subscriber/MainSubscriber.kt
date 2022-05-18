@@ -397,10 +397,6 @@ class MainSubscriber(
         return subscriptions.groupBy { subscription -> subscribers.filter { (_, info) -> info.subscriptions.any { (name, _) -> name == subscription } }.map { Optional.of(it.key) }.firstOrNull() ?: Optional.empty<String>() }
     }
 
-    private fun takeMaster() {
-
-    }
-
     // endregion
 
 }

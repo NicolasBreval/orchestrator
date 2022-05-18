@@ -22,15 +22,15 @@ import javax.jms.Message
  * [AmqpClient] based on ActiveMQ protocol.
  *
  * @param name Name of queue related to this client.
- * @param consumerCountListener If is true, client listen for an AdvisorySupport topic to check if main node queue
  *  (specified by [ConfigNames.PRIMARY_NAME]]) contains a consumer. This is needed to don't create two consumers for main node listening to same queue.
  * @constructor Creates a client based on ActiveMQ protocol, and can be used to send messages a declared consumers to queue with same name as [name].
  * @see AmqpClient
  */
 @AmqpType("activemq")
 class ActiveMqAmqpClient<T: Serializable>(
-    name: String
-): AmqpClient<T>(name), MessageListener {
+    name: String,
+    workers: Int = 1
+): AmqpClient<T>(name, workers), MessageListener {
 
     // region STATIC
 
@@ -69,37 +69,47 @@ class ActiveMqAmqpClient<T: Serializable>(
 
     @Suppress("UNCHECKED_CAST")
     override fun createConsumer(onConsume: Consumer<AmqpMessage<T>>) {
-        consumer = session.createConsumer(declareQueue(name)) { message ->
+        for (i in 0 until workers) {
+            consumers.add(session.createConsumer(declareQueue(name)) { message ->
 
-            try {
-                val amqpMessage = when (message) {
-                    is BytesMessage -> {
-                        val bytes = ByteArray(message.bodyLength.toInt())
-                        message.readBytes(bytes)
-                        BinarySerializer.deserialize(bytes)
+                var retries = ConfigManager.getInt(ConfigNames.AMQP_RETRIES, ConfigNames.AMQP_RETRIES_DEFAULT).let { if (it < 0) 0 else it }
+
+                while (retries > -1) {
+                    try {
+                        val amqpMessage = when (message) {
+                            is BytesMessage -> {
+                                val bytes = ByteArray(message.bodyLength.toInt())
+                                message.readBytes(bytes)
+                                BinarySerializer.deserialize(bytes)
+                            }
+                            is TextMessage -> JSONSerializer.deserialize(message.text, AmqpMessage::class.java) as AmqpMessage<T>
+                            else -> throw IllegalArgumentException("Invalid input message type")
+                        }
+                        onConsume.accept(amqpMessage)
+                    } catch (e: Exception) {
+                        retries--
+
+                        if (e !is InterruptedException)
+                            logger.error("Error consuming message", e)
                     }
-                    is TextMessage -> JSONSerializer.deserialize(message.text, AmqpMessage::class.java) as AmqpMessage<T>
-                    else -> throw IllegalArgumentException("Invalid input message type")
                 }
-                onConsume.accept(amqpMessage)
-            } catch (e: Exception) {
-                if (e !is InterruptedException)
-                    logger.error("Error consuming message", e)
-            } finally {
+
                 message.acknowledge()
-            }
-        } as ActiveMQMessageConsumer
+
+            } as ActiveMQMessageConsumer)
+        }
     }
 
     override fun cancelConsumer() {
-        if (this::consumer.isInitialized)
-            consumer.close()
+        consumers.forEach { it.close() }
+        consumers.clear()
     }
 
     override fun purge() {
-        consumer.close()
+        consumers.forEach { it.close() }
+
         val destination = declareQueue(name)
-        val messageListener = consumer.messageListener
+        val messageListeners = consumers.map { it.messageListener }
 
         val browser = session.createBrowser(destination as Queue)
         val messages = browser.enumeration.asSequence().count()
@@ -112,16 +122,14 @@ class ActiveMqAmqpClient<T: Serializable>(
         }
 
         simpleConsumer.close()
-        consumer = session.createConsumer(destination, messageListener) as ActiveMQMessageConsumer
+        consumers.clear()
+        consumers.addAll(messageListeners.map { session.createConsumer(destination, it) as ActiveMQMessageConsumer })
     }
 
     override fun close() {
         cancelConsumer()
 
-        if (this::advisoryConsumer.isInitialized) {
-            advisoryConsumer.close()
-        }
-
+        advisoryConsumer.close()
         session.close()
         connection.close()
     }
@@ -165,16 +173,12 @@ class ActiveMqAmqpClient<T: Serializable>(
      */
     private val session: ActiveMQSession by lazy { connection.createSession(false, Session.CLIENT_ACKNOWLEDGE) as ActiveMQSession }
 
-    /**
-     * Consumer object used to define a consumer to process received messages. In ActiveMQ is possible to create multiple consumers,
-     * but in this project is needed to keep only a consumer per queue, so this object allows checking if queue contains any consumer before their creation
-     */
-    private lateinit var consumer: ActiveMQMessageConsumer
+    private val consumers: MutableList<ActiveMQMessageConsumer> = mutableListOf()
 
     /**
      * Consumer object used to update information about master node queue.
      */
-    private lateinit var advisoryConsumer: ActiveMQMessageConsumer
+    private var advisoryConsumer: ActiveMQMessageConsumer
 
     /**
      * Queue used for main queue monitoring
@@ -196,7 +200,7 @@ class ActiveMqAmqpClient<T: Serializable>(
      * @param name Name of queue to be created
      */
     private fun declareQueue(name: String): Destination {
-        return session.createQueue("$name?consumer.exclusive=true")
+        return session.createQueue("$name?consumer.exclusive=${ if (workers > 1) "true" else "false" }")
     }
 
     // endregion

@@ -2,6 +2,8 @@ package org.nitb.orchestrator.amqp.rabbitmq
 
 import com.rabbitmq.client.*
 import org.nitb.orchestrator.amqp.AmqpMessage
+import org.nitb.orchestrator.config.ConfigManager
+import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.serialization.binary.BinarySerializer
 import org.nitb.orchestrator.serialization.json.JSONSerializer
@@ -34,19 +36,26 @@ class RabbitMqConsumer<T: Serializable>(
     ) {
         val deliveryTag = envelope?.deliveryTag
 
-        try {
-            val message = try {
-                BinarySerializer.deserialize(body!!)
-            } catch (e: Exception) {
-                JSONSerializer.deserialize(String(body!!), AmqpMessage::class.java) as AmqpMessage<T>
-            }
+        var retries = ConfigManager.getInt(ConfigNames.AMQP_RETRIES, ConfigNames.AMQP_RETRIES_DEFAULT).let { if (it < 0) 0 else it }
 
-            onReceive.accept(message)
-        } catch (e: Exception) {
-            logger.warn("RABBITMQ WARNING: Error processing received message from server for queue $name", e)
-        } finally {
-            channel.basicAck(deliveryTag!!, false)
+        while (retries > -1) {
+            try {
+                val message = try {
+                    BinarySerializer.deserialize(body!!)
+                } catch (e: Exception) {
+                    JSONSerializer.deserialize(String(body!!), AmqpMessage::class.java) as AmqpMessage<T>
+                }
+
+                onReceive.accept(message)
+            } catch (e: Exception) {
+                retries--
+
+                if (e !is InterruptedException)
+                    logger.warn("RABBITMQ WARNING: Error processing received message from server for queue $name", e)
+            }
         }
+
+        channel.basicAck(deliveryTag!!, false)
     }
 
     override fun handleShutdownSignal(consumerTag: String?, sig: ShutdownSignalException?) {

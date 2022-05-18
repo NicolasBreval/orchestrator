@@ -1,12 +1,14 @@
 package org.nitb.orchestrator.web.controllers
 
 import io.micronaut.context.annotation.Parameter
+import io.micronaut.http.HttpRequest
 import io.micronaut.http.annotation.*
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.subscriber.Subscriber
 import org.nitb.orchestrator.subscriber.entities.subscribers.SubscriberInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResponse
+import org.nitb.orchestrator.subscription.entities.DirectMessage
 import org.nitb.orchestrator.web.entities.UploadSubscriptionsRequest
 
 @Controller
@@ -45,6 +47,11 @@ class SubscriberController {
     @Delete("/subscriptions/delete")
     fun removeSubscriptions(@Parameter subscriptions: List<String>): SubscriptionOperationResponse {
         return subscriber.removeSubscriptions(subscriptions)
+    }
+
+    @Post("/subscriptions/handle/{name}")
+    fun dynamicSubscriptionEndpointPost(@PathVariable("name") name: String, @Body message: DirectMessage): Any? {
+        return subscriber.handleSubscriptionMessage(name, message)
     }
 
     private val log = LoggingManager.getLogger("controller")

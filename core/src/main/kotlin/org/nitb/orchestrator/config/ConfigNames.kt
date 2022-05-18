@@ -132,43 +132,48 @@ object ConfigNames {
 
     // endregion
 
-    // region CLOUD
+    // region AMQP
 
     /**
      * Selects type of technology used for queues management
      */
     @RequiredProperty("Needed to select queue connection type")
-    const val CLOUD_TYPE = "cloud.type"
+    const val AMQP_TYPE = "amqp.type"
 
     /**
      * If is true, shows logs related to queue management.
      */
-    const val CLOUD_SHOW_LOGS = "cloud.show.logs"
+    const val AMQP_SHOW_LOGS = "amqp.show.logs"
+
+    /**
+     * Number of retries to process failed input message from queue
+     */
+    const val AMQP_RETRIES = "amqp.retries"
 
     // region RABBITMQ
 
     /**
-     * Hostname of RabbitMQ server. This property is only required if [CLOUD_TYPE] property is RABBITMQ.
+     * Hostname of RabbitMQ server. This property is only required if [AMQP_TYPE] property is RABBITMQ.
      */
-    @RequiredProperty("Only if cloud.type is RABBITMQ", depends = true, dependency = "cloud.type", dependencyValue = "RABBITMQ")
-    const val RABBITMQ_HOST = "cloud.rabbitmq.host"
+    @RequiredProperty("Only if amqp.type is RABBITMQ", depends = true, dependency = "amqp.type", dependencyValue = "RABBITMQ")
+    const val RABBITMQ_HOST = "amqp.rabbitmq.host"
 
     /**
      * Port used to connect with RabbitMQ server
      */
-    const val RABBITMQ_PORT = "cloud.rabbitmq.port"
+    const val RABBITMQ_PORT = "amqp.rabbitmq.port"
 
     /**
-     * Username used to connect with RabbitMQ server. This property is only required if [CLOUD_TYPE] property is RABBITMQ.
+     * Username used to connect with RabbitMQ server. This property is only required if [AMQP_TYPE] property is RABBITMQ.
      */
-    @RequiredProperty("Only if cloud.type is RABBITMQ", depends = true, dependency = "cloud.type", dependencyValue = "RABBITMQ")
-    const val RABBITMQ_USERNAME = "cloud.rabbitmq.username"
+    @RequiredProperty("Only if amqp.type is RABBITMQ", depends = true, dependency = "amqp.type", dependencyValue = "RABBITMQ")
+    const val RABBITMQ_USERNAME = "amqp.rabbitmq.username"
 
     /**
-     * Password used to connect with RabbitMQ server. This property is only required if [CLOUD_TYPE] property is RABBITMQ.
+     * Password used to connect with RabbitMQ server. This property is only required if [AMQP_TYPE] property is RABBITMQ.
      */
-    @RequiredProperty("Only if cloud.type is RABBITMQ", depends = true, dependency = "cloud.type", dependencyValue = "RABBITMQ")
-    const val RABBITMQ_PASSWORD = "cloud.rabbitmq.password"
+    @RequiredProperty("Only if amqp.type is RABBITMQ", depends = true, dependency = "amqp.type", dependencyValue = "RABBITMQ")
+    const val RABBITMQ_PASSWORD = "amqp.rabbitmq.password"
 
     // endregion
 
@@ -177,30 +182,37 @@ object ConfigNames {
     /**
      * URL used to connect with ActiveMQ server(s). It's mandatory that broker URL must have this pattern:
      * *failover:{protocol}://{host}:{port}*, because if you don't put *failover* before URL, if server falls, client couldn't reconnect.
-     * This property is only required if [CLOUD_TYPE] property is ACTIVEMQ.
+     * This property is only required if [AMQP_TYPE] property is ACTIVEMQ.
      */
-    @RequiredProperty("Only if cloud.type is ACTIVEMQ", depends = true, dependency = "cloud.type", dependencyValue = "ACTIVEMQ")
-    const val ACTIVEMQ_BROKER_URL = "cloud.activemq.broker.url"
+    @RequiredProperty("Only if amqp.type is ACTIVEMQ", depends = true, dependency = "amqp.type", dependencyValue = "ACTIVEMQ")
+    const val ACTIVEMQ_BROKER_URL = "amqp.activemq.broker.url"
 
     /**
      * Username used to connect with ActiveMQ server(s).
-     * This property is only required if [CLOUD_TYPE] property is ACTIVEMQ.
+     * This property is only required if [AMQP_TYPE] property is ACTIVEMQ.
      */
-    @RequiredProperty("Only if cloud.type is ACTIVEMQ", depends = true, dependency = "cloud.type", dependencyValue = "ACTIVEMQ")
-    const val ACTIVEMQ_USERNAME = "cloud.activemq.username"
+    @RequiredProperty("Only if amqp.type is ACTIVEMQ", depends = true, dependency = "amqp.type", dependencyValue = "ACTIVEMQ")
+    const val ACTIVEMQ_USERNAME = "amqp.activemq.username"
 
     /**
      * Password used to connect with ActiveMQ server(s).
-     * This property is only required if [CLOUD_TYPE] property is ACTIVEMQ.
+     * This property is only required if [AMQP_TYPE] property is ACTIVEMQ.
      */
-    @RequiredProperty("Only if cloud.type is ACTIVEMQ", depends = true, dependency = "cloud.type", dependencyValue = "ACTIVEMQ")
-    const val ACTIVEMQ_PASSWORD = "cloud.activemq.password"
+    @RequiredProperty("Only if amqp.type is ACTIVEMQ", depends = true, dependency = "amqp.type", dependencyValue = "ACTIVEMQ")
+    const val ACTIVEMQ_PASSWORD = "amqp.activemq.password"
 
     // endregion
 
     // endregion
 
-    // region CLOUD DEFAULTS
+    // region AMQP DEFAULTS
+
+    /**
+     * Amqp clients don't retry to process message by default
+     */
+    const val AMQP_RETRIES_DEFAULT = 0
+
+    const val AMQP_WORKERS_DEFAULT = 1
 
     // region RABBITMQ DEFAULTS
 

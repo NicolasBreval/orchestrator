@@ -11,11 +11,12 @@ import java.io.Serializable
 abstract class ConsumerSubscription<I: Serializable>(
     name: String,
     timeout: Long = -1,
-    description: String? = null
+    description: String? = null,
+    private val workers: Int = 1
 ): Subscription<I, Unit>(name, timeout, description), AmqpManager<I>, AmqpConsumer<I> {
 
     @delegate:Transient
-    protected val client: AmqpClient<I> by lazy { createClient(name) }
+    protected val client: AmqpClient<I> by lazy { createClient(name, workers) }
 
     override fun initialize() {
         client.createConsumer() { cloudMessage ->

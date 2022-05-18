@@ -14,11 +14,12 @@ abstract class DeliverySubscription<I: Serializable, O: Serializable>(
     name: String,
     private val receivers: List<SubscriptionReceiver> = listOf(),
     timeout: Long = -1,
-    description: String? = null
+    description: String? = null,
+    private val workers: Int = 1
 ): Subscription<I, O>(name, timeout, description), AmqpManager<I>, AmqpConsumer<I>, AmqpSender {
 
     @delegate:Transient
-    protected val client: AmqpClient<I> by lazy { createClient(name) }
+    protected val client: AmqpClient<I> by lazy { createClient(name, workers) }
 
     override fun initialize() {
         client.createConsumer() { cloudMessage ->

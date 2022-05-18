@@ -14,6 +14,7 @@ import org.nitb.orchestrator.subscriber.entities.subscriptions.RequestType
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResponse
 import org.nitb.orchestrator.subscription.Subscription
+import org.nitb.orchestrator.subscription.entities.DirectMessage
 import java.io.Serializable
 import java.lang.RuntimeException
 import java.util.*
@@ -131,6 +132,14 @@ class Subscriber(
             return mainSubscriber.getSubscriptionInfo(name)
         } else {
             throw IllegalAccessException("INVALID REQUEST - This node is not the main node.")
+        }
+    }
+
+    fun handleSubscriptionMessage(name: String, message: DirectMessage): Any? {
+        return if (isMainNode) {
+
+        } else {
+            subscriptionsPool[name]?.handleMessage(message)
         }
     }
 

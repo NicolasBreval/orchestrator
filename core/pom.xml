@@ -132,6 +132,11 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
+      <groupId>io.micronaut</groupId>
+      <artifactId>micronaut-router</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
       <scope>compile</scope>
@@ -153,6 +158,11 @@
       <artifactId>junit-jupiter-params</artifactId>
       <version>${junit5.version}</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+      <version>9.3</version>
     </dependency>
   </dependencies>
 

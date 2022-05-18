@@ -120,7 +120,7 @@ class SystemTests {
                 ConfigNames.DATABASE_PASSWORD to "",
                 ConfigNames.DATABASE_USERNAME to "",
                 ConfigNames.DATABASE_CREATE_SCHEMAS_ON_STARTUP to "true",
-                ConfigNames.CLOUD_TYPE to "ACTIVEMQ",
+                ConfigNames.AMQP_TYPE to "ACTIVEMQ",
                 ConfigNames.ACTIVEMQ_BROKER_URL to "failover:tcp://localhost:61616",
                 ConfigNames.ACTIVEMQ_USERNAME to "admin",
                 ConfigNames.ACTIVEMQ_PASSWORD to "admin",
