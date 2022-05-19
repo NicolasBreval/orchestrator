@@ -687,6 +687,7 @@ object ConfigManager {
                 properties.load(fileInputStream)
             }
         }
+        properties.putAll(System.getProperties())
     }
 
     // endregion

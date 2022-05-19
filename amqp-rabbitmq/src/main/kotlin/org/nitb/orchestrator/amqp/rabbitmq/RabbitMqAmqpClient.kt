@@ -7,7 +7,9 @@ import org.nitb.orchestrator.amqp.AmqpMessage
 import org.nitb.orchestrator.amqp.AmqpType
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
+import org.nitb.orchestrator.http.HttpClient
 import org.nitb.orchestrator.logging.LoggingManager
+import org.nitb.orchestrator.scheduling.PeriodicalScheduler
 import org.nitb.orchestrator.serialization.binary.BinarySerializer
 import java.io.IOException
 import java.io.Serializable
@@ -91,7 +93,7 @@ class RabbitMqAmqpClient<T: Serializable>(
     }
 
     override fun masterConsuming(): Boolean {
-        return channel.queueDeclare(ConfigManager.getProperty(ConfigNames.PRIMARY_NAME), true, true, false, null).consumerCount > 0
+        return channel.queueDeclare(mainNodeName, true, false, false, null)?.consumerCount?.let { it > 0 } ?: false
     }
 
     // endregion
@@ -119,6 +121,8 @@ class RabbitMqAmqpClient<T: Serializable>(
      */
     private val consumerTags: MutableList<String> = mutableListOf()
 
+    private val mainNodeName = ConfigManager.getProperty(ConfigNames.PRIMARY_NAME)
+
     // endregion
 
     // region PRIVATE METHODS
@@ -127,7 +131,7 @@ class RabbitMqAmqpClient<T: Serializable>(
      * Method used to create a new queue for this client. All queues are exclusive by default
      */
     private fun declareQueue() {
-        channel.queueDeclare(name, true, workers > 1, false, null)
+        channel.queueDeclare(name, true, workers == 1 && name != mainNodeName, false, null)
     }
 
     // endregion

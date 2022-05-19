@@ -21,6 +21,8 @@
     <module>amqp-activemq</module>
     <module>amqp-rabbitmq</module>
     <module>scripting-js</module>
+    <module>scripting-java</module>
+    <module>watchers</module>
   </modules>
   <properties>
     <kotlin.version>1.6.10</kotlin.version>

@@ -33,11 +33,6 @@ object DbFactory {
         }
     }
 
-    fun localConnect(databaseName: String) {
-        TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
-        createHikariDataSource()
-    }
-
     // endregion
 
     // region PRIVATE PROPERTIES
