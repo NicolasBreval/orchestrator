@@ -37,11 +37,14 @@ class MainSubscriber(
     // region PUBLIC METHODS
 
     fun start() {
+        client.purge()
+
         registerConsumer(client) { message ->
             when (message.message) {
                 is SubscriberInfo -> {
                     subscribers[message.sender] = message.message
                     lastSubscriberInfoReceptionTime = System.currentTimeMillis()
+                    logger.debug("Received message from ${message.sender} with ${message.message.subscriptions.count()} subscriptions")
                 }
                 else -> logger.error("Unrecognized message type has been received. Type: ${message::class.java.name}")
             }
@@ -110,7 +113,7 @@ class MainSubscriber(
             subscriptions.withIndex().groupBy({ (i, _) -> ranking[i % ranking.size] }, { (_, subscription) -> subscription })
         }.entries.parallelStream().forEach { (subscriber, subscriptions) ->
             if (subscriber == subscriberName) {
-                parentSubscriber.uploadSubscriptions(subscriptions)
+                parentSubscriber.uploadSubscriptions(subscriptions, subscriber, true)
             } else {
                 val info = subscribers[subscriber]
                 val url = "http://${info?.hostname}:${info?.httpPort}/subscriptions/upload" // TODO: Check for HTTPS option
@@ -148,7 +151,7 @@ class MainSubscriber(
         groupedSubscriptions.entries.parallelStream().forEach { (subscriber, subscriptions) ->
             if (subscriber.isPresent) {
                 if (subscriber.get() == subscriberName) {
-                    parentSubscriber.removeSubscriptions(subscriptions)
+                    parentSubscriber.removeSubscriptions(subscriptions, true)
                 } else {
                     val info = subscribers[subscriber.get()]
                     val url = "http://${info?.hostname}:${info?.httpPort}/subscriptions/remove" // TODO: Check for HTTPS option
@@ -187,7 +190,7 @@ class MainSubscriber(
         groupedSubscriptions.entries.parallelStream().forEach { (subscriber, subscriptions) ->
             if (subscriber.isPresent) {
                 if (subscriber.get() == subscriberName) {
-                    parentSubscriber.removeSubscriptions(subscriptions)
+                    parentSubscriber.setSubscriptions(subscriptions, stop, true)
                 } else {
                     val info = subscribers[subscriber.get()]
                     val url = "http://${info?.hostname}:${info?.httpPort}/subscriptions/${if (stop) "stop" else "start"}" // TODO: Check for HTTPS option

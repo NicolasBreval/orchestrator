@@ -57,9 +57,9 @@ class Subscriber(
         checkMainNodeExistsScheduler.start()
     }
 
-    fun uploadSubscriptions(subscriptions: List<String>, subscriber: String? = null): SubscriptionOperationResponse {
+    fun uploadSubscriptions(subscriptions: List<String>, subscriber: String? = null, force: Boolean = false): SubscriptionOperationResponse {
         return try {
-            if (isMainNode) {
+            if (isMainNode && !force) {
                 mainSubscriber.uploadSubscriptions(subscriptions, subscriber)
             } else {
                 subscriptions
@@ -70,6 +70,15 @@ class Subscriber(
                         subscription.start()
                     }
 
+                val info = SubscriberInfo(name,
+                    subscriptionsPool.values.associate { subscription ->
+                        Pair(
+                            subscription.name,
+                            subscription.info
+                        )
+                    }, name == mainNodeName)
+                client.send(mainNodeName, info)
+
                 return SubscriptionOperationResponse(RequestType.UPLOAD, "All subscriptions has been uploading", subscriptions)
             }
         } catch (e: Exception) {
@@ -78,9 +87,9 @@ class Subscriber(
         }
     }
 
-    fun removeSubscriptions(subscriptions: List<String>): SubscriptionOperationResponse {
+    fun removeSubscriptions(subscriptions: List<String>, force: Boolean = false): SubscriptionOperationResponse {
         return try {
-            if (isMainNode) {
+            if (isMainNode && !force) {
                 mainSubscriber.removeSubscriptions(subscriptions)
             } else {
                 subscriptions.forEach { subscriptionName ->
@@ -96,9 +105,9 @@ class Subscriber(
         }
     }
 
-    fun setSubscriptions(subscriptions: List<String>, stop: Boolean): SubscriptionOperationResponse {
+    fun setSubscriptions(subscriptions: List<String>, stop: Boolean, force: Boolean = false): SubscriptionOperationResponse {
         return try {
-            if (isMainNode) {
+            if (isMainNode && !force) {
                 mainSubscriber.setSubscriptions(subscriptions, stop)
             } else {
                 subscriptions.forEach { subscriptionName -> subscriptionsPool[subscriptionName]?.let { if (stop) it.stop() else it.start() } }
@@ -155,7 +164,7 @@ class Subscriber(
     /**
      * Name of master node. This name is used to declare master queue in queues system
      */
-    private val masterName = ConfigManager.getProperty(ConfigNames.PRIMARY_NAME, RuntimeException("Needed property doesn't exists: ${ConfigNames.PRIMARY_NAME}"))
+    private val mainNodeName = ConfigManager.getProperty(ConfigNames.PRIMARY_NAME, RuntimeException("Needed property doesn't exists: ${ConfigNames.PRIMARY_NAME}"))
 
     /**
      * Time between two data transmissions to the head node
@@ -198,14 +207,15 @@ class Subscriber(
     private val sendInformationScheduler by lazy {
         object : PeriodicalScheduler(subscriberSendInfoPeriod, 0, subscriberSendInfoTimeout, name = name) {
             override fun onCycle() {
-                client.send(masterName, SubscriberInfo(name,
+                val info = SubscriberInfo(name,
                     subscriptionsPool.values.associate { subscription ->
                         Pair(
                             subscription.name,
                             subscription.info
                         )
-                    }, name == masterName)
-                )
+                    }, name == mainNodeName)
+                client.send(mainNodeName, info)
+                logger.debug("Node info sent to master with ${info.subscriptions.count()} subscriptions")
             }
         }
     }

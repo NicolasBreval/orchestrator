@@ -1,8 +1,9 @@
 package org.nitb.orchestrator.serialization.binary
 
-import com.esotericsoftware.kryo.Kryo
-import com.esotericsoftware.kryo.io.Input
-import com.esotericsoftware.kryo.io.Output
+import com.caucho.hessian.io.Hessian2Input
+import com.caucho.hessian.io.Hessian2Output
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 
 /**
  * Allows serializing objects to a byte array.
@@ -14,10 +15,16 @@ object BinarySerializer {
      * @param message Object to be serialized.
      */
     fun serialize(message: Any): ByteArray {
-        val output = Output(0, Int.MAX_VALUE)
-        conf.get().writeClassAndObject(output, message)
-        output.flush()
-        return output.toBytes()
+        ByteArrayOutputStream().use {
+            val hessian2Output = Hessian2Output(it)
+            hessian2Output.startMessage()
+            hessian2Output.writeObject(message)
+            hessian2Output.bytesOutputStream.flush()
+            hessian2Output.completeMessage()
+            hessian2Output.close()
+            return it.toByteArray()
+        }
+
     }
 
     /**
@@ -26,17 +33,13 @@ object BinarySerializer {
      */
     @Suppress("UNCHECKED_CAST")
     fun <T> deserialize(bytes: ByteArray): T {
-        val input = Input(bytes)
-        return conf.get().readClassAndObject(input) as T
-    }
-
-    /**
-     * Kryo object used for serialization.
-     */
-    private val conf = ThreadLocal.withInitial {
-        val kryo = Kryo()
-        kryo.references = true
-        kryo.isRegistrationRequired = false
-        kryo
+        ByteArrayInputStream(bytes).use {
+            val hessian2Input = Hessian2Input(it)
+            hessian2Input.startMessage()
+            val obj = hessian2Input.readObject() as T
+            hessian2Input.completeMessage()
+            hessian2Input.close()
+            return obj
+        }
     }
 }

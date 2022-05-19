@@ -47,6 +47,7 @@ class RabbitMqConsumer<T: Serializable>(
                 }
 
                 onReceive.accept(message)
+                retries = -1
             } catch (e: Exception) {
                 retries--
 

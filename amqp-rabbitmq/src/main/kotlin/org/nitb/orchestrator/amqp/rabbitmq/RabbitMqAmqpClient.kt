@@ -65,6 +65,7 @@ class RabbitMqAmqpClient<T: Serializable>(
 
     override fun createConsumer(onConsume: Consumer<AmqpMessage<T>>) {
         try {
+            consumerFunction = onConsume
             declareQueue()
             for (i in 0 until workers) {
                 consumerTags.add(channel.basicConsume(name,
@@ -108,7 +109,7 @@ class RabbitMqAmqpClient<T: Serializable>(
     /**
      * Channel object used to send and receive data from queues. It's created from [connection] object.
      */
-    private val channel = connection.createChannel()
+    private var channel = connection.createChannel()
 
     /**
      * Logger object used to show information to developer and client.
@@ -123,6 +124,8 @@ class RabbitMqAmqpClient<T: Serializable>(
 
     private val mainNodeName = ConfigManager.getProperty(ConfigNames.PRIMARY_NAME)
 
+    private lateinit var consumerFunction: Consumer<AmqpMessage<T>>
+
     // endregion
 
     // region PRIVATE METHODS
@@ -135,4 +138,15 @@ class RabbitMqAmqpClient<T: Serializable>(
     }
 
     // endregion
+
+    init {
+        channel.addShutdownListener {
+            logger.warn("Recovering channel due to shutdown...")
+            channel = connection.createChannel()
+
+            if (this::consumerFunction.isInitialized) {
+                createConsumer(consumerFunction)
+            }
+        }
+    }
 }

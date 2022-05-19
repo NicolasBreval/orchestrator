@@ -86,6 +86,7 @@ class ActiveMqAmqpClient<T: Serializable>(
                             else -> throw IllegalArgumentException("Invalid input message type")
                         }
                         onConsume.accept(amqpMessage)
+                        retries = -1
                     } catch (e: Exception) {
                         retries--
 

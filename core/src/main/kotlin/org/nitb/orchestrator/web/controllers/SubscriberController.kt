@@ -1,7 +1,6 @@
 package org.nitb.orchestrator.web.controllers
 
 import io.micronaut.context.annotation.Parameter
-import io.micronaut.http.HttpRequest
 import io.micronaut.http.annotation.*
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.subscriber.Subscriber
@@ -30,12 +29,12 @@ class SubscriberController {
     }
 
     @Get("/subscriptions/stop")
-    fun stopSubscriptions(@Body subscriptions: List<String>): SubscriptionOperationResponse {
+    fun stopSubscriptions(@QueryValue subscriptions: List<String>): SubscriptionOperationResponse {
         return subscriber.setSubscriptions(subscriptions, true)
     }
 
     @Get("/subscriptions/start")
-    fun startSubscriptions(@Body subscriptions: List<String>): SubscriptionOperationResponse {
+    fun startSubscriptions(@QueryValue subscriptions: List<String>): SubscriptionOperationResponse {
         return subscriber.setSubscriptions(subscriptions, false)
     }
 
@@ -45,7 +44,7 @@ class SubscriberController {
     }
 
     @Delete("/subscriptions/delete")
-    fun removeSubscriptions(@Parameter subscriptions: List<String>): SubscriptionOperationResponse {
+    fun removeSubscriptions(@QueryValue subscriptions: List<String>): SubscriptionOperationResponse {
         return subscriber.removeSubscriptions(subscriptions)
     }
 

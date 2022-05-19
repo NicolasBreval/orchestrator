@@ -8,6 +8,7 @@ import org.nitb.orchestrator.serialization.binary.BinarySerializer
 import org.nitb.orchestrator.serialization.json.JSONSerializer
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
 import org.nitb.orchestrator.subscription.entities.DirectMessage
+import java.io.Serializable
 import java.lang.Exception
 import java.math.BigInteger
 
@@ -16,7 +17,7 @@ abstract class Subscription<I, O>(
     val name: String,
     protected val timeout: Long = -1,
     private val description: String? = null
-) {
+): Serializable {
 
     // region PUBLIC METHODS
 
@@ -126,6 +127,8 @@ abstract class Subscription<I, O>(
     protected open fun onSuccess(input: I, output: O?) {}
 
     protected open fun onError(input: I) {}
+
+    protected open fun onDelete() {}
 
     // endregion
 

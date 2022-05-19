@@ -1,6 +1,7 @@
 package org.nitb.orchestrator.test.serialization
 
 import com.cronutils.model.CronType
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.nitb.orchestrator.serialization.binary.BinarySerializer
 import org.nitb.orchestrator.serialization.json.JSONSerializer
@@ -11,6 +12,9 @@ import org.nitb.orchestrator.subscription.detached.DetachedCronSubscription
 import org.nitb.orchestrator.subscription.detached.DetachedPeriodicalSubscription
 import java.io.Serializable
 import org.junit.jupiter.api.Assertions.*
+import org.nitb.orchestrator.subscriber.entities.subscribers.SubscriberInfo
+import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
+import org.nitb.orchestrator.subscription.SubscriptionStatus
 
 class SerializableDetachedPeriodicalSubscription(
     name: String,
@@ -111,60 +115,22 @@ class SerializationTests {
     @Test
     fun binarySerialization() {
 
+        val subscriptionInfo = SubscriptionInfo("example", SubscriptionStatus.STOPPED)
+        val subscriberInfo = SubscriberInfo("example1", subscriptions = mapOf("example" to subscriptionInfo), false)
+
         // region SERIALIZATION
 
-        val binaryDetachedPeriodicalSubscription = BinarySerializer.serialize(serializableDetachedPeriodicalSubscription)
-        assertNotNull(binaryDetachedPeriodicalSubscription)
-        assertNotEquals(binaryDetachedPeriodicalSubscription.size, 0)
-
-        val binaryDetachedCronSubscription = BinarySerializer.serialize(serializableDetachedCronSubscription)
-        assertNotNull(binaryDetachedCronSubscription)
-        assertNotEquals(binaryDetachedCronSubscription.size, 0)
-
-        val binaryDeliverySubscription = BinarySerializer.serialize(serializableDeliverySubscription)
-        assertNotNull(binaryDeliverySubscription)
-        assertNotEquals(binaryDeliverySubscription.size, 0)
-
-        val binaryDeliveryPeriodicalSubscription = BinarySerializer.serialize(serializableDeliveryPeriodicalSubscription)
-        assertNotNull(binaryDeliveryPeriodicalSubscription)
-        assertNotEquals(binaryDeliveryPeriodicalSubscription.size, 0)
-
-        val binaryDeliveryCronSubscription = BinarySerializer.serialize(serializableDeliveryCronSubscription)
-        assertNotNull(binaryDeliveryCronSubscription)
-        assertNotEquals(binaryDeliveryCronSubscription.size, 0)
-
-        val binaryDeliveryMultiInputSubscription = BinarySerializer.serialize(serializableDeliveryMultiInputSubscription)
-        assertNotNull(binaryDeliveryMultiInputSubscription)
-        assertNotEquals(binaryDeliveryMultiInputSubscription.size, 0)
-
-        val binaryConsumerSubscription = BinarySerializer.serialize(serializableConsumerSubscription)
-        assertNotNull(binaryConsumerSubscription)
-        assertNotEquals(binaryConsumerSubscription.size, 0)
+//        val serialized = BinarySerializer.serialize(subscriptionInfo)
+        val serialized1 = BinarySerializer.serialize(subscriberInfo)
 
         // endregion
 
         // region DESERIALIZATION
 
-        val deserializedDetachedPeriodicalSubscription = BinarySerializer.deserialize<SerializableDetachedPeriodicalSubscription>(binaryDetachedPeriodicalSubscription)
-        assertEquals(deserializedDetachedPeriodicalSubscription, serializableDetachedPeriodicalSubscription)
+//        val deserialized = BinarySerializer.deserialize<SubscriptionInfo>(serialized)
+        val deserialized1 = BinarySerializer.deserialize<SubscriberInfo>(serialized1)
 
-        val deserializedDetachedCronSubscription = BinarySerializer.deserialize<DetachedCronSubscription>(binaryDetachedCronSubscription)
-        assertEquals(deserializedDetachedCronSubscription, serializableDetachedCronSubscription)
-
-        val deserializedDeliverySubscription = BinarySerializer.deserialize<DeliverySubscription<*, *>>(binaryDeliverySubscription)
-        assertEquals(deserializedDeliverySubscription, serializableDeliverySubscription)
-
-        val deserializedDeliveryPeriodicalSubscription = BinarySerializer.deserialize<DeliveryPeriodicalSubscription<*>>(binaryDeliveryPeriodicalSubscription)
-        assertEquals(deserializedDeliveryPeriodicalSubscription, serializableDeliveryPeriodicalSubscription)
-
-        val deserializedDeliveryCronSubscription = BinarySerializer.deserialize<DeliveryCronSubscription<*>>(binaryDeliveryCronSubscription)
-        assertEquals(deserializedDeliveryCronSubscription, serializableDeliveryCronSubscription)
-
-        val deserializedDeliveryMultiInputSubscription = BinarySerializer.deserialize<DeliveryMultiInputSubscription<*>>(binaryDeliveryMultiInputSubscription)
-        assertEquals(deserializedDeliveryMultiInputSubscription, serializableDeliveryMultiInputSubscription)
-
-        val deserializedConsumerSubscription = BinarySerializer.deserialize<ConsumerSubscription<*>>(binaryConsumerSubscription)
-        assertEquals(deserializedConsumerSubscription, serializableConsumerSubscription)
+        System.currentTimeMillis()
 
         // endregion
 

@@ -22,6 +22,10 @@ abstract class CyclicalSubscription<O>(
     }
 
     override fun deactivate() {
+        scheduler.pause(true)
+    }
+
+    override fun onDelete() {
         scheduler.stop(true)
     }
 
