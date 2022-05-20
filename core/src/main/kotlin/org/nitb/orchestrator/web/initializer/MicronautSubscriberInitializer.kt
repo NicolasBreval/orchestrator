@@ -2,17 +2,34 @@ package org.nitb.orchestrator.web.initializer
 
 import ch.qos.logback.classic.Level
 import io.micronaut.runtime.Micronaut
+import io.swagger.v3.oas.annotations.OpenAPIDefinition
+import io.swagger.v3.oas.annotations.info.Contact
+import io.swagger.v3.oas.annotations.info.Info
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.logging.LoggingManager
 
-object MicronautServerInitializer {
+@OpenAPIDefinition(
+    info = Info(
+        title = "Subscriber API",
+        version = "0.0.1",
+        description = "Subscriber API definition for subscriptions control",
+        contact = Contact(name = "Nicolas Breval Rodriguez", email = "nicolasbrevalrodriguez@gmail.com")
+    )
+)
+object MicronautSubscriberInitializer {
 
     fun init(vararg args: String) {
         configureLogs()
 
         System.setProperty("micronaut.config.files", ConfigManager.getPropertiesFileLocation())
         System.setProperty("micronaut.server.port", ConfigManager.getProperty(ConfigNames.HTTP_PORT, ConfigNames.HTTP_PORT_DEFAULT.toString()))
+
+        if (ConfigManager.getBoolean(ConfigNames.OPEN_API_RESOURCE_ACTIVE)) {
+            System.setProperty("micronaut.router.static-resources.swagger.paths", "classpath:META-INF/swagger")
+            System.setProperty("micronaut.router.static-resources.swagger.mapping", "/swagger/**")
+            System.setProperty("swagger-ui.enabled", "true")
+        }
 
         Micronaut.build()
             .args(*args)

@@ -137,6 +137,11 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
+      <groupId>io.micronaut.openapi</groupId>
+      <artifactId>micronaut-openapi</artifactId>
+      <version>4.0.1</version>
+    </dependency>
+    <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
       <scope>compile</scope>
@@ -292,6 +297,10 @@
           <proc>none</proc>
           <source>${jdk.version}</source>
           <target>${jdk.version}</target>
+          <fork>true</fork>
+          <compilerArgs>
+            <arg>-Amicronaut.openapi.views.spec=rapidoc.enabled=true,swagger-ui.enabled=true,swagger-ui.theme=flattop</arg>
+          </compilerArgs>
         </configuration>
         <executions>
           <execution>

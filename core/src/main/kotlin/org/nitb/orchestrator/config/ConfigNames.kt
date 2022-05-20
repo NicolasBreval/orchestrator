@@ -391,4 +391,10 @@ object ConfigNames {
     const val DISPLAY_NODE_NAME = "display.node.name"
 
     // endregion
+
+    // region OPEN API
+
+    const val OPEN_API_RESOURCE_ACTIVE = "open.api.resource.active"
+
+    // endregion
 }
