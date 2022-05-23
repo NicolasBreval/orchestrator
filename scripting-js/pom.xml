@@ -13,7 +13,7 @@
 
   <groupId>org.nitb.orchestrator.scripting</groupId>
   <artifactId>scripting-js</artifactId>
-  <version>${orchestrator.version}</version>
+  <version>1.0.1</version>
 
   <name>scripting</name>
   <!-- FIXME change it to the project's website -->
@@ -29,7 +29,7 @@
     <dependency>
       <groupId>org.nitb.orchestrator</groupId>
       <artifactId>core</artifactId>
-      <version>${orchestrator.version}</version>
+      <version>1.0.1</version>
     </dependency>
     <dependency>
       <groupId>org.graalvm.sdk</groupId>

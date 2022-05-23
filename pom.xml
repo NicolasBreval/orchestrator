@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.nitb</groupId>
   <artifactId>orchestrator</artifactId>
-  <version>${orchestrator.version}</version>
+  <version>1.0.1</version>
   <packaging>pom</packaging>
   <name>orchestrator</name>
 
@@ -16,13 +16,16 @@
 
   <modules>
     <module>core</module>
-    <module>webapp</module>
     <module>logging-fluentd-plugin</module>
     <module>amqp-activemq</module>
     <module>amqp-rabbitmq</module>
     <module>scripting-js</module>
     <module>scripting-java</module>
     <module>watchers</module>
+    <module>worker-node</module>
+    <module>display-node</module>
+    <module>worker-node-example</module>
+    <module>display-node-example</module>
   </modules>
   <properties>
     <kotlin.version>1.6.10</kotlin.version>

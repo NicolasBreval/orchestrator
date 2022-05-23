@@ -13,7 +13,7 @@
 
   <groupId>org.nitb.orchestrator</groupId>
   <artifactId>logging-fluentd-plugin</artifactId>
-  <version>${orchestrator.version}</version>
+  <version>1.0.1</version>
 
   <name>logging-fluentd-plugin</name>
   <!-- FIXME change it to the project's website -->
@@ -35,7 +35,7 @@
     <dependency>
       <groupId>org.nitb.orchestrator</groupId>
       <artifactId>core</artifactId>
-      <version>${orchestrator.version}</version>
+      <version>1.0.1</version>
     </dependency>
   </dependencies>
 

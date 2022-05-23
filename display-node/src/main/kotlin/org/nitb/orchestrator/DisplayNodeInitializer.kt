@@ -1,4 +1,4 @@
-package org.nitb.orchestrator.web.initializer
+package org.nitb.orchestrator
 
 import ch.qos.logback.classic.Level
 import io.micronaut.runtime.Micronaut
@@ -8,16 +8,17 @@ import io.swagger.v3.oas.annotations.info.Info
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.logging.LoggingManager
+import org.nitb.orchestrator.web.controllers.DisplayController
 
 @OpenAPIDefinition(
     info = Info(
-        title = "Subscriber API",
+        title = "Display Node API",
         version = "0.0.1",
-        description = "Subscriber API definition for subscriptions control",
+        description = "API definition for subscribers communication",
         contact = Contact(name = "Nicolas Breval Rodriguez", email = "nicolasbrevalrodriguez@gmail.com")
     )
 )
-object MicronautSubscriberInitializer {
+object DisplayNodeInitializer {
 
     fun init(vararg args: String) {
         configureLogs()
@@ -33,7 +34,7 @@ object MicronautSubscriberInitializer {
 
         Micronaut.build()
             .args(*args)
-            .packages("org.nitb.orchestrator.web.controllers")
+            .classes(DisplayController::class.java)
             .eagerInitSingletons(true)
             .start()
     }
@@ -57,4 +58,5 @@ object MicronautSubscriberInitializer {
             LoggingManager.setLoggerLevel("org.apache.activemq", Level.OFF)
         }
     }
+
 }

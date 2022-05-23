@@ -2,6 +2,7 @@ package org.nitb.orchestrator.serialization.json
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect
 import com.fasterxml.jackson.annotation.PropertyAccessor
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator
@@ -58,6 +59,15 @@ object JSONSerializer {
      */
     fun <T> deserialize(content: String, clazz: Class<T>): T {
         return jacksonMapper.get().readValue(content, clazz)
+    }
+
+    /**
+     * Deserializes JSON string to an object, using class to specify target type.
+     * @param content JSON string to deserialize.
+     * @param type [TypeReference] object to deserialize complex types, like Map with values
+     */
+    fun <T> deserialize(content: String, type: TypeReference<T>): T {
+        return jacksonMapper.get().readValue(content, type)
     }
 
     /**

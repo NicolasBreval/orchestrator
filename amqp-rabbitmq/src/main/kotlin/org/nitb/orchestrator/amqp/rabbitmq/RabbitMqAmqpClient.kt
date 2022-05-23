@@ -84,6 +84,7 @@ class RabbitMqAmqpClient<T: Serializable>(
     }
 
     override fun purge() {
+        declareQueue()
         channel.queuePurge(name)
     }
 

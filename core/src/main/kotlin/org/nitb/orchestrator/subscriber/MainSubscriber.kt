@@ -68,8 +68,7 @@ class MainSubscriber(
         checkNodesScheduler.start()
         checkWaitingSubscriptionsToUploadScheduler.start()
 
-        if (displayNodeName != null)
-            sendInfoToDisplayNodeScheduler.start()
+        sendInfoToDisplayNodeScheduler.start()
     }
 
     fun stop() {
@@ -238,12 +237,12 @@ class MainSubscriber(
     /**
      * Name of master node, obtaining from properties.
      */
-    private val name = ConfigManager.getProperty(ConfigNames.PRIMARY_NAME, RuntimeException("Needed property doesn't exists: ${ConfigNames.PRIMARY_NAME}"))
+    private val name = ConfigManager.getProperty(ConfigNames.PRIMARY_NAME, RuntimeException("Required property doesn't exists: ${ConfigNames.PRIMARY_NAME}"))
 
     /**
      * Name of display node used to show information to users
      */
-    private val displayNodeName = ConfigManager.getProperty(ConfigNames.DISPLAY_NODE_NAME)
+    private val displayNodeName = ConfigManager.getProperty(ConfigNames.DISPLAY_NODE_NAME, RuntimeException("Required property doesn't exists: ${ConfigNames.DISPLAY_NODE_NAME}"))
 
     /**
      * Logger object used to print logs.
@@ -351,9 +350,7 @@ class MainSubscriber(
 
     private val sendInfoToDisplayNodeSchedulerDelegate = lazy { object : PeriodicalScheduler(sendInfoToDisplayNodePeriod, 0, sendInfoToDisplayNodeTimeout, name = subscriberName) {
         override fun onCycle() {
-            for ((_, subscriberInfo) in subscribers) {
-                client.send(displayNodeName!!, subscriberInfo)
-            }
+            client.send(displayNodeName, SubscriberInfo(name, mapOf(), true))
         }
     } }
     private val sendInfoToDisplayNodeScheduler by sendInfoToDisplayNodeSchedulerDelegate

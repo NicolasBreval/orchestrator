@@ -16,9 +16,9 @@ class SubscriberInfo(
     @Schema(description = "Unique name of subscriber.")
     val name: String,
     @Schema(description = "List of subscriptions registered in this subscriber.")
-    val subscriptions: Map<String, SubscriptionInfo>,
+    val subscriptions: Map<String, SubscriptionInfo> = mapOf(),
     @Schema(description = "If is true, this information is related to main subscriber")
-    val isMainNode: Boolean,
+    val isMainNode: Boolean = false,
     @Schema(description = "Timestamp when this information was created.")
     val timestamp: Long = System.currentTimeMillis(),
     @Schema(description = "Hostname of this subscriber. It's used to make easy HTTP communication between subscribers.")
@@ -33,4 +33,22 @@ class SubscriberInfo(
     val freeMemory: Long = Runtime.getRuntime().freeMemory(),
     @Schema(description = "CPU usage at moment by this subscriber. This information allows main subscriber to decide where send a new subscription if allocation strategy type uses CPU in their ranking.")
     val cpuUsage: Double = (ManagementFactory.getOperatingSystemMXBean() as OperatingSystemMXBean).processCpuLoad
-): Serializable
+): Serializable {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as SubscriberInfo
+
+        if (name != other.name) return false
+        if (isMainNode != other.isMainNode) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + isMainNode.hashCode()
+        return result
+    }
+}

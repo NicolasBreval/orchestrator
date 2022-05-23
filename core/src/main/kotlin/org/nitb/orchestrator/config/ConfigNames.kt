@@ -316,7 +316,7 @@ object ConfigNames {
     /**
      * Port used for Subscriber API
      */
-    const val HTTP_PORT = "subscriber.http.port"
+    const val HTTP_PORT = "server.http.port"
 
     // endregion
 

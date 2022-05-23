@@ -22,12 +22,28 @@ class HttpClient(
         return client.newCall(request.build()).execute().body?.string()?.let { JSONSerializer.deserialize(it, clazz) } ?: error("Response doesn't valid")
     }
 
+    fun <T> jsonRequest(method: String, clazz: Class<T>): T {
+        val client = OkHttpClient()
+
+        val request = createRequestBuilder(method, null)
+
+        return client.newCall(request.build()).execute().body?.string()?.let { JSONSerializer.deserialize(it, clazz) } ?: error("Response doesn't valid")
+    }
+
     fun jsonRequest(method: String, body: Any): Response {
         val client = OkHttpClient()
 
         val requestBody = JSONSerializer.serialize(body).toRequestBody("application/json".toMediaType())
 
         val request = createRequestBuilder(method, requestBody)
+
+        return client.newCall(request.build()).execute()
+    }
+
+    fun jsonRequest(method: String): Response {
+        val client = OkHttpClient()
+
+        val request = createRequestBuilder(method, null)
 
         return client.newCall(request.build()).execute()
     }
@@ -71,5 +87,4 @@ class HttpClient(
 
         return request
     }
-
 }
