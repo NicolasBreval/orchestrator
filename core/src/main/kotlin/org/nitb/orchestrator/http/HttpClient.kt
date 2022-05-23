@@ -1,5 +1,6 @@
 package org.nitb.orchestrator.http
 
+import com.fasterxml.jackson.core.type.TypeReference
 import okhttp3.*
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
@@ -28,6 +29,14 @@ class HttpClient(
         val request = createRequestBuilder(method, null)
 
         return client.newCall(request.build()).execute().body?.string()?.let { JSONSerializer.deserialize(it, clazz) } ?: error("Response doesn't valid")
+    }
+
+    fun <T> jsonRequest(method: String, typeReference: TypeReference<T>): T {
+        val client = OkHttpClient()
+
+        val request = createRequestBuilder(method, null)
+
+        return client.newCall(request.build()).execute().body?.string()?.let { JSONSerializer.deserialize(it, typeReference) } ?: error("Response doesn't valid")
     }
 
     fun jsonRequest(method: String, body: Any): Response {

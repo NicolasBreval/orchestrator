@@ -12,6 +12,9 @@ import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.serialization.json.JSONSerializer
 import org.nitb.orchestrator.subscriber.entities.subscribers.SubscriberInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
+import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResponse
+import org.nitb.orchestrator.subscription.entities.DirectMessage
+import org.nitb.orchestrator.web.entities.UploadSubscriptionsRequest
 import java.io.Serializable
 import java.lang.RuntimeException
 
@@ -49,18 +52,33 @@ class DisplayManager(
 
     @Suppress("UNCHECKED_CAST")
     fun listSubscriptions(): List<SubscriptionInfo> {
-        val httpClient = HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscriptions/list")
-
-        httpClient.jsonRequest("GET").use { response ->
-            return JSONSerializer.deserialize(response.body!!.string(), object: TypeReference<List<SubscriptionInfo>>() {})
-
-        }
+        return HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscriptions/list")
+            .jsonRequest("GET", object: TypeReference<List<SubscriptionInfo>>() {})
     }
 
     fun subscriptionInfo(name: String): SubscriptionInfo {
-        val httpClient = HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscriptions/list", params = mapOf("subscription" to listOf(name)))
+        return HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscriptions/list",
+            params = mapOf("subscription" to listOf(name))).jsonRequest("GET", SubscriptionInfo::class.java)
+    }
 
-        return httpClient.jsonRequest("GET", SubscriptionInfo::class.java)
+    fun setSubscriptions(subscriptions: List<String>, stop: Boolean): SubscriptionOperationResponse {
+        return HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscriptions/${if (stop) "stop" else "start"}",
+            params = mapOf("subscriptions" to subscriptions)).jsonRequest("GET", SubscriptionOperationResponse::class.java)
+    }
+
+    fun addSubscriptions(request: UploadSubscriptionsRequest): SubscriptionOperationResponse {
+        return HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscriptions/upload")
+            .jsonRequest("PUT", request, SubscriptionOperationResponse::class.java)
+    }
+
+    fun removeSubscriptions(subscriptions: List<String>): SubscriptionOperationResponse {
+        return HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscriptions/delete",
+            params = mapOf("subscriptions" to subscriptions)).jsonRequest("DELETE", SubscriptionOperationResponse::class.java)
+    }
+
+    fun handleSubscription(name: String, message: DirectMessage): Any {
+        return HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscriptions/handle/${name}")
+            .jsonRequest("POST", message, Any::class.java)
     }
 
 
