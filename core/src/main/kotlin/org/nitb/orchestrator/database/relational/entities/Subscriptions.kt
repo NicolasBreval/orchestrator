@@ -5,6 +5,7 @@ import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.javatime.datetime
 import org.jetbrains.exposed.sql.statements.BatchInsertStatement
 import org.jetbrains.exposed.sql.statements.api.ExposedBlob
+import org.nitb.orchestrator.database.relational.annotations.TableToCreate
 import java.time.LocalDateTime
 
 /**
@@ -42,8 +43,9 @@ class SubscriptionEntry(
 /**
  * Table object to specify ORM table schema.
  */
+@TableToCreate
 object Subscriptions: Table("SUBSCRIPTIONS") {
-    val id = long("ID").autoIncrement()
+    val id = long("ID").autoIncrement().uniqueIndex()
     val name = varchar("NAME", 300)
     val content = blob("CONTENT")
     val subscriber = varchar("SUBSCRIBER", 300)

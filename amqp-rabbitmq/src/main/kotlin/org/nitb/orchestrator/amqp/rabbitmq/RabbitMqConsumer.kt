@@ -1,6 +1,7 @@
 package org.nitb.orchestrator.amqp.rabbitmq
 
 import com.rabbitmq.client.*
+import org.nitb.orchestrator.amqp.AmqpBlockingException
 import org.nitb.orchestrator.amqp.AmqpMessage
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
@@ -38,6 +39,8 @@ class RabbitMqConsumer<T: Serializable>(
 
         var retries = ConfigManager.getInt(ConfigNames.AMQP_RETRIES, ConfigNames.AMQP_RETRIES_DEFAULT).let { if (it < 0) 0 else it }
 
+        var sendAck = true
+
         while (retries > -1) {
             try {
                 val message = try {
@@ -53,6 +56,9 @@ class RabbitMqConsumer<T: Serializable>(
 
                 if (e !is InterruptedException)
                     logger.warn("RABBITMQ WARNING: Error processing received message from server for queue $name", e)
+
+                if (e is AmqpBlockingException)
+                    sendAck = false
             }
         }
 

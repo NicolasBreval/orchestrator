@@ -1,5 +1,6 @@
 package org.nitb.orchestrator.scheduling
 
+import com.cronutils.model.Cron
 import com.cronutils.model.CronType
 import com.cronutils.model.definition.CronDefinitionBuilder
 import com.cronutils.model.time.ExecutionTime
@@ -21,8 +22,7 @@ import java.util.concurrent.TimeUnit
  * @param timeout Maximum time that scheduler can execute task.
  */
 abstract class CronScheduler(
-    private val cronExpression: String,
-    private val cronType: CronType = CronType.UNIX,
+    private val cron: Cron,
     timeout: Long = -1,
     name: String? = null,
     vararg params: Any = arrayOf()
@@ -51,14 +51,5 @@ abstract class CronScheduler(
                 executorTask = initializeTask()
             }
         }, delay, TimeUnit.MILLISECONDS)
-    }
-
-    /**
-     * Cron parser used to calculate elapsed time for next execution
-     */
-    private val cron by lazy { CronParser(CronDefinitionBuilder.instanceDefinitionFor(cronType)).parse(cronExpression) }
-
-    init {
-        cron.validate()
     }
 }

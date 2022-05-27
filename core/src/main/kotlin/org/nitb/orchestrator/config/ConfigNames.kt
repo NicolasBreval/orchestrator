@@ -116,6 +116,8 @@ object ConfigNames {
      */
     const val DATABASE_SHOW_LOGS = "database.show.logs"
 
+    const val DATABASE_CREATE_ON_STARTUP_SCHEMAS_PACKAGES = "database.create.on.startup.schemas.packages"
+
     // endregion
 
     // region DATABASE DEFAULTS

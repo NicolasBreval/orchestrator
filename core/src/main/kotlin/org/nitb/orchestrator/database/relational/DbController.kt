@@ -4,15 +4,18 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
+import org.nitb.orchestrator.database.relational.annotations.TableToCreate
 import org.nitb.orchestrator.database.relational.entities.SubscriptionEntry
 import org.nitb.orchestrator.database.relational.entities.Subscriptions
 import org.nitb.orchestrator.database.relational.entities.operations.OperationType
 import org.nitb.orchestrator.database.relational.entities.operations.SubscriptionDatabaseOperation
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.scheduling.PeriodicalScheduler
+import org.reflections.Reflections
 import java.lang.RuntimeException
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingDeque
+import kotlin.reflect.full.createInstance
 
 object DbController {
 
@@ -90,6 +93,12 @@ object DbController {
         }
     }
 
+    fun createTableIfNotExists(tableClass: Table) {
+        transaction {
+            SchemaUtils.createMissingTablesAndColumns(tableClass)
+        }
+    }
+
     // endregion
 
     // region INTERNAL METHODS
@@ -116,6 +125,7 @@ object DbController {
 
     // region PRIVATE PROPERTIES
 
+    private val logger = LoggingManager.getLogger("db.controller")
     private val executor = Executors.newSingleThreadExecutor()
 
     // endregion
@@ -127,8 +137,24 @@ object DbController {
             DbFactory.connect()
 
             if (ConfigManager.getBoolean(ConfigNames.DATABASE_CREATE_SCHEMAS_ON_STARTUP)) {
+
                 transaction {
-                    SchemaUtils.createMissingTablesAndColumns(Subscriptions)
+                    val packages = listOf("org.nitb.orchestrator.database.relational.entities",
+                        *ConfigManager.getProperties(ConfigNames.DATABASE_CREATE_ON_STARTUP_SCHEMAS_PACKAGES).toTypedArray())
+
+
+                    for (packageName in packages) {
+                        Reflections(packageName).getTypesAnnotatedWith(TableToCreate::class.java).forEach {
+                            if (Table::class.java.isAssignableFrom(it)) {
+                                try {
+                                    SchemaUtils.createMissingTablesAndColumns(it.kotlin.objectInstance as Table)
+                                } catch (e: Exception) {
+                                    logger.error("Error with database table ${it.name}")
+                                }
+                            }
+
+                        }
+                    }
                 }
             }
         } catch (e: Exception) {

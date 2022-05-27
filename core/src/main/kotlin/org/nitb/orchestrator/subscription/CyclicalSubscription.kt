@@ -1,21 +1,54 @@
 package org.nitb.orchestrator.subscription
 
+import com.cronutils.model.CronType
+import com.cronutils.model.definition.CronDefinitionBuilder
+import com.cronutils.parser.CronParser
+import org.nitb.orchestrator.scheduling.CronScheduler
+import org.nitb.orchestrator.scheduling.PeriodicalScheduler
 import org.nitb.orchestrator.scheduling.Scheduler
+import org.nitb.orchestrator.subscription.entities.PeriodType
+import java.lang.IllegalArgumentException
+import java.lang.RuntimeException
+import java.math.BigInteger
 
 abstract class CyclicalSubscription<O>(
     name: String,
     timeout: Long = -1,
-    description: String? = null
+    description: String? = null,
+    private val periodExpression: String,
+    private val type: PeriodType
 ): Subscription<Unit, O>(name, timeout, description) {
 
-    // region PRIVATE PROPERTIES
+    private val fixedRegex = "\\d+(@)?(\\d+)?"
 
     @delegate:Transient
-    private val scheduler: Scheduler by lazy { createScheduler() }
+    private val scheduler: Scheduler by lazy {
+        if (type == PeriodType.FIXED) {
+            if (!fixedRegex.toRegex().matches(periodExpression)) {
+                throw RuntimeException("Invalid expression for $type.")
+            }
 
-    // endregion
+            object : PeriodicalScheduler(0, 0, timeout) {
+                override fun onCycle() {
+                    runEvent(BigInteger.ZERO, name, Unit)
+                }
+            }
+        } else {
 
-    // region PRIVATE METHODS
+            val cron = try {
+                CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.valueOf(type.name)))
+                    .parse(periodExpression).validate()
+            } catch (e: IllegalArgumentException) {
+                throw RuntimeException("Invalid expression for $type.")
+            }
+
+            object : CronScheduler(cron, timeout) {
+                override fun onCycle() {
+                    runEvent(BigInteger.ZERO, name, Unit)
+                }
+            }
+        }
+    }
 
     override fun initialize() {
         scheduler.start()
@@ -28,9 +61,4 @@ abstract class CyclicalSubscription<O>(
     override fun onDelete() {
         scheduler.stop(true)
     }
-
-    abstract fun createScheduler(): Scheduler
-
-    // endregion
-
 }
