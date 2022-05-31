@@ -57,12 +57,12 @@ class RabbitMqConsumer<T: Serializable>(
                 if (e !is InterruptedException)
                     logger.warn("RABBITMQ WARNING: Error processing received message from server for queue $name", e)
 
-                if (e is AmqpBlockingException)
-                    sendAck = false
+                sendAck = e !is AmqpBlockingException
             }
         }
 
-        channel.basicAck(deliveryTag!!, false)
+        if (sendAck)
+            channel.basicAck(deliveryTag!!, false)
     }
 
     override fun handleShutdownSignal(consumerTag: String?, sig: ShutdownSignalException?) {

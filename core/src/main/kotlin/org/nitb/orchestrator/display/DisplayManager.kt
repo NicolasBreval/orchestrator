@@ -76,7 +76,7 @@ class DisplayManager(
             params = mapOf("subscriptions" to subscriptions)).jsonRequest("DELETE", SubscriptionOperationResponse::class.java)
     }
 
-    fun handleSubscription(name: String, message: DirectMessage): Any {
+    fun handleSubscription(name: String, message: DirectMessage<*>): Any {
         return HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscriptions/handle/${name}")
             .jsonRequest("POST", message, Any::class.java)
     }

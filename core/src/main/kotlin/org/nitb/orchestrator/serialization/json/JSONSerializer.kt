@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.PropertyAccessor
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import java.lang.NullPointerException
@@ -22,7 +23,7 @@ object JSONSerializer {
      * @param obj Object to serialize.
      */
     fun serializeWithClassName(obj: Any): String {
-        val node = jacksonMapper.get().convertValue(obj, JsonNode::class.java)
+        val node = jacksonMapper.convertValue(obj, JsonNode::class.java)
         (node as ObjectNode).put("className", obj::class.java.name)
         return node.toString()
     }
@@ -33,7 +34,7 @@ object JSONSerializer {
      */
     fun deserializeWithClassName(content: String): Any {
         try {
-            val mapper = jacksonMapper.get()
+            val mapper = jacksonMapper
             val node = mapper.readValue(content, JsonNode::class.java)
             val clazz = Class.forName((node as ObjectNode).get("className").asText())
             node.remove("className")
@@ -49,7 +50,7 @@ object JSONSerializer {
      * @param obj Object to serialize.
      */
     fun serialize(obj: Any): String {
-        return jacksonMapper.get().writeValueAsString(obj)
+        return jacksonMapper.writeValueAsString(obj)
     }
 
     /**
@@ -58,7 +59,7 @@ object JSONSerializer {
      * @param clazz Class used to deserialize JSON string.
      */
     fun <T> deserialize(content: String, clazz: Class<T>): T {
-        return jacksonMapper.get().readValue(content, clazz)
+        return jacksonMapper.readValue(content, clazz)
     }
 
     /**
@@ -67,7 +68,7 @@ object JSONSerializer {
      * @param type [TypeReference] object to deserialize complex types, like Map with values
      */
     fun <T> deserialize(content: String, type: TypeReference<T>): T {
-        return jacksonMapper.get().readValue(content, type)
+        return jacksonMapper.readValue(content, type)
     }
 
     /**
@@ -76,7 +77,7 @@ object JSONSerializer {
      * @param pretty If is true, serializes object with indenting and new lines.
      */
     fun getSchema(clazz: Class<*>, pretty: Boolean = false): String? {
-        val mapper = jacksonMapper.get()
+        val mapper = jacksonMapper
         val schemaGenerator = JsonSchemaGenerator(mapper)
 
         return if (pretty)
@@ -92,10 +93,10 @@ object JSONSerializer {
     /**
      * Mapper object used to serialize and deserialize objects.
      */
-    private val jacksonMapper = ThreadLocal.withInitial {
-        val jacksonMapper = jacksonObjectMapper()
+    private val jacksonMapper = jacksonObjectMapper()
+
+    init {
         jacksonMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
-        jacksonMapper
     }
 
     // endregion

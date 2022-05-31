@@ -5,16 +5,20 @@ import okhttp3.*
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.nitb.orchestrator.serialization.json.JSONSerializer
+import java.io.IOException
 
 class HttpClient(
     private val url: String,
     private val params: Map<String, List<String>> = mapOf(),
-    private val headers: Map<String, List<String>> = mapOf()
+    private val headers: Map<String, List<String>> = mapOf(),
+    private val retries: Int = 0,
+    private val timeBetweenRetries: Long = 0
 ) {
 
     fun <T> jsonRequest(method: String, body: Any, clazz: Class<T>): T {
-        val client = OkHttpClient()
+        val client = createClient()
 
         val requestBody = JSONSerializer.serialize(body).toRequestBody("application/json".toMediaType())
 
@@ -24,7 +28,7 @@ class HttpClient(
     }
 
     fun <T> jsonRequest(method: String, clazz: Class<T>): T {
-        val client = OkHttpClient()
+        val client = createClient()
 
         val request = createRequestBuilder(method, null)
 
@@ -32,7 +36,7 @@ class HttpClient(
     }
 
     fun <T> jsonRequest(method: String, typeReference: TypeReference<T>): T {
-        val client = OkHttpClient()
+        val client = createClient()
 
         val request = createRequestBuilder(method, null)
 
@@ -40,7 +44,7 @@ class HttpClient(
     }
 
     fun jsonRequest(method: String, body: Any): Response {
-        val client = OkHttpClient()
+        val client = createClient()
 
         val requestBody = JSONSerializer.serialize(body).toRequestBody("application/json".toMediaType())
 
@@ -50,7 +54,7 @@ class HttpClient(
     }
 
     fun jsonRequest(method: String): Response {
-        val client = OkHttpClient()
+        val client = createClient()
 
         val request = createRequestBuilder(method, null)
 
@@ -58,7 +62,7 @@ class HttpClient(
     }
 
     fun multipartFormRequest(method: String, valueParts: Map<String, String> = mapOf(), fileParts: List<Triple<String, String, RequestBody>> = listOf()): Response {
-        val client = OkHttpClient()
+        val client = createClient()
 
         val requestBody = MultipartBody.Builder().setType(MultipartBody.FORM)
 
@@ -96,4 +100,31 @@ class HttpClient(
 
         return request
     }
+
+    private fun createClient(): OkHttpClient {
+        val clientBuilder = OkHttpClient.Builder()
+
+        clientBuilder.addInterceptor(Interceptor { chain ->
+            val req = chain.request()
+
+            var res: Response = if (retries == 0) chain.proceed(req) else Response.Builder().code(0).request(req).protocol(Protocol.HTTP_2).message("")
+                .body( "".toResponseBody("plain/text".toMediaType())).build()
+
+            var tryCount = 0
+            while (tryCount < retries) {
+                try {
+                    res = chain.proceed(req)
+                    tryCount = retries
+                } catch (e: IOException) {
+                    Thread.sleep(timeBetweenRetries)
+                    tryCount++
+                }
+            }
+
+            res
+        })
+
+        return clientBuilder.build()
+    }
+
 }

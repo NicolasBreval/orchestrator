@@ -2,6 +2,7 @@ package org.nitb.orchestrator.amqp.activemq
 
 import org.apache.activemq.*
 import org.apache.activemq.advisory.AdvisorySupport
+import org.nitb.orchestrator.amqp.AmqpBlockingException
 import org.nitb.orchestrator.amqp.AmqpClient
 import org.nitb.orchestrator.amqp.AmqpMessage
 import org.nitb.orchestrator.amqp.AmqpType
@@ -72,6 +73,7 @@ class ActiveMqAmqpClient<T: Serializable>(
         for (i in 0 until workers) {
             consumers.add(session.createConsumer(declareQueue(name)) { message ->
 
+                var sendAck = true
                 var retries = ConfigManager.getInt(ConfigNames.AMQP_RETRIES, ConfigNames.AMQP_RETRIES_DEFAULT).let { if (it < 0) 0 else it }
 
                 while (retries > -1) {
@@ -92,10 +94,14 @@ class ActiveMqAmqpClient<T: Serializable>(
 
                         if (e !is InterruptedException)
                             logger.error("Error consuming message", e)
+
+                        sendAck = e !is AmqpBlockingException
+
                     }
                 }
 
-                message.acknowledge()
+                if (sendAck)
+                    message.acknowledge()
 
             } as ActiveMQMessageConsumer)
         }

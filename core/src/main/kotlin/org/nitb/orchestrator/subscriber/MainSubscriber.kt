@@ -17,6 +17,7 @@ import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResponse
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResult
 import org.nitb.orchestrator.subscription.Subscription
+import org.nitb.orchestrator.subscription.entities.DirectMessage
 import java.io.Serializable
 import java.lang.IllegalStateException
 import java.lang.RuntimeException
@@ -55,11 +56,11 @@ class MainSubscriber(
 
             if (allocationStrategy == AllocationStrategy.FIXED) {
                 lastSubscriptions.groupBy { it.subscriber }.forEach { (subscriber, subscriptions) ->
-                    fallenSubscriptionsBySubscriber[subscriber] = subscriptions.associate { Pair(it.name, String(it.content)) }
+                    fallenSubscriptionsBySubscriber[subscriber] = subscriptions.associate { Pair(it.name, String(it.content.bytes)) }
                     fallenSubscriptionsNeedToSend[subscriber] = true
                 }
             } else {
-                fallenSubscriptionsBySubscriber[""] = lastSubscriptions.associate { Pair(it.name, String(it.content)) }
+                fallenSubscriptionsBySubscriber[""] = lastSubscriptions.associate { Pair(it.name, String(it.content.bytes)) }
                 fallenSubscriptionsNeedToSend[""] = true
             }
         }.start()
@@ -227,7 +228,20 @@ class MainSubscriber(
     }
 
     fun getSubscriptionInfo(name: String): SubscriptionInfo? {
-        return subscribers.flatMap { it.value.subscriptions.values }.filter { it.name == name }.firstOrNull()
+        return subscribers.flatMap { it.value.subscriptions.values }.firstOrNull { it.name == name }
+    }
+
+    fun handleSubscriptionMessage(name: String, message: DirectMessage<*>): Any? {
+        subscribers.filter { it.value.subscriptions.containsKey(name) }.keys.first().let {
+            return if (it == subscriberName) {
+                parentSubscriber.handleSubscriptionMessage(name, message, true)
+            } else {
+                val info = subscribers[it]
+                val url = "http://${info?.hostname}:${info?.httpPort}/subscriptions/remove" // TODO: Check for HTTPS option
+
+                HttpClient(url).jsonRequest("POST", message, Any::class.java)
+            }
+        }
     }
 
     // endregion
@@ -376,7 +390,7 @@ class MainSubscriber(
         }
 
         subscribers.forEach { subscriber ->
-            val subscriptionsForSubscriber = DbController.getLastActiveSubscriptionsBySubscriber(subscriber).associate { Pair(it.name, String(it.content)) }
+            val subscriptionsForSubscriber = DbController.getLastActiveSubscriptionsBySubscriber(subscriber).associate { Pair(it.name, String(it.content.bytes)) }
             fallenSubscriptionsBySubscriber[subscriber] = subscriptionsForSubscriber
             fallenSubscriptionsNeedToSend[subscriber] = true
         }
@@ -399,4 +413,7 @@ class MainSubscriber(
 
     // endregion
 
+    init {
+        DbController.initialize()
+    }
 }

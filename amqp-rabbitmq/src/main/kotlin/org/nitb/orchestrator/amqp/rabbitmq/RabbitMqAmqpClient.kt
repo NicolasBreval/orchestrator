@@ -2,14 +2,13 @@ package org.nitb.orchestrator.amqp.rabbitmq
 
 import com.rabbitmq.client.AlreadyClosedException
 import com.rabbitmq.client.ConnectionFactory
+import com.rabbitmq.client.ShutdownListener
 import org.nitb.orchestrator.amqp.AmqpClient
 import org.nitb.orchestrator.amqp.AmqpMessage
 import org.nitb.orchestrator.amqp.AmqpType
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
-import org.nitb.orchestrator.http.HttpClient
 import org.nitb.orchestrator.logging.LoggingManager
-import org.nitb.orchestrator.scheduling.PeriodicalScheduler
 import org.nitb.orchestrator.serialization.binary.BinarySerializer
 import java.io.IOException
 import java.io.Serializable
@@ -90,6 +89,7 @@ class RabbitMqAmqpClient<T: Serializable>(
 
     override fun close() {
         cancelConsumer()
+        channel.removeShutdownListener(shutdownListener)
         channel.close()
         connection.close()
     }
@@ -127,6 +127,17 @@ class RabbitMqAmqpClient<T: Serializable>(
 
     private lateinit var consumerFunction: Consumer<AmqpMessage<T>>
 
+    private val shutdownListener = ShutdownListener {
+        logger.warn("Recovering channel due to shutdown...")
+        channel = connection.createChannel()
+
+        try {
+            createConsumer(consumerFunction)
+        } catch (e: Exception) {
+            // do nothing
+        }
+    }
+
     // endregion
 
     // region PRIVATE METHODS
@@ -141,13 +152,6 @@ class RabbitMqAmqpClient<T: Serializable>(
     // endregion
 
     init {
-        channel.addShutdownListener {
-            logger.warn("Recovering channel due to shutdown...")
-            channel = connection.createChannel()
-
-            if (this::consumerFunction.isInitialized) {
-                createConsumer(consumerFunction)
-            }
-        }
+        channel.addShutdownListener(shutdownListener)
     }
 }

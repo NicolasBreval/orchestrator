@@ -144,9 +144,9 @@ class Subscriber(
         }
     }
 
-    fun handleSubscriptionMessage(name: String, message: DirectMessage): Any? {
-        return if (isMainNode) {
-
+    fun handleSubscriptionMessage(name: String, message: DirectMessage<*>, force: Boolean = false): Any? {
+        return if (isMainNode && !force) {
+            mainSubscriber.handleSubscriptionMessage(name, message)
         } else {
             subscriptionsPool[name]?.handleMessage(message)
         }

@@ -75,7 +75,7 @@ abstract class Subscription<I, O>(
 
     @JsonIgnore
     @Transient
-    protected val messageHandlers: Map<String, (DirectMessage) -> Any?> = mapOf()
+    protected val messageHandlers: MutableMap<String, (DirectMessage<*>) -> Any?> = mutableMapOf()
 
     // endregion
 
@@ -130,6 +130,10 @@ abstract class Subscription<I, O>(
 
     protected open fun onDelete() {}
 
+    protected fun <T> parseHandlerMessage(message: DirectMessage<*>, clazz: Class<T>): T {
+        return JSONSerializer.deserialize(JSONSerializer.serialize(message.info), clazz)
+    }
+
     // endregion
 
     // region PUBLIC PROPERTIES
@@ -159,7 +163,7 @@ abstract class Subscription<I, O>(
         return schema?.hashCode() ?: 0
     }
 
-    fun handleMessage(message: DirectMessage): Any? {
+    fun handleMessage(message: DirectMessage<*>): Any? {
         return this.messageHandlers[message.handler]?.invoke(message)
     }
 
