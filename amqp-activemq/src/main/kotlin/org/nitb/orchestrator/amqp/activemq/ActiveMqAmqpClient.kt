@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
 import javax.jms.*
 import javax.jms.Message
+import kotlin.Exception
 
 /**
  * [AmqpClient] based on ActiveMQ protocol.
@@ -134,11 +135,15 @@ class ActiveMqAmqpClient<T: Serializable>(
     }
 
     override fun close() {
-        cancelConsumer()
+        try {
+            cancelConsumer()
 
-        advisoryConsumer.close()
-        session.close()
-        connection.close()
+            advisoryConsumer.close()
+            session.close()
+            connection.close()
+        } catch (e: Exception) {
+            // do nothing
+        }
     }
 
     override fun masterConsuming(): Boolean {
@@ -166,7 +171,7 @@ class ActiveMqAmqpClient<T: Serializable>(
     /**
      * Logger object used to show information to developer and client.
      */
-    private val logger = LoggingManager.getLogger(this::class.java)
+    private val logger = LoggingManager.getLogger(name)
 
     /**
      * Connection object used to send and receive data from ActiveMQ queues.

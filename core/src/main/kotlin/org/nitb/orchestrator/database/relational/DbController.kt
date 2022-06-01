@@ -28,22 +28,6 @@ object DbController {
     }
 
     /**
-     * Obtains all subscriptions with specified name.
-     * @param subscriptionName Name of subscription to search.
-     * @param onlyActive If is true, obtains only active subscriptions
-     */
-    fun getSubscriptionsByName(subscriptionName: String, onlyActive: Boolean = false): List<SubscriptionEntry> {
-        return transaction {
-            val filters: Op<Boolean> = when {
-                onlyActive -> Op.build { Subscriptions.name eq subscriptionName and Subscriptions.active }
-                else -> Op.build { Subscriptions.name eq subscriptionName }
-            }
-
-            SubscriptionEntry.find(filters).toList()
-        }
-    }
-
-    /**
      * Obtains all active subscriptions registered on database.
      */
     fun getLastActiveSubscriptions(): List<SubscriptionEntry> {
@@ -65,7 +49,7 @@ object DbController {
      * Inserts a list of subscriptions concurrently inside an ExecutorService
      */
     fun uploadSubscriptionsConcurrently(subscriptions: Map<String, String>, subscriber: String, stopped: Boolean? = null, active: Boolean? = null) {
-        executor.submit {
+        Thread {
             val lastSubscriptions = getLastActiveSubscriptionsBySubscriber(subscriber).associateBy { it.name }
 
             transaction {
@@ -79,7 +63,25 @@ object DbController {
                     }
                 }
             }
-        }
+        }.start()
+    }
+
+    fun setSubscriptionsConcurrentlyByName(subscriptions: List<String>, stopped: Boolean? = null, active: Boolean? = null) {
+        Thread {
+            transaction {
+                SubscriptionEntry.find { Subscriptions.id inSubQuery Subscriptions.slice(Subscriptions.id.max())
+                    .select { Subscriptions.name inList subscriptions }
+                    .groupBy(Subscriptions.name) }.forEach { entry ->
+                    SubscriptionEntry.new {
+                        this.name = entry.name
+                        this.content = entry.content
+                        this.subscriber = entry.subscriber
+                        this.stopped = stopped ?: entry.stopped
+                        this.active = active ?: entry.active
+                    }
+                }
+            }
+        }.start()
     }
 
     // endregion
@@ -139,7 +141,6 @@ object DbController {
     // region PRIVATE PROPERTIES
 
     private val logger = LoggingManager.getLogger("db.controller")
-    private val executor = Executors.newSingleThreadExecutor()
 
     // endregion
 

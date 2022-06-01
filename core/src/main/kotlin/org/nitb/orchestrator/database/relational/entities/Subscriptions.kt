@@ -4,14 +4,9 @@ import org.jetbrains.exposed.dao.Entity
 import org.jetbrains.exposed.dao.EntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.javatime.datetime
-import org.jetbrains.exposed.sql.statements.BatchInsertStatement
-import org.jetbrains.exposed.sql.statements.api.ExposedBlob
+import org.jetbrains.exposed.sql.javatime.timestamp
 import org.nitb.orchestrator.database.relational.annotations.TableToCreate
 import java.time.Instant
-import java.time.LocalDateTime
 
 /**
  * Table object to specify ORM table schema.
@@ -22,7 +17,7 @@ object Subscriptions: LongIdTable("SUBSCRIPTIONS") {
     val content = blob("CONTENT")
     val subscriber = varchar("SUBSCRIBER", 300)
     val stopped = bool("STOPPED")
-    val creationDate = datetime("CREATION_DATE").default(LocalDateTime.now())
+    val creationDate = timestamp("CREATION_DATE").default(Instant.now())
     val active = bool("ACTIVE")
 }
 

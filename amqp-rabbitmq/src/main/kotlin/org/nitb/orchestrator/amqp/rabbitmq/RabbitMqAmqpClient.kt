@@ -88,10 +88,14 @@ class RabbitMqAmqpClient<T: Serializable>(
     }
 
     override fun close() {
-        cancelConsumer()
-        channel.removeShutdownListener(shutdownListener)
-        channel.close()
-        connection.close()
+        try {
+            cancelConsumer()
+            channel.removeShutdownListener(shutdownListener)
+            channel.close()
+            connection.close()
+        } catch (e: Exception) {
+            // do nothing
+        }
     }
 
     override fun masterConsuming(): Boolean {
@@ -115,7 +119,7 @@ class RabbitMqAmqpClient<T: Serializable>(
     /**
      * Logger object used to show information to developer and client.
      */
-    private val logger = LoggingManager.getLogger(this::class.java)
+    private val logger = LoggingManager.getLogger(name)
 
     /**
      * Identifier of consumer. When RabbitMQ client creates new consumer for a client, returns a tag to identify the consumer.

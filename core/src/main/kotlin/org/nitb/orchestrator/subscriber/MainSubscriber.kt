@@ -125,9 +125,8 @@ class MainSubscriber(
                 } catch (e: IllegalStateException) {
                     notUploaded.addAll(subscriptions)
                 }
-
-                DbController.uploadSubscriptionsConcurrently(subscriptions.associateBy { (JSONSerializer.deserializeWithClassName(it) as Subscription<*, *>).name }, subscriber)
             }
+            DbController.uploadSubscriptionsConcurrently(subscriptions.associateBy { (JSONSerializer.deserializeWithClassName(it) as Subscription<*, *>).name }, subscriber, stopped = false, active = true)
         }
 
         val message = if (notUploaded.isEmpty()) {
@@ -163,9 +162,8 @@ class MainSubscriber(
                     } catch (e: IllegalStateException) {
                         notRemoved.addAll(subscriptions)
                     }
-
-                    DbController.uploadSubscriptionsConcurrently(subscriptions.associateBy { (JSONSerializer.deserializeWithClassName(it) as Subscription<*, *>).name }, subscriber.get(), active = false)
                 }
+                DbController.setSubscriptionsConcurrentlyByName(subscriptions, active = false)
             }
         }
 
@@ -202,9 +200,8 @@ class MainSubscriber(
                     } catch (e: IllegalStateException) {
                         notSet.addAll(subscriptions)
                     }
-
-                    DbController.uploadSubscriptionsConcurrently(subscriptions.associateBy { (JSONSerializer.deserializeWithClassName(it) as Subscription<*, *>).name }, subscriber.get(), stopped = stop)
                 }
+                DbController.setSubscriptionsConcurrentlyByName(subscriptions, stopped = stop)
             }
         }
 
