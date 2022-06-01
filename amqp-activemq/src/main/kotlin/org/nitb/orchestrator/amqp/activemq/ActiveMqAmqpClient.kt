@@ -12,13 +12,11 @@ import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.serialization.binary.BinarySerializer
 import org.nitb.orchestrator.serialization.json.JSONSerializer
 import java.io.Serializable
-import java.lang.Exception
 import java.lang.RuntimeException
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
 import javax.jms.*
 import javax.jms.Message
-import kotlin.Exception
 
 /**
  * [AmqpClient] based on ActiveMQ protocol.
