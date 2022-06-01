@@ -1,7 +1,6 @@
 package org.nitb.orchestrator.display
 
 import com.fasterxml.jackson.core.type.TypeReference
-import io.micronaut.http.client.exceptions.EmptyResponseException
 import org.nitb.orchestrator.amqp.AmqpConsumer
 import org.nitb.orchestrator.amqp.AmqpManager
 import org.nitb.orchestrator.amqp.AmqpSender
@@ -45,7 +44,7 @@ class DisplayManager(
     fun listSubscribers(): Map<String, SubscriberInfo> {
         val httpClient = HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscribers/list")
 
-        httpClient.jsonRequest("GET").use { response ->
+        httpClient.basicRequest("GET").use { response ->
             return JSONSerializer.deserialize(response.body!!.string(), object : TypeReference<Map<String, SubscriberInfo>>() {})
         }
     }

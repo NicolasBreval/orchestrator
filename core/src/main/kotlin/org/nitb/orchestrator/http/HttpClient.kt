@@ -43,7 +43,7 @@ class HttpClient(
         return client.newCall(request.build()).execute().body?.string()?.let { JSONSerializer.deserialize(it, typeReference) } ?: error("Response doesn't valid")
     }
 
-    fun jsonRequest(method: String, body: Any): Response {
+    fun basicRequest(method: String, body: Any): Response {
         val client = createClient()
 
         val requestBody = JSONSerializer.serialize(body).toRequestBody("application/json".toMediaType())
@@ -53,7 +53,7 @@ class HttpClient(
         return client.newCall(request.build()).execute()
     }
 
-    fun jsonRequest(method: String): Response {
+    fun basicRequest(method: String): Response {
         val client = createClient()
 
         val request = createRequestBuilder(method, null)

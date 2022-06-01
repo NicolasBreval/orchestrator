@@ -11,7 +11,6 @@ import org.nitb.orchestrator.database.relational.entities.Subscriptions
 import org.nitb.orchestrator.logging.LoggingManager
 import org.reflections.Reflections
 import java.lang.RuntimeException
-import java.util.concurrent.Executors
 
 object DbController {
 
