@@ -21,8 +21,6 @@
     <module>amqp-rabbitmq</module>
     <module>worker-node</module>
     <module>display-node</module>
-    <module>worker-node-example</module>
-    <module>display-node-example</module>
   </modules>
   <properties>
     <kotlin.version>1.6.21</kotlin.version>
