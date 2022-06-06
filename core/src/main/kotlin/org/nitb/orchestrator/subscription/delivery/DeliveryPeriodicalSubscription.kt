@@ -7,6 +7,7 @@ import org.nitb.orchestrator.amqp.AmqpSender
 import org.nitb.orchestrator.subscription.CyclicalSubscription
 import org.nitb.orchestrator.subscription.SubscriptionReceiver
 import org.nitb.orchestrator.subscription.entities.PeriodType
+import org.nitb.orchestrator.transformers.Transformer
 import java.io.Serializable
 
 @HeritableSubscription
@@ -25,5 +26,11 @@ abstract class DeliveryPeriodicalSubscription<O: Serializable>(
     override fun deactivate() {
         super.deactivate()
         client.close()
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override fun onSuccess(input: Unit, output: O?) {
+        if (output != null)
+            sendToReceivers(output, client, receivers)
     }
 }

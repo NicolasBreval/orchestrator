@@ -28,7 +28,14 @@ abstract class CyclicalSubscription<O>(
                 throw RuntimeException("Invalid expression for $type.")
             }
 
-            object : PeriodicalScheduler(0, 0, timeout) {
+            val (delay, initialDelay) = if (periodExpression.contains("@")) {
+                val parts = periodExpression.split("@")
+                Pair(parts[0].toLong(), parts[1].toLong())
+            } else {
+                Pair(periodExpression.toLong(), 0L)
+            }
+
+            object : PeriodicalScheduler(delay, initialDelay, timeout) {
                 override fun onCycle() {
                     runEvent(BigInteger.ZERO, name, Unit)
                 }

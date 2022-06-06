@@ -1,6 +1,7 @@
 package org.nitb.orchestrator.amqp
 
 import org.nitb.orchestrator.subscription.SubscriptionReceiver
+import org.nitb.orchestrator.transformers.Transformer
 import java.io.Serializable
 
 /**
@@ -16,9 +17,16 @@ interface AmqpSender {
      * @param client Client used to make sent.
      * @param receivers List of Subscriptions to send message.
      */
+    @Suppress("UNCHECKED_CAST")
     fun sendToReceivers(message: Serializable, client: AmqpClient<*>, receivers: List<SubscriptionReceiver>) {
         for (receiver in receivers) {
-            client.send(receiver.name, message)
+            val transformed = try {
+                (Class.forName(receiver.transformer).newInstance() as Transformer<Serializable>).transform(message)
+            } catch (e: Exception) {
+                message
+            }
+
+            client.send(receiver.name, transformed)
         }
     }
 

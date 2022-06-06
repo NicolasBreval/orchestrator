@@ -9,6 +9,7 @@ import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.serialization.binary.BinarySerializer
 import org.nitb.orchestrator.serialization.json.JSONSerializer
 import java.io.Serializable
+import java.util.concurrent.Executors
 import java.util.function.Consumer
 
 /**
@@ -41,25 +42,28 @@ class RabbitMqConsumer<T: Serializable>(
 
         var sendAck = true
 
-        while (retries > -1) {
-            try {
-                val message = try {
-                    BinarySerializer.deserialize(body!!)
+        val task = executor.submit {
+            while (retries > -1) {
+                try {
+                    val message = try {
+                        BinarySerializer.deserialize(body!!)
+                    } catch (e: Exception) {
+                        JSONSerializer.deserialize(String(body!!), AmqpMessage::class.java) as AmqpMessage<T>
+                    }
+
+                    onReceive.accept(message)
+                    retries = -1
                 } catch (e: Exception) {
-                    JSONSerializer.deserialize(String(body!!), AmqpMessage::class.java) as AmqpMessage<T>
+                    retries--
+
+                    if (e !is InterruptedException)
+                        logger.warn("RABBITMQ WARNING: Error processing received message from server for queue $name", e)
+
+                    sendAck = e !is AmqpBlockingException
                 }
-
-                onReceive.accept(message)
-                retries = -1
-            } catch (e: Exception) {
-                retries--
-
-                if (e !is InterruptedException)
-                    logger.warn("RABBITMQ WARNING: Error processing received message from server for queue $name", e)
-
-                sendAck = e !is AmqpBlockingException
             }
         }
+        task.get()
 
         if (sendAck)
             channel.basicAck(deliveryTag!!, false)
@@ -86,6 +90,8 @@ class RabbitMqConsumer<T: Serializable>(
      * Logger object used to show information to developer
      */
     private val logger = LoggingManager.getLogger(name)
+
+    private val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
 
     // endregion
 }

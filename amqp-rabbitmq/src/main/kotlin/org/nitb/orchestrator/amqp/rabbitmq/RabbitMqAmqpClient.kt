@@ -109,7 +109,7 @@ class RabbitMqAmqpClient<T: Serializable>(
     /**
      * Connection object used to send and receive data from queues.
      */
-    private val connection = connectionFactory.newConnection()
+    private var connection = connectionFactory.newConnection()
 
     /**
      * Channel object used to send and receive data from queues. It's created from [connection] object.
@@ -133,12 +133,16 @@ class RabbitMqAmqpClient<T: Serializable>(
 
     private val shutdownListener = ShutdownListener {
         logger.warn("Recovering channel due to shutdown...")
-        channel = connection.createChannel()
 
-        try {
-            createConsumer(consumerFunction)
-        } catch (e: Exception) {
-            // do nothing
+        while (!connection.isOpen) {
+            try {
+                connection = connectionFactory.newConnection()
+                channel = connection.createChannel()
+                createConsumer(consumerFunction)
+            } catch (e: Exception) {
+                logger.warn("Error recovering channel, retrying after a second...")
+                Thread.sleep(1000)
+            }
         }
     }
 

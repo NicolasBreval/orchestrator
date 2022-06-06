@@ -76,7 +76,7 @@ class DisplayManager(
     }
 
     fun handleSubscription(name: String, message: DirectMessage<*>): Any {
-        return HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscriptions/handle/${name}")
+        return HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscriptions/handle", params = mapOf("name" to listOf(name)))
             .jsonRequest("POST", message, Any::class.java)
     }
 

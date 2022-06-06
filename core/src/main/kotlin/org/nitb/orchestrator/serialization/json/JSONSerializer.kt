@@ -6,6 +6,8 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import java.lang.NullPointerException
@@ -106,6 +108,8 @@ object JSONSerializer {
 
     init {
         jacksonMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+        jacksonMapper.registerModule(Jdk8Module())
+        jacksonMapper.registerModule(JavaTimeModule())
     }
 
     // endregion

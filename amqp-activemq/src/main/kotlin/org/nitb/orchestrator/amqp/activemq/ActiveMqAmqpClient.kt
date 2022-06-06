@@ -13,6 +13,7 @@ import org.nitb.orchestrator.serialization.binary.BinarySerializer
 import org.nitb.orchestrator.serialization.json.JSONSerializer
 import java.io.Serializable
 import java.lang.RuntimeException
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
 import javax.jms.*
@@ -75,29 +76,32 @@ class ActiveMqAmqpClient<T: Serializable>(
                 var sendAck = true
                 var retries = ConfigManager.getInt(ConfigNames.AMQP_RETRIES, ConfigNames.AMQP_RETRIES_DEFAULT).let { if (it < 0) 0 else it }
 
-                while (retries > -1) {
-                    try {
-                        val amqpMessage = when (message) {
-                            is BytesMessage -> {
-                                val bytes = ByteArray(message.bodyLength.toInt())
-                                message.readBytes(bytes)
-                                BinarySerializer.deserialize(bytes)
+                val task = executor.submit {
+                    while (retries > -1) {
+                        try {
+                            val amqpMessage = when (message) {
+                                is BytesMessage -> {
+                                    val bytes = ByteArray(message.bodyLength.toInt())
+                                    message.readBytes(bytes)
+                                    BinarySerializer.deserialize(bytes)
+                                }
+                                is TextMessage -> JSONSerializer.deserialize(message.text, AmqpMessage::class.java) as AmqpMessage<T>
+                                else -> throw IllegalArgumentException("Invalid input message type")
                             }
-                            is TextMessage -> JSONSerializer.deserialize(message.text, AmqpMessage::class.java) as AmqpMessage<T>
-                            else -> throw IllegalArgumentException("Invalid input message type")
+                            onConsume.accept(amqpMessage)
+                            retries = -1
+                        } catch (e: Exception) {
+                            retries--
+
+                            if (e !is InterruptedException)
+                                logger.error("Error consuming message", e)
+
+                            sendAck = e !is AmqpBlockingException
+
                         }
-                        onConsume.accept(amqpMessage)
-                        retries = -1
-                    } catch (e: Exception) {
-                        retries--
-
-                        if (e !is InterruptedException)
-                            logger.error("Error consuming message", e)
-
-                        sendAck = e !is AmqpBlockingException
-
                     }
                 }
+                task.get()
 
                 if (sendAck)
                     message.acknowledge()
@@ -175,13 +179,13 @@ class ActiveMqAmqpClient<T: Serializable>(
      * Connection object used to send and receive data from ActiveMQ queues.
      * @see ActiveMQConnection
      */
-    private val connection: ActiveMQConnection = connectionFactory.createConnection() as ActiveMQConnection
+    private var connection: ActiveMQConnection = connectionFactory.createConnection() as ActiveMQConnection
 
     /**
      * Session object used to send and receive data from ActiveMQ queues. It's created from [connection] object.
      * @see ActiveMQSession
      */
-    private val session: ActiveMQSession by lazy { connection.createSession(false, Session.CLIENT_ACKNOWLEDGE) as ActiveMQSession }
+    private var session: ActiveMQSession = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE) as ActiveMQSession
 
     private val consumers: MutableList<ActiveMQMessageConsumer> = mutableListOf()
 
@@ -199,6 +203,8 @@ class ActiveMqAmqpClient<T: Serializable>(
      * Variable used for main queue checking, if this value is greater than 1, is a bad signal, because main node queue only must contain a consumer
      */
     private var masterConsumersCount: AtomicInteger = AtomicInteger(0)
+
+    private val executor = Executors.newSingleThreadExecutor()
 
     // endregion
 

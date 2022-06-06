@@ -204,7 +204,7 @@ class Subscriber(
     /**
      * This scheduler sends slave information continuously to master
      */
-    private val sendInformationScheduler by lazy {
+    private val sendInformationSchedulerDelegate = lazy {
         object : PeriodicalScheduler(subscriberSendInfoPeriod, 0, subscriberSendInfoTimeout, name = name) {
             override fun onCycle() {
                 val info = SubscriberInfo(name,
@@ -219,12 +219,13 @@ class Subscriber(
             }
         }
     }
+    private val sendInformationScheduler by sendInformationSchedulerDelegate
 
     /**
      * This scheduler checks continuously if master node is up. When main node is down, if [ConfigNames.ALLOCATION_STRATEGY] is not [AllocationStrategy.FIXED]
      * tries to take main node's role
      */
-    private val checkMainNodeExistsScheduler by lazy {
+    private val checkMainNodeExistsSchedulerDelegate = lazy {
         object : PeriodicalScheduler(checkMainNodeExistPeriod, 0, checkMainNodeExistsTimeout, name = name) {
             override fun onCycle() {
                 if (!masterConsuming(client)) {
@@ -235,6 +236,7 @@ class Subscriber(
             }
         }
     }
+    private val checkMainNodeExistsScheduler by checkMainNodeExistsSchedulerDelegate
 
     // endregion
 

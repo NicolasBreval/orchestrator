@@ -70,9 +70,14 @@ class WorkerController {
     }
 
     @Operation(summary = "Used to invoke subscription handler.")
-    @Post("/subscriptions/handle/{name}")
-    fun dynamicSubscriptionEndpointPost(@PathVariable("name") name: String, @Body message: DirectMessage<*>): Any? {
-        return subscriber.handleSubscriptionMessage(name, message)
+    @Post("/subscriptions/handle")
+    fun dynamicSubscriptionEndpointPost(@QueryValue("name") name: String, @Body message: DirectMessage<*>): Any? {
+        try {
+            return subscriber.handleSubscriptionMessage(name, message)
+        } catch (e: Exception) {
+            logger.error("Fatal error during request", e)
+            throw e
+        }
     }
 
     @Get("/subscriber/api/definition")
@@ -83,7 +88,7 @@ class WorkerController {
         return HttpResponse.redirect(URI("/swagger/" + swaggerPath?.toFile()?.name))
     }
 
-    private val log = LoggingManager.getLogger("controller")
+    private val logger = LoggingManager.getLogger("controller")
     private var swaggerPath: Path?
     private val subscriber = Subscriber()
 
@@ -92,6 +97,6 @@ class WorkerController {
         swaggerPath = swaggerLocation?.let { Files.walk(Paths.get(it.file.replaceFirst("/", ""))).filter { file -> Files.isRegularFile(file) }.findFirst().orElse(null) }
 
 
-        log.info("Subscriber controller initialized!!!")
+        logger.info("Subscriber controller initialized!!!")
     }
 }

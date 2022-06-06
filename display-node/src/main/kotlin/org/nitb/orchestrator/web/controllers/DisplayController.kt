@@ -70,8 +70,8 @@ class DisplayController {
     }
 
     @Operation(summary = "Used to invoke subscription handler.")
-    @Post("/subscriptions/handle/{name}")
-    fun dynamicSubscriptionEndpointPost(@PathVariable("name") name: String, @Body message: DirectMessage<*>): Any? {
+    @Post("/subscriptions/handle")
+    fun dynamicSubscriptionEndpointPost(@QueryValue("name") name: String, @Body message: DirectMessage<*>): Any? {
         return displayManager.handleSubscription(name, message)
     }
 
