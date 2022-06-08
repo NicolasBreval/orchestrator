@@ -74,15 +74,6 @@ object JSONSerializer {
     }
 
     /**
-     * Deserializes JSON string to an array of objects, using class to specify generic type of array.
-     * @param content JSON string to deserialize
-     * @param clazz Class used to deserialize JSON string.
-     */
-    fun <T> deserializeDynamicTypeArray(content: String, clazz: Class<T>): Array<T> {
-        return jacksonMapper.readValue(content, jacksonMapper.typeFactory.constructArrayType(clazz))
-    }
-
-    /**
      * Obtains JSON schema of a class.
      * @param clazz Class to obtain their schema.
      * @param pretty If is true, serializes object with indenting and new lines.

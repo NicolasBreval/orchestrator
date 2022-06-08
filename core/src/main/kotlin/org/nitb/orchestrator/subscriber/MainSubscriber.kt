@@ -1,11 +1,14 @@
 package org.nitb.orchestrator.subscriber
 
+import com.fasterxml.jackson.core.type.TypeReference
 import org.nitb.orchestrator.amqp.AmqpConsumer
 import org.nitb.orchestrator.amqp.AmqpManager
 import org.nitb.orchestrator.amqp.AmqpSender
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.database.relational.DbController
+import org.nitb.orchestrator.database.relational.entities.SubscriptionEntry
+import org.nitb.orchestrator.database.relational.entities.SubscriptionSerializableEntry
 import org.nitb.orchestrator.http.HttpClient
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.scheduling.PeriodicalScheduler
@@ -18,6 +21,7 @@ import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOpera
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResult
 import org.nitb.orchestrator.subscription.Subscription
 import org.nitb.orchestrator.subscription.entities.DirectMessage
+import org.reflections.Reflections
 import java.io.Serializable
 import java.lang.IllegalStateException
 import java.lang.RuntimeException
@@ -70,6 +74,8 @@ class MainSubscriber(
         checkWaitingSubscriptionsToUploadScheduler.start()
 
         sendInfoToDisplayNodeScheduler.start()
+
+        isStarted = true
     }
 
     fun stop() {
@@ -131,7 +137,7 @@ class MainSubscriber(
 
         val message = if (notUploaded.isEmpty()) {
             "All subscriptions has been successfully uploaded"
-        } else if (uploaded.isNotEmpty() && notUploaded.isNotEmpty()) {
+        } else if (uploaded.isNotEmpty()) {
             "Some subscriptions could not be uploaded"
         } else {
             "Operation revoked"
@@ -169,7 +175,7 @@ class MainSubscriber(
 
         val message = if (notRemoved.isEmpty()) {
             "All subscriptions has been successfully uploaded"
-        } else if (removed.isNotEmpty() && notRemoved.isNotEmpty()) {
+        } else if (removed.isNotEmpty()) {
             "Some subscriptions could not be uploaded"
         } else {
             "Operation revoked"
@@ -207,13 +213,27 @@ class MainSubscriber(
 
         val message = if (notSet.isEmpty()) {
             "All subscriptions has been successfully ${if (stop) "stopped" else "started"}"
-        } else if (set.isNotEmpty() && notSet.isNotEmpty()) {
+        } else if (set.isNotEmpty()) {
             "Some subscriptions could not be ${if (stop) "stopped" else "started"}"
         } else {
             "Operation revoked"
         }
 
         return SubscriptionOperationResponse(RequestType.SET, message, set, notSet)
+    }
+
+    fun getLogs(name: String, count: Int): List<String> {
+        val subscriber = subscribers.entries.firstOrNull { entry -> entry.value.subscriptions.containsKey(name) }?.key ?: throw IllegalArgumentException("Subscription doesn't exists")
+
+        return if (subscriber == subscriberName) {
+            parentSubscriber.getLogs(name, count, true)
+        } else {
+            val info = subscribers[subscriber]
+            val url = "http://${info?.hostname}:${info?.httpPort}/subscription/logs" // TODO: Check for HTTPS option
+
+            HttpClient(url, params = mapOf("name" to listOf(name), "count" to listOf("$count")))
+                .jsonRequest("GET", object: TypeReference<List<String>>() {})
+        }
     }
 
     fun listSubscribers(): Map<String, SubscriberInfo> {
@@ -223,7 +243,6 @@ class MainSubscriber(
     fun listSubscriptions(): List<SubscriptionInfo> {
         return subscribers.flatMap { it.value.subscriptions.values }
     }
-
     fun getSubscriptionInfo(name: String): SubscriptionInfo? {
         return subscribers.flatMap { it.value.subscriptions.values }.firstOrNull { it.name == name }
     }
@@ -239,6 +258,14 @@ class MainSubscriber(
                 HttpClient(url).jsonRequest("POST", message, Any::class.java)
             }
         }
+    }
+
+    fun getSubscriptionsSchemas(): Map<String, String?> {
+        return subscriptionSchemas
+    }
+
+    fun getSubscriptionHistorical(name: String): List<SubscriptionSerializableEntry> {
+        return DbController.getSubscriptionHistorical(name)
     }
 
     // endregion
@@ -377,6 +404,8 @@ class MainSubscriber(
     }}
     private val checkMasterRoleScheduler by checkMasterRoleSchedulerDelegate
 
+    private val subscriptionSchemas by lazy { loadSubscriptionSchemas() }
+
     // endregion
 
     // region PRIVATE METHODS
@@ -406,6 +435,19 @@ class MainSubscriber(
 
     private fun subscriptionsBySubscriber(subscriptions: List<String>): Map<Optional<String>, List<String>> {
         return subscriptions.groupBy { subscription -> subscribers.filter { (_, info) -> info.subscriptions.any { (name, _) -> name == subscription } }.map { Optional.of(it.key) }.firstOrNull() ?: Optional.empty<String>() }
+    }
+
+    private fun loadSubscriptionSchemas(): Map<String, String?> {
+        val packages = Package.getPackages()
+        val packageSet = mutableSetOf<String>()
+
+        for (p in packages) {
+            packageSet.add(p.name.split(".")[0])
+        }
+
+        return packageSet.flatMap { packageName ->
+            Reflections(packageName).getSubTypesOf(Subscription::class.java).filter { !it.kotlin.isAbstract }
+        }.associate { Pair(it.name, JSONSerializer.getSchema(it, false)) }
     }
 
     // endregion

@@ -5,6 +5,8 @@ import org.nitb.orchestrator.amqp.AmqpManager
 import org.nitb.orchestrator.amqp.AmqpSender
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
+import org.nitb.orchestrator.database.relational.entities.SubscriptionEntry
+import org.nitb.orchestrator.database.relational.entities.SubscriptionSerializableEntry
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.scheduling.PeriodicalScheduler
 import org.nitb.orchestrator.serialization.json.JSONSerializer
@@ -15,6 +17,7 @@ import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResponse
 import org.nitb.orchestrator.subscription.Subscription
 import org.nitb.orchestrator.subscription.entities.DirectMessage
+import org.reflections.Reflections
 import java.io.Serializable
 import java.lang.RuntimeException
 import java.util.*
@@ -120,6 +123,13 @@ class Subscriber(
         }
     }
 
+    fun getLogs(name: String, count: Int, force: Boolean = false): List<String> {
+        return if (isMainNode && !force)
+            mainSubscriber.getLogs(name, count)
+        else
+            LoggingManager.getLogs(name, count)
+    }
+
     fun listSubscribers(): Map<String, SubscriberInfo> {
         if (isMainNode) {
             return mainSubscriber.listSubscribers()
@@ -150,6 +160,20 @@ class Subscriber(
         } else {
             subscriptionsPool[name]?.handleMessage(message)
         }
+    }
+
+    fun getSubscriptionsSchemas(): Map<String, String?> {
+        return if (isMainNode)
+            mainSubscriber.getSubscriptionsSchemas()
+        else
+            throw IllegalAccessException("You cannot request schemas to a non-main node")
+    }
+
+    fun getSubscriptionHistorical(name: String): List<SubscriptionSerializableEntry> {
+        return if (isMainNode)
+            mainSubscriber.getSubscriptionHistorical(name)
+        else
+            throw IllegalAccessException("You cannot request subscription historical to a non-main node")
     }
 
     // endregion
@@ -213,7 +237,7 @@ class Subscriber(
                             subscription.name,
                             subscription.info
                         )
-                    }, name == mainNodeName)
+                    },  mainSubscriber.isStarted)
                 client.send(mainNodeName, info)
                 logger.debug("Node info sent to master with ${info.subscriptions.count()} subscriptions")
             }

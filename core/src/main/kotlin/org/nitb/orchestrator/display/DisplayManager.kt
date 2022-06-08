@@ -6,6 +6,8 @@ import org.nitb.orchestrator.amqp.AmqpManager
 import org.nitb.orchestrator.amqp.AmqpSender
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
+import org.nitb.orchestrator.database.relational.entities.SubscriptionEntry
+import org.nitb.orchestrator.database.relational.entities.SubscriptionSerializableEntry
 import org.nitb.orchestrator.http.HttpClient
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.serialization.json.JSONSerializer
@@ -49,10 +51,20 @@ class DisplayManager(
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
     fun listSubscriptions(): List<SubscriptionInfo> {
         return HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscriptions/list")
             .jsonRequest("GET", object: TypeReference<List<SubscriptionInfo>>() {})
+    }
+
+    fun getSubscriptionInfo(name: String): SubscriptionInfo {
+        return HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscription/info", params = mapOf("name" to listOf(name)))
+            .jsonRequest("GET", SubscriptionInfo::class.java)
+    }
+
+    fun getLogs(name: String, count: Int): List<String> {
+        return HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscription/logs",
+            params = mapOf("name" to listOf(name), "count" to listOf("$count")))
+            .jsonRequest("GET", object: TypeReference<List<String>>() {})
     }
 
     fun subscriptionInfo(name: String): SubscriptionInfo {
@@ -80,6 +92,15 @@ class DisplayManager(
             .jsonRequest("POST", message, Any::class.java)
     }
 
+    fun getSubscriptionSchemas(): Map<String, String?> {
+        return HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscriptions/schemas")
+            .jsonRequest("GET", object: TypeReference<Map<String, String?>>() {})
+    }
+
+    fun getSubscriptionHistorical(name: String): List<SubscriptionSerializableEntry> {
+        return HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscription/historical", params = mapOf("name" to listOf(name)))
+            .jsonRequest("GET", object: TypeReference<List<SubscriptionSerializableEntry>>() {})
+    }
 
     private val logger = LoggingManager.getLogger("display.node")
     private val client = createClient(name)

@@ -5,6 +5,8 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.*
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import org.nitb.orchestrator.database.relational.entities.SubscriptionEntry
+import org.nitb.orchestrator.database.relational.entities.SubscriptionSerializableEntry
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.subscriber.Subscriber
 import org.nitb.orchestrator.subscriber.entities.subscribers.SubscriberInfo
@@ -67,6 +69,30 @@ class WorkerController {
     @Delete("/subscriptions/delete")
     fun removeSubscriptions(@QueryValue subscriptions: List<String>): SubscriptionOperationResponse {
         return subscriber.removeSubscriptions(subscriptions)
+    }
+
+    @Operation(summary = "Used to retrieve all schemas of different subscriptions")
+    @ApiResponse(description = "List of jackson schemas of all different subscriptions classes")
+    @Get("/subscriptions/schemas")
+    fun getSubscriptionsSchema(): Map<String, String?> {
+        return subscriber.getSubscriptionsSchemas()
+    }
+
+    @Operation(summary = "Used to get information about a single subscription")
+    @Get("/subscription/info")
+    fun getSubscriptionInfo(@QueryValue name: String): SubscriptionInfo? {
+        return subscriber.getSubscriptionInfo(name)
+    }
+
+    @Operation(summary = "Used to retrieve all log lines of a subscription")
+    @Get("/subscription/logs")
+    fun getLogs(@QueryValue name: String, @QueryValue(defaultValue = "100") count: Int): List<String> {
+        return subscriber.getLogs(name, count)
+    }
+
+    @Get("/subscription/historical")
+    fun getSubscriptionHistorical(@QueryValue name: String): List<SubscriptionSerializableEntry> {
+        return subscriber.getSubscriptionHistorical(name)
     }
 
     @Operation(summary = "Used to invoke subscription handler.")

@@ -5,6 +5,8 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.*
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import org.nitb.orchestrator.database.relational.entities.SubscriptionEntry
+import org.nitb.orchestrator.database.relational.entities.SubscriptionSerializableEntry
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.subscriber.entities.subscribers.SubscriberInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
@@ -69,6 +71,29 @@ class DisplayController {
         return displayManager.removeSubscriptions(subscriptions)
     }
 
+    @Operation(summary = "Used to get all available subscription schemas")
+    @Get("/subscriptions/schemas")
+    fun getSubscriptionSchemas(): Map<String, String?> {
+        return displayManager.getSubscriptionSchemas()
+    }
+
+    @Operation(summary = "Used to get information about a single subscription")
+    @Get("/subscription/info")
+    fun getSubscriptionInfo(@QueryValue name: String): SubscriptionInfo {
+        return displayManager.getSubscriptionInfo(name)
+    }
+
+    @Operation(summary = "Used to retrieve all log lines of a subscription")
+    @Get("/subscription/logs")
+    fun getLogs(@QueryValue name: String, @QueryValue(defaultValue = "100") count: Int): List<String> {
+        return displayManager.getLogs(name, count)
+    }
+
+    @Get("/subscription/historical")
+    fun getSubscriptionHistorical(@QueryValue name: String): List<SubscriptionSerializableEntry> {
+        return displayManager.getSubscriptionHistorical(name)
+    }
+
     @Operation(summary = "Used to invoke subscription handler.")
     @Post("/subscriptions/handle")
     fun dynamicSubscriptionEndpointPost(@QueryValue("name") name: String, @Body message: DirectMessage<*>): Any? {
@@ -90,7 +115,6 @@ class DisplayController {
     init {
         val swaggerLocation = DisplayController::class.java.classLoader.getResource("META-INF/swagger")
         swaggerPath = swaggerLocation?.let { Files.walk(Paths.get(it.file.replaceFirst("/", ""))).filter { file -> Files.isRegularFile(file) }.findFirst().orElse(null) }
-
 
         log.info("Display controller initialized!!!")
     }

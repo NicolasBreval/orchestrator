@@ -33,5 +33,40 @@ class SubscriptionEntry(id: EntityID<Long>): Entity<Long>(id) {
     var stopped by Subscriptions.stopped
     var creationDate by Subscriptions.creationDate
     var active by Subscriptions.active
+}
 
+data class SubscriptionSerializableEntry(
+    val name: String,
+    val content: ByteArray,
+    val subscriber: String,
+    val stopped: Boolean,
+    val creationDate: Instant,
+    val active: Boolean
+) {
+    constructor(subscriptionEntry: SubscriptionEntry): this(subscriptionEntry.name, subscriptionEntry.content.bytes,
+        subscriptionEntry.subscriber, subscriptionEntry.stopped, subscriptionEntry.creationDate, subscriptionEntry.active)
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is SubscriptionSerializableEntry) return false
+
+        if (name != other.name) return false
+        if (!content.contentEquals(other.content)) return false
+        if (subscriber != other.subscriber) return false
+        if (stopped != other.stopped) return false
+        if (creationDate != other.creationDate) return false
+        if (active != other.active) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + content.contentHashCode()
+        result = 31 * result + subscriber.hashCode()
+        result = 31 * result + stopped.hashCode()
+        result = 31 * result + creationDate.hashCode()
+        result = 31 * result + active.hashCode()
+        return result
+    }
 }

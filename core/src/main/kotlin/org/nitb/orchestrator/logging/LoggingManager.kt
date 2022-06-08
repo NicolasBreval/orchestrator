@@ -8,13 +8,16 @@ import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.rolling.RollingFileAppender
 import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy
 import ch.qos.logback.core.util.FileSize
+import org.apache.commons.io.input.ReversedLinesFileReader
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.reflections.Reflections
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.lang.RuntimeException
+import java.nio.charset.Charset
 import java.nio.file.Files
+import java.nio.file.Paths
 
 /**
  * Util class used to create logger objects.
@@ -57,6 +60,19 @@ object LoggingManager {
     fun setLoggerLevel(loggerName: String, level: Level = commonLoggerLevel) {
         val logger = context.getLogger(loggerName)
         logger.level = level
+    }
+
+    fun getLogs(loggerName: String, count: Int): List<String> {
+        return Files.walk(Paths.get(loggingFolder)).filter { Files.isRegularFile(it) && it.toFile().name.startsWith(loggerName) }
+            .findFirst().map { path ->
+                val lines = mutableListOf<String>()
+
+                ReversedLinesFileReader(path.toFile(), Charset.defaultCharset()).use { reader ->
+                    lines.addAll(reader.readLines(count))
+                }
+
+                lines.toList()
+            }.orElse(listOf())
     }
 
     // endregion

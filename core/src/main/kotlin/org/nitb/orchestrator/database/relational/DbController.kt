@@ -7,6 +7,7 @@ import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.database.relational.annotations.TableToCreate
 import org.nitb.orchestrator.database.relational.entities.SubscriptionEntry
+import org.nitb.orchestrator.database.relational.entities.SubscriptionSerializableEntry
 import org.nitb.orchestrator.database.relational.entities.Subscriptions
 import org.nitb.orchestrator.logging.LoggingManager
 import org.reflections.Reflections
@@ -81,6 +82,16 @@ object DbController {
                 }
             }
         }.start()
+    }
+
+    fun getSubscriptionHistorical(name: String): List<SubscriptionSerializableEntry> {
+        val historical = mutableListOf<SubscriptionSerializableEntry>()
+
+        transaction {
+            historical.addAll(SubscriptionEntry.find { Subscriptions.name eq name }.map { SubscriptionSerializableEntry(it) }.toList())
+        }
+
+        return historical
     }
 
     // endregion
