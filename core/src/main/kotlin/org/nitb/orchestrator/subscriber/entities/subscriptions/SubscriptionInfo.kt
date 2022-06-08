@@ -3,6 +3,7 @@ package org.nitb.orchestrator.subscriber.entities.subscriptions
 import io.swagger.v3.oas.annotations.media.Schema
 import org.nitb.orchestrator.annotations.NoArgsConstructor
 import org.nitb.orchestrator.subscription.SubscriptionStatus
+import org.nitb.orchestrator.subscription.entities.MessageHandlerInfo
 import java.io.Serializable
 import java.math.BigInteger
 
@@ -32,5 +33,7 @@ class SubscriptionInfo (
     @Schema(description = "JSON schema related to subscription, to be used as template.")
     val schema: String? = null,
     @Schema(description = "JSON schema related to subscription with filled parameters.")
-    val content: String = ""
+    val content: String = "",
+    @Schema(description = "List of handlers which can be requested from orchestrator's API")
+    val messageHandlers: Map<String, MessageHandlerInfo?> = mapOf()
 ): Serializable

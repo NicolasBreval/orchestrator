@@ -8,6 +8,7 @@ import org.nitb.orchestrator.serialization.binary.BinarySerializer
 import org.nitb.orchestrator.serialization.json.JSONSerializer
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
 import org.nitb.orchestrator.subscription.entities.DirectMessage
+import org.nitb.orchestrator.subscription.entities.MessageHandlerInfo
 import java.io.Serializable
 import java.lang.Exception
 import java.math.BigInteger
@@ -77,6 +78,10 @@ abstract class Subscription<I, O>(
     @Transient
     protected val messageHandlers: MutableMap<String, (DirectMessage<*>) -> Any?> = mutableMapOf()
 
+    @JsonIgnore
+    @Transient
+    protected val messageHandlerInfo: MutableMap<String, MessageHandlerInfo> = mutableMapOf()
+
     // endregion
 
     // region PRIVATE METHODS
@@ -142,7 +147,8 @@ abstract class Subscription<I, O>(
     private val content: String by lazy { JSONSerializer.serializeWithClassName(this) }
 
     @get:JsonIgnore
-    val info: SubscriptionInfo get() = SubscriptionInfo(name, status, creation, inputVolume, outputVolume, starts, stops, success, error, lastExecution, schema, content)
+    val info: SubscriptionInfo get() = SubscriptionInfo(name, status, creation, inputVolume, outputVolume, starts, stops,
+        success, error, lastExecution, schema, content, messageHandlers.keys.associateWith { messageHandlerInfo[it] })
 
     // endregion
 

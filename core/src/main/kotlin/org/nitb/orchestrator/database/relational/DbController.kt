@@ -30,18 +30,18 @@ object DbController {
     /**
      * Obtains all active subscriptions registered on database.
      */
-    fun getLastActiveSubscriptions(): List<SubscriptionEntry> {
+    fun getLastSubscriptions(): List<SubscriptionEntry> {
         return transaction {
             val maxId = Subscriptions.id.max().alias("maxId")
             val lastSubscriptions =
                 Subscriptions
                     .slice(Subscriptions.name, maxId)
-                    .select { Subscriptions.active eq true }
+                    .selectAll()
                     .groupBy(Subscriptions.name)
                     .alias("maxIdBySub")
 
             Join(Subscriptions).join(lastSubscriptions, JoinType.INNER, lastSubscriptions[maxId], Subscriptions.id)
-            .selectAll().map { resultRow -> SubscriptionEntry.wrapRow(resultRow) }
+            .select { Subscriptions.active eq true }.map { resultRow -> SubscriptionEntry.wrapRow(resultRow) }
         }
     }
 

@@ -14,6 +14,7 @@ import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOpera
 import org.nitb.orchestrator.subscription.entities.DirectMessage
 import org.nitb.orchestrator.display.DisplayManager
 import org.nitb.orchestrator.web.entities.UploadSubscriptionsRequest
+import org.nitb.orchestrator.web.entities.VersionInfo
 import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
@@ -106,6 +107,12 @@ class DisplayController {
             throw IllegalAccessException()
 
         return HttpResponse.redirect(URI("/swagger/" + swaggerPath?.toFile()?.name))
+    }
+
+    @Operation(summary = "Used to retrieve environment and version information")
+    @Get("/version")
+    fun versionInfo(): VersionInfo {
+        return VersionInfo()
     }
 
     private val log = LoggingManager.getLogger("controller")

@@ -7,7 +7,6 @@ import org.nitb.orchestrator.amqp.AmqpSender
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.database.relational.DbController
-import org.nitb.orchestrator.database.relational.entities.SubscriptionEntry
 import org.nitb.orchestrator.database.relational.entities.SubscriptionSerializableEntry
 import org.nitb.orchestrator.http.HttpClient
 import org.nitb.orchestrator.logging.LoggingManager
@@ -56,7 +55,7 @@ class MainSubscriber(
         }
 
         Thread {
-            val lastSubscriptions = DbController.getLastActiveSubscriptions()
+            val lastSubscriptions = DbController.getLastSubscriptions()
 
             if (allocationStrategy == AllocationStrategy.FIXED) {
                 lastSubscriptions.groupBy { it.subscriber }.forEach { (subscriber, subscriptions) ->

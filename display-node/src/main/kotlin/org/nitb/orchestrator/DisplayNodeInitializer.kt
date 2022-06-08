@@ -32,6 +32,15 @@ object DisplayNodeInitializer {
             System.setProperty("swagger-ui.enabled", "true")
         }
 
+        val customArgs = args.filter { it.contains("=") }.distinctBy { it.split("=")[0] }
+            .associate { it.split("=").let { parts -> Pair(parts[0], parts[1]) } }
+
+        val version = customArgs["--version"] ?: customArgs["--version-env"]?.let { System.getenv(it) } ?: ""
+        val environment = customArgs["--environment"] ?: customArgs["--environment-env"]?.let { System.getenv(it) }
+
+        System.setProperty("application.version", version)
+        System.setProperty("application.environment", environment)
+
         Micronaut.build()
             .args(*args)
             .classes(DisplayController::class.java)

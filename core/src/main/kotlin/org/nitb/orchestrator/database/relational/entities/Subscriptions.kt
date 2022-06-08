@@ -36,6 +36,7 @@ class SubscriptionEntry(id: EntityID<Long>): Entity<Long>(id) {
 }
 
 data class SubscriptionSerializableEntry(
+    val id: Long,
     val name: String,
     val content: ByteArray,
     val subscriber: String,
@@ -43,8 +44,9 @@ data class SubscriptionSerializableEntry(
     val creationDate: Instant,
     val active: Boolean
 ) {
-    constructor(subscriptionEntry: SubscriptionEntry): this(subscriptionEntry.name, subscriptionEntry.content.bytes,
-        subscriptionEntry.subscriber, subscriptionEntry.stopped, subscriptionEntry.creationDate, subscriptionEntry.active)
+    constructor(subscriptionEntry: SubscriptionEntry): this(subscriptionEntry.id.value, subscriptionEntry.name,
+        subscriptionEntry.content.bytes, subscriptionEntry.subscriber, subscriptionEntry.stopped,
+        subscriptionEntry.creationDate, subscriptionEntry.active)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

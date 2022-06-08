@@ -68,7 +68,7 @@ class DisplayManager(
     }
 
     fun subscriptionInfo(name: String): SubscriptionInfo {
-        return HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscriptions/list",
+        return HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscriptions/info",
             params = mapOf("subscription" to listOf(name))).jsonRequest("GET", SubscriptionInfo::class.java)
     }
 
