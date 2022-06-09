@@ -13,11 +13,18 @@ import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.reflections.Reflections
 import org.slf4j.LoggerFactory
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.lang.RuntimeException
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+import kotlin.streams.toList
 
 /**
  * Util class used to create logger objects.
@@ -73,6 +80,24 @@ object LoggingManager {
 
                 lines.toList()
             }.orElse(listOf())
+    }
+
+    fun getLogFiles(loggerName: String): String {
+        val filename = "$loggerName-logs_${System.nanoTime()}.zip"
+
+        ZipOutputStream(BufferedOutputStream(FileOutputStream(filename))).use {out ->
+            Files.walk(Paths.get(loggingFolder)).filter { Files.isRegularFile(it) && it.toFile().name.startsWith(loggerName) }.forEach { file ->
+                FileInputStream(file.toFile()).use { input ->
+                    BufferedInputStream(input).use { origin ->
+                        val entry = ZipEntry(file.toFile().name)
+                        out.putNextEntry(entry)
+                        origin.copyTo(out, 1024)
+                    }
+                }
+            }
+        }
+
+        return filename
     }
 
     // endregion

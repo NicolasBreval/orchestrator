@@ -14,6 +14,7 @@ import org.nitb.orchestrator.subscription.entities.DirectMessage
 import org.nitb.orchestrator.display.DisplayManager
 import org.nitb.orchestrator.web.entities.UploadSubscriptionsRequest
 import org.nitb.orchestrator.web.entities.VersionInfo
+import java.io.OutputStream
 import java.net.URI
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -88,6 +89,12 @@ class DisplayController {
     @Get("/subscription/logs")
     fun getLogs(@QueryValue name: String, @QueryValue(defaultValue = "100") count: Int): List<String> {
         return displayManager.getLogs(name, count)
+    }
+
+    @Operation(summary = "Used to download log files related to a subscription")
+    @Get("/subscription/logs/download")
+    fun downloadLogs(@QueryValue name: String): ByteArray {
+        return displayManager.downloadLogs(name) ?: ByteArray(0)
     }
 
     @Get("/subscription/historical")

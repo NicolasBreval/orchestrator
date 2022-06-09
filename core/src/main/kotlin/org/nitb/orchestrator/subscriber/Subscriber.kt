@@ -18,6 +18,8 @@ import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOpera
 import org.nitb.orchestrator.subscription.Subscription
 import org.nitb.orchestrator.subscription.entities.DirectMessage
 import org.reflections.Reflections
+import java.io.FileInputStream
+import java.io.InputStream
 import java.io.Serializable
 import java.lang.RuntimeException
 import java.util.*
@@ -128,6 +130,15 @@ class Subscriber(
             mainSubscriber.getLogs(name, count)
         else
             LoggingManager.getLogs(name, count)
+    }
+
+    fun getLogFiles(name: String, force: Boolean = false): InputStream? {
+        return if (isMainNode && !force)
+            mainSubscriber.getLogFiles(name)
+        else {
+            val file = LoggingManager.getLogFiles(name)
+            return FileInputStream(file)
+        }
     }
 
     fun listSubscribers(): Map<String, SubscriberInfo> {

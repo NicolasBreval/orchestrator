@@ -91,6 +91,12 @@ class WorkerController {
         return subscriber.getLogs(name, count)
     }
 
+    @Operation(summary = "Used to download log files related to a subscription")
+    @Get("/subscription/logs/download")
+    fun downloadLogs(@QueryValue name: String): ByteArray {
+        return subscriber.getLogFiles(name)?.readBytes() ?: ByteArray(0)
+    }
+
     @Get("/subscription/historical")
     fun getSubscriptionHistorical(@QueryValue name: String): List<SubscriptionSerializableEntry> {
         return subscriber.getSubscriptionHistorical(name)

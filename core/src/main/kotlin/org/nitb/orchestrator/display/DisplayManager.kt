@@ -16,6 +16,7 @@ import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResponse
 import org.nitb.orchestrator.subscription.entities.DirectMessage
 import org.nitb.orchestrator.web.entities.UploadSubscriptionsRequest
+import java.io.InputStream
 import java.io.Serializable
 import java.lang.RuntimeException
 
@@ -65,6 +66,13 @@ class DisplayManager(
         return HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscription/logs",
             params = mapOf("name" to listOf(name), "count" to listOf("$count")))
             .jsonRequest("GET", object: TypeReference<List<String>>() {})
+    }
+
+    fun downloadLogs(name: String): ByteArray? {
+        HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscription/logs/download",
+            params = mapOf("name" to listOf(name))).basicRequest("GET").use { response ->
+                return response.body?.byteStream()?.readBytes()
+        }
     }
 
     fun subscriptionInfo(name: String): SubscriptionInfo {

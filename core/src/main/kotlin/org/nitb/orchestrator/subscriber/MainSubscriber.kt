@@ -21,6 +21,7 @@ import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOpera
 import org.nitb.orchestrator.subscription.Subscription
 import org.nitb.orchestrator.subscription.entities.DirectMessage
 import org.reflections.Reflections
+import java.io.InputStream
 import java.io.Serializable
 import java.lang.IllegalStateException
 import java.lang.RuntimeException
@@ -232,6 +233,21 @@ class MainSubscriber(
 
             HttpClient(url, params = mapOf("name" to listOf(name), "count" to listOf("$count")))
                 .jsonRequest("GET", object: TypeReference<List<String>>() {})
+        }
+    }
+
+    fun getLogFiles(name: String): InputStream? {
+        val subscriber = subscribers.entries.firstOrNull { entry -> entry.value.subscriptions.containsKey(name) }?.key ?: throw IllegalArgumentException("Subscription doesn't exists")
+
+        return if (subscriber == subscriberName) {
+            parentSubscriber.getLogFiles(name, true)
+        } else {
+            val info = subscribers[subscriber]
+            val url = "http://${info?.hostname}:${info?.httpPort}/subscription/logs/download" // TODO: Check for HTTPS option
+
+            HttpClient(url, params = mapOf("name" to listOf(name))).basicRequest("GET").use { res ->
+                res.body?.byteStream()
+            }
         }
     }
 
