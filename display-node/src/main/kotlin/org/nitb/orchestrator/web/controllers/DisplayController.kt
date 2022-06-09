@@ -5,7 +5,6 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.*
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
-import org.nitb.orchestrator.database.relational.entities.SubscriptionEntry
 import org.nitb.orchestrator.database.relational.entities.SubscriptionSerializableEntry
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.subscriber.entities.subscribers.SubscriberInfo
@@ -16,6 +15,7 @@ import org.nitb.orchestrator.display.DisplayManager
 import org.nitb.orchestrator.web.entities.UploadSubscriptionsRequest
 import org.nitb.orchestrator.web.entities.VersionInfo
 import java.net.URI
+import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -102,11 +102,8 @@ class DisplayController {
     }
 
     @Get("/display/api/definition")
-    fun apiDefinition(): HttpResponse<String> {
-        if (swaggerPath == null)
-            throw IllegalAccessException()
-
-        return HttpResponse.redirect(URI("/swagger/" + swaggerPath?.toFile()?.name))
+    fun apiDefinition(): String {
+        return swaggerConfig ?: "NOT FOUND"
     }
 
     @Operation(summary = "Used to retrieve environment and version information")
@@ -115,14 +112,26 @@ class DisplayController {
         return VersionInfo()
     }
 
-    private val log = LoggingManager.getLogger("controller")
-    private var swaggerPath: Path?
+    private val logger = LoggingManager.getLogger("controller")
+    private var swaggerConfig: String? = null
     private val displayManager = DisplayManager()
 
     init {
         val swaggerLocation = DisplayController::class.java.classLoader.getResource("META-INF/swagger")
-        swaggerPath = swaggerLocation?.let { Files.walk(Paths.get(it.file.replaceFirst("/", ""))).filter { file -> Files.isRegularFile(file) }.findFirst().orElse(null) }
 
-        log.info("Display controller initialized!!!")
+        swaggerConfig = if (swaggerLocation.toURI().scheme == "jar") {
+            val fileSystem = FileSystems.newFileSystem(swaggerLocation.toURI(), mapOf<String, Any>())
+            val path = Files.walk(fileSystem.getPath("META-INF/swager")).filter { Files.isRegularFile(it) }.findFirst().orElse(null)
+            String(Files.readAllBytes(path))
+        } else {
+            val path = swaggerLocation?.let {
+                Files.walk(Paths.get(it.file.replaceFirst("/", ""))).filter { file -> Files.isRegularFile(file) }
+                    .findFirst().orElse(null)
+            }
+            String(Files.readAllBytes(path))
+
+        }
+
+        logger.info("Display node initialized!!!")
     }
 }

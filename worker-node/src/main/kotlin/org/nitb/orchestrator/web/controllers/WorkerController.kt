@@ -15,6 +15,7 @@ import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOpera
 import org.nitb.orchestrator.subscription.entities.DirectMessage
 import org.nitb.orchestrator.web.entities.UploadSubscriptionsRequest
 import java.net.URI
+import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -107,21 +108,29 @@ class WorkerController {
     }
 
     @Get("/subscriber/api/definition")
-    fun apiDefinition(): HttpResponse<String> {
-        if (swaggerPath == null)
-            throw IllegalAccessException()
-
-        return HttpResponse.redirect(URI("/swagger/" + swaggerPath?.toFile()?.name))
+    fun apiDefinition(): String {
+        return swaggerConfig ?: "NOT FOUND"
     }
 
     private val logger = LoggingManager.getLogger("controller")
-    private var swaggerPath: Path?
+    private var swaggerConfig: String? = null
     private val subscriber = Subscriber()
 
     init {
         val swaggerLocation = WorkerController::class.java.classLoader.getResource("META-INF/swagger")
-        swaggerPath = swaggerLocation?.let { Files.walk(Paths.get(it.file.replaceFirst("/", ""))).filter { file -> Files.isRegularFile(file) }.findFirst().orElse(null) }
 
+        swaggerConfig = if (swaggerLocation.toURI().scheme == "jar") {
+            val fileSystem = FileSystems.newFileSystem(swaggerLocation.toURI(), mapOf<String, Any>())
+            val path = Files.walk(fileSystem.getPath("META-INF/swager")).filter { Files.isRegularFile(it) }.findFirst().orElse(null)
+            String(Files.readAllBytes(path))
+        } else {
+            val path = swaggerLocation?.let {
+                Files.walk(Paths.get(it.file.replaceFirst("/", ""))).filter { file -> Files.isRegularFile(file) }
+                    .findFirst().orElse(null)
+            }
+            String(Files.readAllBytes(path))
+
+        }
 
         logger.info("Subscriber controller initialized!!!")
     }
