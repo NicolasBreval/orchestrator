@@ -121,7 +121,7 @@ class DisplayController {
 
         swaggerConfig = if (swaggerLocation.toURI().scheme == "jar") {
             val fileSystem = FileSystems.newFileSystem(swaggerLocation.toURI(), mapOf<String, Any>())
-            val path = Files.walk(fileSystem.getPath("META-INF/swager")).filter { Files.isRegularFile(it) }.findFirst().orElse(null)
+            val path = Files.walk(fileSystem.getPath("META-INF/swagger")).filter { Files.isRegularFile(it) }.findFirst().orElse(null)
             String(Files.readAllBytes(path))
         } else {
             val path = swaggerLocation?.let {
