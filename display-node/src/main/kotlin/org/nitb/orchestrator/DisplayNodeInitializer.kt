@@ -36,7 +36,7 @@ object DisplayNodeInitializer {
             .associate { it.split("=").let { parts -> Pair(parts[0], parts[1]) } }
 
         val version = customArgs["--version"] ?: customArgs["--version-env"]?.let { System.getenv(it) } ?: ""
-        val environment = customArgs["--environment"] ?: customArgs["--environment-env"]?.let { System.getenv(it) }
+        val environment = customArgs["--environment"] ?: customArgs["--environment-env"]?.let { System.getenv(it) } ?: ""
 
         System.setProperty("application.version", version)
         System.setProperty("application.environment", environment)
