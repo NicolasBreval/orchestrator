@@ -23,7 +23,6 @@ object DisplayNodeInitializer {
     fun init(vararg args: String) {
         configureLogs()
 
-        System.setProperty("micronaut.server.cors.enabled", ConfigManager.getProperty("cors.enabled", "true"))
         System.setProperty("micronaut.config.files", ConfigManager.getPropertiesFileLocation())
         System.setProperty("micronaut.server.port", ConfigManager.getProperty(ConfigNames.HTTP_PORT, ConfigNames.HTTP_PORT_DEFAULT.toString()))
 
@@ -41,6 +40,7 @@ object DisplayNodeInitializer {
 
         System.setProperty("application.version", version)
         System.setProperty("application.environment", environment)
+        System.setProperty("micronaut.server.cors.enabled", ConfigManager.getProperty("cors.enabled", "true"))
 
         Micronaut.build()
             .args(*args)

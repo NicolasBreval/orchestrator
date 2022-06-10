@@ -32,6 +32,10 @@
       <version>2.0.0</version>
       <scope>compile</scope>
     </dependency>
+      <dependency>
+          <groupId>io.reactivex.rxjava2</groupId>
+          <artifactId>rxjava</artifactId>
+      </dependency>
   </dependencies>
 
   <build>

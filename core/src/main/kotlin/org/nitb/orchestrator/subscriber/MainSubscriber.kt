@@ -20,6 +20,7 @@ import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOpera
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResult
 import org.nitb.orchestrator.subscription.Subscription
 import org.nitb.orchestrator.subscription.entities.DirectMessage
+import org.nitb.orchestrator.web.entities.UploadSubscriptionsRequest
 import org.reflections.Reflections
 import java.io.InputStream
 import java.io.Serializable
@@ -122,10 +123,10 @@ class MainSubscriber(
                 parentSubscriber.uploadSubscriptions(subscriptions, subscriber, true)
             } else {
                 val info = subscribers[subscriber]
-                val url = "http://${info?.hostname}:${info?.httpPort}/subscriptions/upload" // TODO: Check for HTTPS option
+                val url = "http://${info?.hostname}:${info?.httpPort}/subscriptions/upload"
 
                 try {
-                    val response = HttpClient(url).jsonRequest("PUT", subscriptions, SubscriptionOperationResponse::class.java)
+                    val response = HttpClient(url).jsonRequest("PUT", UploadSubscriptionsRequest(subscriptions), SubscriptionOperationResponse::class.java)
                     uploaded.addAll(response.modified)
                     notUploaded.addAll(response.notModified)
                 } catch (e: IllegalStateException) {
