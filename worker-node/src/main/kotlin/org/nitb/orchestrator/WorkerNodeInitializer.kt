@@ -9,6 +9,8 @@ import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.web.controllers.WorkerController
+import java.nio.file.Files
+import java.nio.file.Paths
 
 @OpenAPIDefinition(
     info = Info(
@@ -23,8 +25,14 @@ object WorkerNodeInitializer {
     fun init(vararg args: String) {
         configureLogs()
 
+        val propertiesFile = ConfigManager.getPropertiesFileLocation()
+
+        if (!Files.exists(Paths.get(propertiesFile))) {
+            Files.createFile(Paths.get(propertiesFile))
+        }
+
         System.setProperty("micronaut.server.cors.enabled", ConfigManager.getProperty("cors.enabled", "true"))
-        System.setProperty("micronaut.config.files", ConfigManager.getPropertiesFileLocation())
+        System.setProperty("micronaut.config.files", propertiesFile)
         System.setProperty("micronaut.server.port", ConfigManager.getProperty(ConfigNames.HTTP_PORT, ConfigNames.HTTP_PORT_DEFAULT.toString()))
 
         if (ConfigManager.getBoolean(ConfigNames.OPEN_API_RESOURCE_ACTIVE)) {
