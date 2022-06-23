@@ -688,6 +688,7 @@ object ConfigManager {
             }
         }
         properties.putAll(System.getProperties())
+        properties.putAll(System.getenv())
     }
 
     // endregion
