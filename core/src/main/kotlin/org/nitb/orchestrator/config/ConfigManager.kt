@@ -688,7 +688,7 @@ object ConfigManager {
             }
         }
         properties.putAll(System.getProperties())
-        properties.putAll(System.getenv())
+        properties.putAll(System.getenv().map { Pair(it.key, it.value.replace("_", ".")) }.toMap())
     }
 
     // endregion
