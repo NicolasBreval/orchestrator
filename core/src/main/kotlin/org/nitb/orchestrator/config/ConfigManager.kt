@@ -28,7 +28,7 @@ object ConfigManager {
      * @return Value related to key, or null if property doesn't exist.
      */
     fun getProperty(key: String): String? {
-        return properties.getProperty(key)
+        return properties.getProperty(key) ?: System.getenv(key.replace(".", "_"))
     }
 
     /**
