@@ -420,7 +420,7 @@ class MainSubscriber(
     }}
     private val checkMasterRoleScheduler by checkMasterRoleSchedulerDelegate
 
-    private val subscriptionSchemas by lazy { loadSubscriptionSchemas() }
+    private val subscriptionSchemas = mutableMapOf<String, String?>()
 
     // endregion
 
@@ -470,5 +470,9 @@ class MainSubscriber(
 
     init {
         DbController.initialize()
+
+        Thread() {
+            subscriptionSchemas.putAll(loadSubscriptionSchemas())
+        }
     }
 }
