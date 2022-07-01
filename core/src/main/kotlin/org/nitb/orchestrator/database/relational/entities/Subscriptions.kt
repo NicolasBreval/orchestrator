@@ -5,6 +5,8 @@ import org.jetbrains.exposed.dao.EntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.javatime.timestamp
+import org.nitb.orchestrator.config.ConfigManager
+import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.database.relational.annotations.TableToCreate
 import java.time.Instant
 
@@ -12,7 +14,7 @@ import java.time.Instant
  * Table object to specify ORM table schema.
  */
 @TableToCreate
-object Subscriptions: LongIdTable("SUBSCRIPTIONS") {
+object Subscriptions: LongIdTable("${ConfigManager.getProperty(ConfigNames.DATABASE_ORCHESTRATOR_SCHEMA)?.let { "$it." } ?: ""}SUBSCRIPTIONS") {
     val name = varchar("NAME", 300)
     val content = blob("CONTENT")
     val subscriber = varchar("SUBSCRIBER", 300)

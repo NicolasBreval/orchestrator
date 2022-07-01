@@ -118,6 +118,8 @@ object ConfigNames {
 
     const val DATABASE_CREATE_ON_STARTUP_SCHEMAS_PACKAGES = "database.create.on.startup.schemas.packages"
 
+    const val DATABASE_ORCHESTRATOR_SCHEMA = "database.orchestrator.schema"
+
     // endregion
 
     // region DATABASE DEFAULTS
