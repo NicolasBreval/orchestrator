@@ -19,7 +19,7 @@ object Subscriptions: LongIdTable("${ConfigManager.getProperty(ConfigNames.DATAB
     val content = blob("CONTENT")
     val subscriber = varchar("SUBSCRIBER", 300)
     val stopped = bool("STOPPED")
-    val creationDate = timestamp("CREATION_DATE").default(Instant.now())
+    val creationDate = timestamp("CREATION_DATE").clientDefault { Instant.now() }
     val active = bool("ACTIVE")
 }
 

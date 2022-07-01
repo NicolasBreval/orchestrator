@@ -133,7 +133,7 @@ object DbController {
                                 try {
                                     SchemaUtils.createMissingTablesAndColumns(it.kotlin.objectInstance as Table)
                                 } catch (e: Exception) {
-                                    logger.error("Error with database table ${it.name}")
+                                    logger.error("Error with database table ${it.name}", e)
                                 }
                             }
 
