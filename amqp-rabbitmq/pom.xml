@@ -7,13 +7,13 @@
   <parent>
     <artifactId>orchestrator</artifactId>
     <groupId>org.nitb</groupId>
-    <version>2.0.0</version>
+    2.1.0
     <relativePath>../pom.xml</relativePath>
   </parent>
 
   <groupId>org.nitb.orchestrator.amqp</groupId>
   <artifactId>amqp-rabbitmq</artifactId>
-  <version>2.0.0</version>
+  2.1.0
 
   <name>amqp-rabbitmq</name>
   <!-- FIXME change it to the project's website -->
@@ -30,7 +30,7 @@
     <dependency>
       <groupId>org.nitb.orchestrator</groupId>
       <artifactId>core</artifactId>
-      <version>2.0.0</version>
+      2.1.0
     </dependency>
     <dependency>
       <groupId>com.rabbitmq</groupId>
