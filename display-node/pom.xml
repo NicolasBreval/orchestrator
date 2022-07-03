@@ -6,7 +6,7 @@
 
   <groupId>org.nitb.orchestrator</groupId>
   <artifactId>display-node</artifactId>
-  2.1.0
+  <version>2.1.0</version>
 
   <name>untitled</name>
   <!-- FIXME change it to the project's website -->
@@ -15,7 +15,7 @@
   <parent>
     <artifactId>orchestrator</artifactId>
     <groupId>org.nitb</groupId>
-    2.1.0
+    <version>2.1.0</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -29,7 +29,7 @@
     <dependency>
       <groupId>org.nitb.orchestrator</groupId>
       <artifactId>core</artifactId>
-      2.1.0
+      <version>2.1.0</version>
       <scope>compile</scope>
     </dependency>
       <dependency>

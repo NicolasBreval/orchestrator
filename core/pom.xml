@@ -6,12 +6,12 @@
 
   <groupId>org.nitb.orchestrator</groupId>
   <artifactId>core</artifactId>
-  2.1.0
+  <version>2.1.0</version>
 
   <parent>
     <artifactId>orchestrator</artifactId>
     <groupId>org.nitb</groupId>
-    2.1.0
+    <version>2.1.0</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
