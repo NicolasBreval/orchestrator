@@ -473,6 +473,6 @@ class MainSubscriber(
 
         Thread() {
             subscriptionSchemas.putAll(loadSubscriptionSchemas())
-        }
+        }.start()
     }
 }
