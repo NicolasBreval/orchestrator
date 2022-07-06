@@ -116,24 +116,31 @@ class ActiveMqAmqpClient<T: Serializable>(
     }
 
     override fun purge() {
-        consumers.forEach { it.close() }
+        if (!session.isClosed) {
+            consumers.forEach { it.close() }
 
-        val destination = declareQueue(name)
-        val messageListeners = consumers.map { it.messageListener }
+            val destination = declareQueue(name)
+            val messageListeners = consumers.map { it.messageListener }
 
-        val browser = session.createBrowser(destination as Queue)
-        val messages = browser.enumeration.asSequence().count()
-        val simpleConsumer = session.createConsumer(destination)
-        var purged = 0
+            val browser = session.createBrowser(destination as Queue)
+            val messages = browser.enumeration.asSequence().count()
+            val simpleConsumer = session.createConsumer(destination)
+            var purged = 0
 
-        while (purged < messages) {
-            simpleConsumer.receive(1000)?.acknowledge()
-            purged++
+            while (purged < messages) {
+                simpleConsumer.receive(1000)?.acknowledge()
+                purged++
+            }
+
+            simpleConsumer.close()
+            consumers.clear()
+            consumers.addAll(messageListeners.map {
+                session.createConsumer(
+                    destination,
+                    it
+                ) as ActiveMQMessageConsumer
+            })
         }
-
-        simpleConsumer.close()
-        consumers.clear()
-        consumers.addAll(messageListeners.map { session.createConsumer(destination, it) as ActiveMQMessageConsumer })
     }
 
     override fun close() {
