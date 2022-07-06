@@ -30,6 +30,10 @@ abstract class DeliveryMultiInputSubscription<O: Serializable>(
     @delegate:Transient
     private val client: AmqpClient<Serializable> by lazy { createClient(name, workers) }
 
+    protected fun activeSendOutput(output: O) {
+        sendToReceivers(output, client, receivers)
+    }
+
     override fun initialize() {
         client.createConsumer() { cloudMessage ->
 

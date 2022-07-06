@@ -21,6 +21,10 @@ abstract class DeliverySubscription<I: Serializable, O: Serializable>(
     @delegate:Transient
     protected val client: AmqpClient<I> by lazy { createClient(name, workers) }
 
+    protected fun activeSendOutput(output: O) {
+        sendToReceivers(output, client, receivers)
+    }
+
     override fun initialize() {
         client.createConsumer() { cloudMessage ->
             val result = runEvent(cloudMessage.size, cloudMessage.sender, cloudMessage.message)

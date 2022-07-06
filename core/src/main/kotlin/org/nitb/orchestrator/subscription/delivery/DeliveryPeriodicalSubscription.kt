@@ -23,6 +23,10 @@ abstract class DeliveryPeriodicalSubscription<O: Serializable>(
     @delegate:Transient
     private val client: AmqpClient<O> by lazy { createClient(name) }
 
+    protected fun activeSendOutput(output: O) {
+        sendToReceivers(output, client, receivers)
+    }
+
     override fun deactivate() {
         super.deactivate()
         client.close()
