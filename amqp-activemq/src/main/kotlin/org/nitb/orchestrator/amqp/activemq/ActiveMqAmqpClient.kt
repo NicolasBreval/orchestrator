@@ -70,43 +70,45 @@ class ActiveMqAmqpClient<T: Serializable>(
 
     @Suppress("UNCHECKED_CAST")
     override fun createConsumer(onConsume: Consumer<AmqpMessage<T>>) {
-        for (i in 0 until workers) {
-            consumers.add(session.createConsumer(declareQueue(name)) { message ->
+        if (!session.isClosed) {
+            for (i in 0 until workers) {
+                consumers.add(session.createConsumer(declareQueue(name)) { message ->
 
-                var sendAck = true
-                var retries = ConfigManager.getInt(ConfigNames.AMQP_RETRIES, ConfigNames.AMQP_RETRIES_DEFAULT).let { if (it < 0) 0 else it }
+                    var sendAck = true
+                    var retries = ConfigManager.getInt(ConfigNames.AMQP_RETRIES, ConfigNames.AMQP_RETRIES_DEFAULT).let { if (it < 0) 0 else it }
 
-                val task = executor.submit {
-                    while (retries > -1) {
-                        try {
-                            val amqpMessage = when (message) {
-                                is BytesMessage -> {
-                                    val bytes = ByteArray(message.bodyLength.toInt())
-                                    message.readBytes(bytes)
-                                    BinarySerializer.deserialize(bytes)
+                    val task = executor.submit {
+                        while (retries > -1) {
+                            try {
+                                val amqpMessage = when (message) {
+                                    is BytesMessage -> {
+                                        val bytes = ByteArray(message.bodyLength.toInt())
+                                        message.readBytes(bytes)
+                                        BinarySerializer.deserialize(bytes)
+                                    }
+                                    is TextMessage -> JSONSerializer.deserialize(message.text, AmqpMessage::class.java) as AmqpMessage<T>
+                                    else -> throw IllegalArgumentException("Invalid input message type")
                                 }
-                                is TextMessage -> JSONSerializer.deserialize(message.text, AmqpMessage::class.java) as AmqpMessage<T>
-                                else -> throw IllegalArgumentException("Invalid input message type")
+                                onConsume.accept(amqpMessage)
+                                retries = -1
+                            } catch (e: Exception) {
+                                retries--
+
+                                if (e !is InterruptedException)
+                                    logger.error("Error consuming message", e)
+
+                                sendAck = e !is AmqpBlockingException
+
                             }
-                            onConsume.accept(amqpMessage)
-                            retries = -1
-                        } catch (e: Exception) {
-                            retries--
-
-                            if (e !is InterruptedException)
-                                logger.error("Error consuming message", e)
-
-                            sendAck = e !is AmqpBlockingException
-
                         }
                     }
-                }
-                task.get()
+                    task.get()
 
-                if (sendAck)
-                    message.acknowledge()
+                    if (sendAck)
+                        message.acknowledge()
 
-            } as ActiveMQMessageConsumer)
+                } as ActiveMQMessageConsumer)
+            }
         }
     }
 
