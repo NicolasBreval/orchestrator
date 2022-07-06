@@ -6,6 +6,8 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.nitb.orchestrator.config.ConfigManager
+import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.serialization.json.JSONSerializer
 import java.io.IOException
 
@@ -13,8 +15,8 @@ class HttpClient(
     private val url: String,
     private val params: Map<String, List<String>> = mapOf(),
     private val headers: Map<String, List<String>> = mapOf(),
-    private val retries: Int = 0,
-    private val timeBetweenRetries: Long = 0
+    private val retries: Int = ConfigManager.getInt(ConfigNames.HTTP_CLIENT_RETRIES, ConfigNames.HTTP_CLIENT_RETRIES_DEFAULT),
+    private val timeBetweenRetries: Long = ConfigManager.getLong(ConfigNames.HTTP_CLIENT_TIME_BETWEEN_RETRIES, ConfigNames.HTTP_CLIENT_TIME_BETWEEN_RETRIES_DEFAULT)
 ) {
 
     fun <T> jsonRequest(method: String, body: Any, clazz: Class<T>): T {

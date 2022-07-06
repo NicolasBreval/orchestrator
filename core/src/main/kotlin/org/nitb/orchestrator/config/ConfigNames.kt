@@ -401,4 +401,21 @@ object ConfigNames {
     const val OPEN_API_RESOURCE_ACTIVE = "open.api.resource.active"
 
     // endregion
+
+    // region HTTP CLIENT
+
+    const val HTTP_CLIENT_RETRIES = "http.client.retries"
+
+    const val HTTP_CLIENT_TIME_BETWEEN_RETRIES = "http.time.between.retries"
+
+    // endregion
+
+    // region HTTP_CLIENT_DEFAULTS
+
+    const val HTTP_CLIENT_RETRIES_DEFAULT = 3
+
+    const val HTTP_CLIENT_TIME_BETWEEN_RETRIES_DEFAULT = 500L
+
+    // endregion
+
 }
