@@ -109,6 +109,8 @@ abstract class Subscription<I, O>(
                 outputVolume = outputVolume.add(if (output is Unit) BigInteger.ZERO else output?.let { BinarySerializer.serialize(output).size.toBigInteger() } ?: BigInteger.ZERO)
             } catch (e: Exception) {
                 logger.error("Fatal error obtaining output volume", e)
+            } catch (e: StackOverflowError) {
+                logger.error("Fatal error obtaining output volume", e)
             }
             output
         } catch (e: Exception) {

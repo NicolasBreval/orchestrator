@@ -100,6 +100,7 @@ class RabbitMqAmqpClient<T: Serializable>(
     }
 
     override fun masterConsuming(): Boolean {
+        if (!channel.isOpen) return true
         return channel.queueDeclare(mainNodeName, true, false, false, null)?.consumerCount?.let { it > 0 } ?: false
     }
 
@@ -155,6 +156,7 @@ class RabbitMqAmqpClient<T: Serializable>(
      * Method used to create a new queue for this client. All queues are exclusive by default
      */
     private fun declareQueue() {
+        if (!channel.isOpen) return;
         channel.queueDeclare(name, true, workers == 1 && name != mainNodeName, false, null)
     }
 
