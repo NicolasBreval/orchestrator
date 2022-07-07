@@ -28,6 +28,8 @@ import java.lang.IllegalStateException
 import java.lang.RuntimeException
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.concurrent.thread
+import kotlin.streams.asSequence
 
 class MainSubscriber(
     private val parentSubscriber: Subscriber,
@@ -420,7 +422,7 @@ class MainSubscriber(
     }}
     private val checkMasterRoleScheduler by checkMasterRoleSchedulerDelegate
 
-    private val subscriptionSchemas = mutableMapOf<String, String?>()
+    private val subscriptionSchemas = loadSubscriptionSchemas()
 
     // endregion
 
@@ -461,18 +463,16 @@ class MainSubscriber(
             packageSet.add(p.name.split(".")[0])
         }
 
-        return packageSet.flatMap { packageName ->
-            Reflections(packageName).getSubTypesOf(Subscription::class.java).filter { !it.kotlin.isAbstract }
-        }.associate { Pair(it.name, JSONSerializer.getSchema(it, false)) }
+        val result = packageSet.parallelStream().flatMap { packageName ->
+            Reflections(packageName).getSubTypesOf(Subscription::class.java).filter { !it.kotlin.isAbstract }.stream()
+        }.asSequence().associate { Pair(it.name, JSONSerializer.getSchema(it, false)) }
+
+        return result
     }
 
     // endregion
 
     init {
         DbController.initialize()
-
-        Thread() {
-            subscriptionSchemas.putAll(loadSubscriptionSchemas())
-        }.start()
     }
 }
