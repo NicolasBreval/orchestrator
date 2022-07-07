@@ -21,7 +21,7 @@ abstract class DeliveryPeriodicalSubscription<O: Serializable>(
 ): CyclicalSubscription<O>(name, timeout, description, periodExpression, type), AmqpManager<O>, AmqpSender {
 
     @delegate:Transient
-    private val client: AmqpClient<O> by lazy { createClient(name) }
+    protected val client: AmqpClient<O> by lazy { createClient(name) }
 
     protected fun activeSendOutput(output: O) {
         sendToReceivers(output, client, receivers)
