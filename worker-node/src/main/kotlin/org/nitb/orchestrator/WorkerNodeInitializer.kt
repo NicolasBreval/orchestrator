@@ -47,7 +47,7 @@ object WorkerNodeInitializer {
             .args(*args)
             .classes(
                 WorkerController::class.java,
-                *ConfigManager.getProperties(ConfigNames.CUSTOM_SUBSCRIPTIONS_PACKAGES).map { Reflections(it).getTypesAnnotatedWith(Controller::class.java) }.flatten().toTypedArray())
+                *ConfigManager.getProperties(ConfigNames.CUSTOM_WEB_CONTROLLERS).map { Reflections(it).getTypesAnnotatedWith(Controller::class.java) }.flatten().toTypedArray())
             .eagerInitSingletons(true)
             .start()
     }

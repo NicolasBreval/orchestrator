@@ -55,7 +55,7 @@ object DisplayNodeInitializer {
 
         Micronaut.build()
             .args(*args)
-            .classes(DisplayController::class.java, *ConfigManager.getProperties(ConfigNames.CUSTOM_SUBSCRIPTIONS_PACKAGES).map { Reflections(it).getTypesAnnotatedWith(
+            .classes(DisplayController::class.java, *ConfigManager.getProperties(ConfigNames.CUSTOM_WEB_CONTROLLERS).map { Reflections(it).getTypesAnnotatedWith(
                 Controller::class.java) }.flatten().toTypedArray())
             .eagerInitSingletons(true)
             .start()
