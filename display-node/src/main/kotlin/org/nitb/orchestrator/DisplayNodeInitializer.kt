@@ -53,10 +53,12 @@ object DisplayNodeInitializer {
         System.setProperty("application.environment", environment)
         System.setProperty("micronaut.server.cors.enabled", ConfigManager.getProperty("cors.enabled", "true"))
 
+        val controllers = arrayOf(DisplayController::class.java, *ConfigManager.getProperties(ConfigNames.CUSTOM_WEB_CONTROLLERS).map { Reflections(it).getTypesAnnotatedWith(
+            Controller::class.java) }.flatten().toTypedArray())
+
         Micronaut.build()
             .args(*args)
-            .classes(DisplayController::class.java, *ConfigManager.getProperties(ConfigNames.CUSTOM_WEB_CONTROLLERS).map { Reflections(it).getTypesAnnotatedWith(
-                Controller::class.java) }.flatten().toTypedArray())
+            .classes(*controllers)
             .eagerInitSingletons(true)
             .start()
     }

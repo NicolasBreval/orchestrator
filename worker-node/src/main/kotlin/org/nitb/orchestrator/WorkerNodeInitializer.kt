@@ -43,11 +43,12 @@ object WorkerNodeInitializer {
             System.setProperty("swagger-ui.enabled", "true")
         }
 
+        val controllers = arrayOf(WorkerController::class.java,
+            *ConfigManager.getProperties(ConfigNames.CUSTOM_WEB_CONTROLLERS).map { Reflections(it).getTypesAnnotatedWith(Controller::class.java) }.flatten().toTypedArray())
+
         Micronaut.build()
             .args(*args)
-            .classes(
-                WorkerController::class.java,
-                *ConfigManager.getProperties(ConfigNames.CUSTOM_WEB_CONTROLLERS).map { Reflections(it).getTypesAnnotatedWith(Controller::class.java) }.flatten().toTypedArray())
+            .classes(*controllers)
             .eagerInitSingletons(true)
             .start()
     }
