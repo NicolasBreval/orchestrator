@@ -33,6 +33,20 @@ class HttpClient(
         } ?: error("Response doesn't valid")
     }
 
+    fun <T> jsonRequest(method: String, body: Any, typeReference: TypeReference<T>): T {
+        val client = createClient()
+
+        val requestBody = JSONSerializer.serialize(body).toRequestBody("application/json".toMediaType())
+
+        val request = createRequestBuilder(method, requestBody)
+
+        return client.newCall(request.build()).execute().use {res ->
+            res.body?.use { responseBody ->
+                responseBody.string().let { JSONSerializer.deserialize(it, typeReference) }
+            }
+        } ?: error("Response doesn't valid")
+    }
+
     fun <T> jsonRequest(method: String, clazz: Class<T>): T {
         val client = createClient()
 
