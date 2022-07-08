@@ -58,19 +58,19 @@ class MainSubscriber(
             }
         }
 
-        Thread {
-            val lastSubscriptions = DbController.getLastSubscriptions()
+        logger.info("Obtaining subscriptions from database...")
+        val lastSubscriptions = DbController.getLastSubscriptions()
 
-            if (allocationStrategy == AllocationStrategy.FIXED) {
-                lastSubscriptions.groupBy { it.subscriber }.forEach { (subscriber, subscriptions) ->
-                    fallenSubscriptionsBySubscriber[subscriber] = subscriptions.associate { Pair(it.name, String(it.content.bytes)) }
-                    fallenSubscriptionsNeedToSend[subscriber] = true
-                }
-            } else {
-                fallenSubscriptionsBySubscriber[""] = lastSubscriptions.associate { Pair(it.name, String(it.content.bytes)) }
-                fallenSubscriptionsNeedToSend[""] = true
+        logger.info("${lastSubscriptions.size} obtained from database")
+        if (allocationStrategy == AllocationStrategy.FIXED) {
+            lastSubscriptions.groupBy { it.subscriber }.forEach { (subscriber, subscriptions) ->
+                fallenSubscriptionsBySubscriber[subscriber] = subscriptions.associate { Pair(it.name, String(it.content.bytes)) }
+                fallenSubscriptionsNeedToSend[subscriber] = true
             }
-        }.start()
+        } else {
+            fallenSubscriptionsBySubscriber[""] = lastSubscriptions.associate { Pair(it.name, String(it.content.bytes)) }
+            fallenSubscriptionsNeedToSend[""] = true
+        }
 
         checkMasterRoleScheduler.start()
         checkNodesScheduler.start()

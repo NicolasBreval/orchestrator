@@ -3,6 +3,7 @@ package org.nitb.orchestrator.subscription
 import com.cronutils.model.CronType
 import com.cronutils.model.definition.CronDefinitionBuilder
 import com.cronutils.parser.CronParser
+import com.fasterxml.jackson.annotation.JsonIgnore
 import org.nitb.orchestrator.scheduling.CronScheduler
 import org.nitb.orchestrator.scheduling.PeriodicalScheduler
 import org.nitb.orchestrator.scheduling.Scheduler
@@ -19,8 +20,11 @@ abstract class CyclicalSubscription<O>(
     private val type: PeriodType
 ): Subscription<Unit, O>(name, timeout, description) {
 
+    @JsonIgnore
+    @Transient
     private val fixedRegex = "\\d+(@)?(\\d+)?"
 
+    @delegate:JsonIgnore
     @delegate:Transient
     private val scheduler: Scheduler by lazy {
         if (type == PeriodType.FIXED) {
