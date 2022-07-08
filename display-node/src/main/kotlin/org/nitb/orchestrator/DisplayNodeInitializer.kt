@@ -1,6 +1,7 @@
 package org.nitb.orchestrator
 
 import ch.qos.logback.classic.Level
+import io.micronaut.http.annotation.Controller
 import io.micronaut.runtime.Micronaut
 import io.swagger.v3.oas.annotations.OpenAPIDefinition
 import io.swagger.v3.oas.annotations.info.Contact
@@ -9,6 +10,7 @@ import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.web.controllers.DisplayController
+import org.reflections.Reflections
 import java.nio.file.Files
 import java.nio.file.Paths
 
@@ -53,7 +55,8 @@ object DisplayNodeInitializer {
 
         Micronaut.build()
             .args(*args)
-            .classes(DisplayController::class.java)
+            .classes(DisplayController::class.java, *ConfigManager.getProperties(ConfigNames.CUSTOM_SUBSCRIPTIONS_PACKAGES).map { Reflections(it).getTypesAnnotatedWith(
+                Controller::class.java) }.flatten().toTypedArray())
             .eagerInitSingletons(true)
             .start()
     }

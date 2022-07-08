@@ -28,7 +28,6 @@ import java.lang.IllegalStateException
 import java.lang.RuntimeException
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.concurrent.thread
 import kotlin.streams.asSequence
 
 class MainSubscriber(
@@ -456,12 +455,7 @@ class MainSubscriber(
     }
 
     private fun loadSubscriptionSchemas(): Map<String, String?> {
-        val packages = Package.getPackages()
-        val packageSet = mutableSetOf<String>()
-
-        for (p in packages) {
-            packageSet.add(p.name.split(".")[0])
-        }
+        val packageSet = ConfigManager.getProperties(ConfigNames.CUSTOM_SUBSCRIPTIONS_PACKAGES).toSet()
 
         val result = packageSet.parallelStream().flatMap { packageName ->
             Reflections(packageName).getSubTypesOf(Subscription::class.java).filter { !it.kotlin.isAbstract }.stream()

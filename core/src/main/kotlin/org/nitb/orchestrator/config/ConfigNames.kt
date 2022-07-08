@@ -322,6 +322,16 @@ object ConfigNames {
      */
     const val HTTP_PORT = "server.http.port"
 
+    /**
+     * Used to define custom subscriptions packages to search for them on initialization
+     */
+    const val CUSTOM_SUBSCRIPTIONS_PACKAGES = "custom.subscriptions.packages"
+
+    /**
+     * Used to specify where to find custom web controllers
+     */
+    const val CUSTOM_WEB_CONTROLLERS = "custom.web.controllers"
+
     // endregion
 
     // region SECONDARY SUBSCRIBER DEFAULTS
