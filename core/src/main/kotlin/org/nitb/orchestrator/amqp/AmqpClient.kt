@@ -39,6 +39,11 @@ abstract class AmqpClient<T: Serializable>(
     abstract fun purge()
 
     /**
+     * Starts amqp connection if is closed
+     */
+    abstract fun start()
+
+    /**
      * Closes connections related to this client.
      */
     abstract fun close()
@@ -47,6 +52,8 @@ abstract class AmqpClient<T: Serializable>(
      * Checks if master node queue has a consumer
      */
     abstract fun masterConsuming(): Boolean
+
+    abstract fun isConnected(): Boolean
 
     // endregion
 

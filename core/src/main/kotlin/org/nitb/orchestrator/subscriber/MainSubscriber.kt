@@ -44,6 +44,7 @@ class MainSubscriber(
     // region PUBLIC METHODS
 
     fun start() {
+        client.start()
         client.purge()
 
         registerConsumer(client) { message ->
@@ -60,7 +61,7 @@ class MainSubscriber(
         logger.info("Obtaining subscriptions from database...")
         val lastSubscriptions = DbController.getLastSubscriptions()
 
-        logger.info("${lastSubscriptions.size} obtained from database")
+        logger.info("${lastSubscriptions.size} subscriptions obtained from database")
         if (allocationStrategy == AllocationStrategy.FIXED) {
             lastSubscriptions.groupBy { it.subscriber }.forEach { (subscriber, subscriptions) ->
                 fallenSubscriptionsBySubscriber[subscriber] = subscriptions.associate { Pair(it.name, String(it.content.bytes)) }

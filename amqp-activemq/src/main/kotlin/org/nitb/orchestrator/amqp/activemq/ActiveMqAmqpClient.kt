@@ -145,6 +145,15 @@ class ActiveMqAmqpClient<T: Serializable>(
         }
     }
 
+    override fun start() {
+        try {
+            connection = initConnection()
+            session = initSession(connection)
+        } catch (e: Exception) {
+            // do nothing
+        }
+    }
+
     override fun close() {
         try {
             cancelConsumer()
@@ -159,6 +168,10 @@ class ActiveMqAmqpClient<T: Serializable>(
 
     override fun masterConsuming(): Boolean {
         return masterConsumersCount.get() > 0
+    }
+
+    override fun isConnected(): Boolean {
+        return !(session.isClosed || connection.isClosed)
     }
 
     /**
@@ -188,13 +201,13 @@ class ActiveMqAmqpClient<T: Serializable>(
      * Connection object used to send and receive data from ActiveMQ queues.
      * @see ActiveMQConnection
      */
-    private var connection: ActiveMQConnection = connectionFactory.createConnection() as ActiveMQConnection
+    private var connection: ActiveMQConnection = initConnection()
 
     /**
      * Session object used to send and receive data from ActiveMQ queues. It's created from [connection] object.
      * @see ActiveMQSession
      */
-    private var session: ActiveMQSession = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE) as ActiveMQSession
+    private var session: ActiveMQSession = initSession(connection)
 
     private val consumers: MutableList<ActiveMQMessageConsumer> = mutableListOf()
 
@@ -218,6 +231,14 @@ class ActiveMqAmqpClient<T: Serializable>(
     // endregion
 
     // region PRIVATE METHODS
+
+    private fun initConnection(): ActiveMQConnection {
+        return connectionFactory.createConnection() as ActiveMQConnection
+    }
+
+    private fun initSession(connection: Connection): ActiveMQSession {
+        return connection.createSession(false, Session.CLIENT_ACKNOWLEDGE) as ActiveMQSession
+    }
 
     /**
      * Creates a queue for this client. All queues are created as exclusive, to ensure that,

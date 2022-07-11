@@ -58,6 +58,7 @@ class Subscriber(
     }
 
     fun start() {
+        client.start()
         sendInformationScheduler.start()
         checkMainNodeExistsScheduler.start()
     }
@@ -67,10 +68,13 @@ class Subscriber(
             if (isMainNode && !force) {
                 mainSubscriber.uploadSubscriptions(subscriptions, subscriber)
             } else {
+                logger.info("Uploading ${subscriptions.size} subscriptions")
+
                 subscriptions
                     .map { subscription -> JSONSerializer.deserializeWithClassName(subscription) as Subscription<*, *> }
                     .filter { subscription -> subscriptionsPool[subscription.name]?.info?.content != subscription.info.content }
                     .forEach { subscription ->
+                        logger.info("Uploading subscription ${subscription.name}")
                         subscriptionsPool[subscription.name] = subscription
                         subscription.start()
                     }
@@ -263,9 +267,10 @@ class Subscriber(
     private val checkMainNodeExistsSchedulerDelegate = lazy {
         object : PeriodicalScheduler(checkMainNodeExistPeriod, 0, checkMainNodeExistsTimeout, name = name) {
             override fun onCycle() {
-                if (!masterConsuming(client)) {
+                if (amqpConnectionIsOpen(client) && !masterConsuming(client)) {
                     logger.info("Master node is fallen, obtaining master role")
                     isMainNode = true
+                    mainSubscriber.stop()
                     mainSubscriber.start()
                 }
             }

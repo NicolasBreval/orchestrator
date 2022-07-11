@@ -19,14 +19,16 @@ interface AmqpSender {
      */
     @Suppress("UNCHECKED_CAST")
     fun sendToReceivers(message: Serializable, client: AmqpClient<*>, receivers: List<SubscriptionReceiver>) {
-        for (receiver in receivers) {
-            val transformed = try {
-                (Class.forName(receiver.transformer).newInstance() as Transformer<Serializable>).transform(message)
-            } catch (e: Exception) {
-                message
-            }
+        if (client.isConnected()) {
+            for (receiver in receivers) {
+                val transformed = try {
+                    (Class.forName(receiver.transformer).newInstance() as Transformer<Serializable>).transform(message)
+                } catch (e: Exception) {
+                    message
+                }
 
-            client.send(receiver.name, transformed)
+                client.send(receiver.name, transformed)
+            }
         }
     }
 

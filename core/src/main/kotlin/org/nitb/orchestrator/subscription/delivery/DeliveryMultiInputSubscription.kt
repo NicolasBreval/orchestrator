@@ -34,7 +34,11 @@ abstract class DeliveryMultiInputSubscription<O: Serializable>(
         sendToReceivers(output, client, receivers)
     }
 
-    override fun initialize() {
+    override fun deactivate() {
+        client.close()
+    }
+
+    override fun onStart() {
         client.createConsumer() { cloudMessage ->
 
             senderQueues[cloudMessage.sender].let { queue ->
@@ -51,8 +55,8 @@ abstract class DeliveryMultiInputSubscription<O: Serializable>(
         }
     }
 
-    override fun deactivate() {
-        client.close()
+    override fun onStop() {
+        client.cancelConsumer()
     }
 
     private fun push(input: Serializable): String {

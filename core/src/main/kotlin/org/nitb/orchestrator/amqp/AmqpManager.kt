@@ -26,5 +26,9 @@ interface AmqpManager<T: Serializable> {
         return client.masterConsuming()
     }
 
+    fun amqpConnectionIsOpen(client: AmqpClient<T>): Boolean {
+        return client.isConnected()
+    }
+
     // endregion
 }

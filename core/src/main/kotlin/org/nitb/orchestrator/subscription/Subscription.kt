@@ -23,6 +23,7 @@ abstract class Subscription<I, O>(
     // region PUBLIC METHODS
 
     fun start() {
+        logger.info("Subscription $name started")
         status = SubscriptionStatus.IDLE
         starts = starts.add(BigInteger.ONE)
         initialize()
@@ -34,6 +35,7 @@ abstract class Subscription<I, O>(
         deactivate()
         status = SubscriptionStatus.STOPPED
         stops = stops.add(BigInteger.ONE)
+        logger.info("Subscription $name stopped")
     }
 
     // endregion
@@ -95,6 +97,7 @@ abstract class Subscription<I, O>(
     protected abstract fun deactivate()
 
     protected fun runEvent(messageSize: BigInteger, sender: String, input: I): O? {
+        logger.info("Running new event for subscription $name")
         status = SubscriptionStatus.RUNNING
         lastExecution = System.currentTimeMillis()
         inputVolume = inputVolume.add(messageSize)
@@ -123,7 +126,8 @@ abstract class Subscription<I, O>(
             }
             null
         } finally {
-            status = SubscriptionStatus.IDLE
+            if (status == SubscriptionStatus.RUNNING)
+                status = SubscriptionStatus.IDLE
         }
     }
 
@@ -140,6 +144,8 @@ abstract class Subscription<I, O>(
     protected fun <T> parseHandlerMessage(message: DirectMessage<*>, clazz: Class<T>): T {
         return JSONSerializer.deserialize(JSONSerializer.serialize(message.info), clazz)
     }
+
+    protected val customStatus: SubscriptionStatus get() = status
 
     // endregion
 

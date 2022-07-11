@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.info.Contact
 import io.swagger.v3.oas.annotations.info.Info
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
+import org.nitb.orchestrator.display.DisplayManager
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.web.controllers.DisplayController
 import org.reflections.Reflections
@@ -52,6 +53,8 @@ object DisplayNodeInitializer {
         System.setProperty("application.version", version)
         System.setProperty("application.environment", environment)
         System.setProperty("micronaut.server.cors.enabled", ConfigManager.getProperty("cors.enabled", "true"))
+
+        DisplayManager.start()
 
         val controllers = arrayOf(DisplayController::class.java, *ConfigManager.getProperties(ConfigNames.CUSTOM_WEB_CONTROLLERS).map { Reflections(it).getTypesAnnotatedWith(
             Controller::class.java) }.flatten().toTypedArray())

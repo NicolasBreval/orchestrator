@@ -379,7 +379,7 @@ object ConfigNames {
     /**
      * Default value for [SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_UPLOAD_TIMEOUT], if is not set.
      */
-    const val SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_UPLOAD_TIMEOUT_DEFAULT = 4000L
+    const val SUBSCRIBER_CHECK_WAITING_SUBSCRIPTIONS_TO_UPLOAD_TIMEOUT_DEFAULT = 60000L
 
     /**
      * Default value for [HTTP_PORT], if is not set

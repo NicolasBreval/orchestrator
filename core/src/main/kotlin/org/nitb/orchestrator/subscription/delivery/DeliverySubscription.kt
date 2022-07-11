@@ -25,16 +25,20 @@ abstract class DeliverySubscription<I: Serializable, O: Serializable>(
         sendToReceivers(output, client, receivers)
     }
 
-    override fun initialize() {
+    override fun deactivate() {
+        client.close()
+    }
+
+    override fun onStop() {
+        client.cancelConsumer()
+    }
+
+    override fun onStart() {
         client.createConsumer() { cloudMessage ->
             val result = runEvent(cloudMessage.size, cloudMessage.sender, cloudMessage.message)
 
             if (result != null)
                 sendToReceivers(result, client, receivers)
         }
-    }
-
-    override fun deactivate() {
-        client.close()
     }
 }

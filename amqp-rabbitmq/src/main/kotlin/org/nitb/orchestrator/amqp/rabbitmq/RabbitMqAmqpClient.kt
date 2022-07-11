@@ -1,6 +1,8 @@
 package org.nitb.orchestrator.amqp.rabbitmq
 
 import com.rabbitmq.client.AlreadyClosedException
+import com.rabbitmq.client.Channel
+import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.ShutdownListener
 import org.nitb.orchestrator.amqp.AmqpClient
@@ -62,6 +64,10 @@ class RabbitMqAmqpClient<T: Serializable>(
     }
 
     override fun createConsumer(onConsume: Consumer<AmqpMessage<T>>) {
+        if (!isConnected()) {
+            initConnection()
+        }
+
         try {
             consumerFunction = onConsume
             declareQueue()
@@ -82,9 +88,19 @@ class RabbitMqAmqpClient<T: Serializable>(
     }
 
     override fun purge() {
-        if (channel.isOpen) {
+        if (isConnected()) {
             declareQueue()
             channel.queuePurge(name)
+        }
+    }
+
+    override fun start() {
+        try {
+            if (!isConnected()) {
+                initConnection()
+            }
+        } catch (e: Exception) {
+            // do nothing
         }
     }
 
@@ -100,8 +116,12 @@ class RabbitMqAmqpClient<T: Serializable>(
     }
 
     override fun masterConsuming(): Boolean {
-        if (!channel.isOpen) return true
+        if (!isConnected()) return true
         return channel.queueDeclare(mainNodeName, true, false, false, null)?.consumerCount?.let { it > 0 } ?: false
+    }
+
+    override fun isConnected(): Boolean {
+        return this::channel.isInitialized && this::connection.isInitialized && channel.isOpen && connection.isOpen
     }
 
     // endregion
@@ -111,12 +131,12 @@ class RabbitMqAmqpClient<T: Serializable>(
     /**
      * Connection object used to send and receive data from queues.
      */
-    private var connection = connectionFactory.newConnection()
+    private lateinit var connection: Connection
 
     /**
      * Channel object used to send and receive data from queues. It's created from [connection] object.
      */
-    private var channel = connection.createChannel()
+    private lateinit var channel: Channel
 
     /**
      * Logger object used to show information to developer and client.
@@ -152,6 +172,23 @@ class RabbitMqAmqpClient<T: Serializable>(
 
     // region PRIVATE METHODS
 
+    @Synchronized
+    private fun initConnection() {
+        if (!isConnected()) {
+            try {
+                if (this::channel.isInitialized )
+                    channel.close()
+                if (this::connection.isInitialized)
+                    connection.close()
+            } catch (e: Exception) {
+                // do nothing
+            }
+
+            connection = connectionFactory.newConnection()
+            channel = connection.createChannel()
+        }
+    }
+
     /**
      * Method used to create a new queue for this client. All queues are exclusive by default
      */
@@ -163,6 +200,7 @@ class RabbitMqAmqpClient<T: Serializable>(
     // endregion
 
     init {
+        initConnection()
         channel.addShutdownListener(shutdownListener)
     }
 }

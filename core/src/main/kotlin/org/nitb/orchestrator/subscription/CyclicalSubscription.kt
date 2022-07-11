@@ -61,15 +61,15 @@ abstract class CyclicalSubscription<O>(
         }
     }
 
-    override fun initialize() {
-        scheduler.start()
-    }
-
     override fun deactivate() {
         scheduler.pause(true)
     }
 
-    override fun onDelete() {
+    override fun onStart() {
+        scheduler.start()
+    }
+
+    override fun onStop() {
         scheduler.stop(true)
     }
 }

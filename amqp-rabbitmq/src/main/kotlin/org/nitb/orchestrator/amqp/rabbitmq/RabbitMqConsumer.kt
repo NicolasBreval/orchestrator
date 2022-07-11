@@ -36,37 +36,41 @@ class RabbitMqConsumer<T: Serializable>(
         properties: AMQP.BasicProperties?,
         body: ByteArray?
     ) {
-        val deliveryTag = envelope?.deliveryTag
+        try {
+            val deliveryTag = envelope?.deliveryTag
 
-        var retries = ConfigManager.getInt(ConfigNames.AMQP_RETRIES, ConfigNames.AMQP_RETRIES_DEFAULT).let { if (it < 0) 0 else it }
+            var retries = ConfigManager.getInt(ConfigNames.AMQP_RETRIES, ConfigNames.AMQP_RETRIES_DEFAULT).let { if (it < 0) 0 else it }
 
-        var sendAck = true
+            var sendAck = true
 
-        val task = executor.submit {
-            while (retries > -1) {
-                try {
-                    val message = try {
-                        BinarySerializer.deserialize(body!!)
+            val task = executor.submit {
+                while (retries > -1) {
+                    try {
+                        val message = try {
+                            BinarySerializer.deserialize(body!!)
+                        } catch (e: Exception) {
+                            JSONSerializer.deserialize(String(body!!), AmqpMessage::class.java) as AmqpMessage<T>
+                        }
+
+                        onReceive.accept(message)
+                        retries = -1
                     } catch (e: Exception) {
-                        JSONSerializer.deserialize(String(body!!), AmqpMessage::class.java) as AmqpMessage<T>
+                        retries--
+
+                        if (e !is InterruptedException)
+                            logger.warn("RABBITMQ WARNING: Error processing received message from server for queue $name", e)
+
+                        sendAck = e !is AmqpBlockingException
                     }
-
-                    onReceive.accept(message)
-                    retries = -1
-                } catch (e: Exception) {
-                    retries--
-
-                    if (e !is InterruptedException)
-                        logger.warn("RABBITMQ WARNING: Error processing received message from server for queue $name", e)
-
-                    sendAck = e !is AmqpBlockingException
                 }
             }
-        }
-        task.get()
+            task.get()
 
-        if (sendAck)
-            channel.basicAck(deliveryTag!!, false)
+            if (sendAck)
+                channel.basicAck(deliveryTag!!, false)
+        } catch (e: AlreadyClosedException) {
+            // do nothing
+        }
     }
 
     override fun handleShutdownSignal(consumerTag: String?, sig: ShutdownSignalException?) {

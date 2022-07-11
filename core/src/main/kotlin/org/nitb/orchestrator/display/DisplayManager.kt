@@ -20,9 +20,9 @@ import java.io.InputStream
 import java.io.Serializable
 import java.lang.RuntimeException
 
-class DisplayManager(
+object DisplayManager: AmqpManager<Serializable>, AmqpConsumer<Serializable>, AmqpSender {
+
     private val name: String = ConfigManager.getProperty(ConfigNames.DISPLAY_NODE_NAME, RuntimeException("You must set a value for ${ConfigNames.DISPLAY_NODE_NAME} property"))
-): AmqpManager<Serializable>, AmqpConsumer<Serializable>, AmqpSender {
 
     fun start() {
         client.purge()
@@ -53,8 +53,12 @@ class DisplayManager(
     }
 
     fun listSubscriptions(): List<SubscriptionInfo> {
-        return HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscriptions/list")
-            .jsonRequest("GET", object: TypeReference<List<SubscriptionInfo>>() {})
+        return if (!this::mainNode.isInitialized) {
+            listOf()
+        } else {
+            HttpClient("http://${mainNode.hostname}:${mainNode.httpPort}/subscriptions/list")
+                .jsonRequest("GET", object: TypeReference<List<SubscriptionInfo>>() {})
+        }
     }
 
     fun getSubscriptionInfo(name: String): SubscriptionInfo {
@@ -115,7 +119,4 @@ class DisplayManager(
 
     private lateinit var mainNode: SubscriberInfo
 
-    init {
-        start()
-    }
 }
