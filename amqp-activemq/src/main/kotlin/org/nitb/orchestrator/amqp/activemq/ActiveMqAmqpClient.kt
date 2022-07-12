@@ -228,6 +228,10 @@ class ActiveMqAmqpClient<T: Serializable>(
 
     private val executor = Executors.newSingleThreadExecutor()
 
+    private val mainNodeName = ConfigManager.getProperty(ConfigNames.PRIMARY_NAME)
+
+    private val displayNodeName = ConfigManager.getProperty(ConfigNames.DISPLAY_NODE_NAME)
+
     // endregion
 
     // region PRIVATE METHODS
@@ -246,7 +250,7 @@ class ActiveMqAmqpClient<T: Serializable>(
      * @param name Name of queue to be created
      */
     private fun declareQueue(name: String): Destination {
-        return session.createQueue("$name?consumer.exclusive=${ if (workers > 1) "true" else "false" }")
+        return session.createQueue("$name?consumer.exclusive=${ if (name != displayNodeName && workers == 1 && name != mainNodeName) "true" else "false" }")
     }
 
     // endregion

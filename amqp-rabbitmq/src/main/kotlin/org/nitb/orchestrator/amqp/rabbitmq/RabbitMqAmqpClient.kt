@@ -151,6 +151,8 @@ class RabbitMqAmqpClient<T: Serializable>(
 
     private val mainNodeName = ConfigManager.getProperty(ConfigNames.PRIMARY_NAME)
 
+    private val displayNodeName = ConfigManager.getProperty(ConfigNames.DISPLAY_NODE_NAME)
+
     private lateinit var consumerFunction: Consumer<AmqpMessage<T>>
 
     private val shutdownListener = ShutdownListener {
@@ -194,7 +196,7 @@ class RabbitMqAmqpClient<T: Serializable>(
      */
     private fun declareQueue() {
         if (!channel.isOpen) return;
-        channel.queueDeclare(name, true, workers == 1 && name != mainNodeName, false, null)
+        channel.queueDeclare(name, true,  name != displayNodeName && workers == 1 && name != mainNodeName, false, null)
     }
 
     // endregion

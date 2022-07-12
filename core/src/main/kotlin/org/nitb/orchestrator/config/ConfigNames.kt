@@ -332,6 +332,8 @@ object ConfigNames {
      */
     const val CUSTOM_WEB_CONTROLLERS = "custom.web.controllers"
 
+    const val SUBSCRIBER_COMMUNICATION_USE_HOSTNAME = "subscriber.communication.use.hostname"
+
     // endregion
 
     // region SECONDARY SUBSCRIBER DEFAULTS

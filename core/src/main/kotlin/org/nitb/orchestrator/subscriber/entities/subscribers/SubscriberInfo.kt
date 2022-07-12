@@ -51,4 +51,12 @@ class SubscriberInfo(
         result = 31 * result + isMainNode.hashCode()
         return result
     }
+
+    val fixedHost: String get() {
+        return if (ConfigManager.getBoolean(ConfigNames.SUBSCRIBER_COMMUNICATION_USE_HOSTNAME)) {
+            hostname
+        } else {
+            ipAddress
+        }
+    }
 }

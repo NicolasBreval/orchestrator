@@ -126,7 +126,7 @@ class MainSubscriber(
                 parentSubscriber.uploadSubscriptions(subscriptions, subscriber, true)
             } else {
                 val info = subscribers[subscriber]
-                val url = "http://${info?.hostname}:${info?.httpPort}/subscriptions/upload"
+                val url = "http://${info?.fixedHost}:${info?.httpPort}/subscriptions/upload"
 
                 try {
                     val response = HttpClient(url).jsonRequest("PUT", UploadSubscriptionsRequest(subscriptions), SubscriptionOperationResponse::class.java)
@@ -163,7 +163,7 @@ class MainSubscriber(
                     parentSubscriber.removeSubscriptions(subscriptions, true)
                 } else {
                     val info = subscribers[subscriber.get()]
-                    val url = "http://${info?.hostname}:${info?.httpPort}/subscriptions/remove" // TODO: Check for HTTPS option
+                    val url = "http://${info?.fixedHost}:${info?.httpPort}/subscriptions/remove" // TODO: Check for HTTPS option
 
                     try {
                         val response = HttpClient(url).jsonRequest("PUT", subscriptions, SubscriptionOperationResponse::class.java)
@@ -201,7 +201,7 @@ class MainSubscriber(
                     parentSubscriber.setSubscriptions(subscriptions, stop, true)
                 } else {
                     val info = subscribers[subscriber.get()]
-                    val url = "http://${info?.hostname}:${info?.httpPort}/subscriptions/${if (stop) "stop" else "start"}" // TODO: Check for HTTPS option
+                    val url = "http://${info?.fixedHost}:${info?.httpPort}/subscriptions/${if (stop) "stop" else "start"}" // TODO: Check for HTTPS option
 
                     try {
                         val response = HttpClient(url).jsonRequest("PUT", subscriptions, SubscriptionOperationResponse::class.java)
@@ -233,7 +233,7 @@ class MainSubscriber(
             parentSubscriber.getLogs(name, count, true)
         } else {
             val info = subscribers[subscriber]
-            val url = "http://${info?.hostname}:${info?.httpPort}/subscription/logs" // TODO: Check for HTTPS option
+            val url = "http://${info?.fixedHost}:${info?.httpPort}/subscription/logs" // TODO: Check for HTTPS option
 
             HttpClient(url, params = mapOf("name" to listOf(name), "count" to listOf("$count")))
                 .jsonRequest("GET", object: TypeReference<List<String>>() {})
@@ -247,7 +247,7 @@ class MainSubscriber(
             parentSubscriber.getLogFiles(name, true)
         } else {
             val info = subscribers[subscriber]
-            val url = "http://${info?.hostname}:${info?.httpPort}/subscription/logs/download" // TODO: Check for HTTPS option
+            val url = "http://${info?.fixedHost}:${info?.httpPort}/subscription/logs/download" // TODO: Check for HTTPS option
 
             HttpClient(url, params = mapOf("name" to listOf(name))).basicRequest("GET").use { res ->
                 res.body?.byteStream()
@@ -272,7 +272,7 @@ class MainSubscriber(
                 parentSubscriber.handleSubscriptionMessage(name, message, true)
             } else {
                 val info = subscribers[it]
-                val url = "http://${info?.hostname}:${info?.httpPort}/subscriptions/remove" // TODO: Check for HTTPS option
+                val url = "http://${info?.fixedHost}:${info?.httpPort}/subscriptions/remove" // TODO: Check for HTTPS option
 
                 HttpClient(url).jsonRequest("POST", message, Any::class.java)
             }
