@@ -5,7 +5,6 @@ import org.nitb.orchestrator.amqp.AmqpManager
 import org.nitb.orchestrator.amqp.AmqpSender
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
-import org.nitb.orchestrator.database.relational.entities.SubscriptionEntry
 import org.nitb.orchestrator.database.relational.entities.SubscriptionSerializableEntry
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.scheduling.PeriodicalScheduler
@@ -17,7 +16,6 @@ import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResponse
 import org.nitb.orchestrator.subscription.Subscription
 import org.nitb.orchestrator.subscription.entities.DirectMessage
-import org.reflections.Reflections
 import java.io.FileInputStream
 import java.io.InputStream
 import java.io.Serializable
@@ -26,11 +24,7 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
-class Subscriber(
-    private val name: String = if (ConfigManager.getEnumProperty(ConfigNames.ALLOCATION_STRATEGY, AllocationStrategy::class.java, ConfigNames.ALLOCATION_STRATEGY_DEFAULT) == AllocationStrategy.FIXED)
-        ConfigManager.getProperty(ConfigNames.SECONDARY_NAME, RuntimeException("${ConfigNames.SECONDARY_NAME} property is required when allocation type is ${AllocationStrategy.FIXED}"))
-    else UUID.randomUUID().toString()
-): AmqpManager<Serializable>, AmqpConsumer<Serializable>, AmqpSender {
+object Subscriber: AmqpManager<Serializable>, AmqpConsumer<Serializable>, AmqpSender {
 
 
     // region PUBLIC PROPERTIES
@@ -191,9 +185,20 @@ class Subscriber(
             throw IllegalAccessException("You cannot request subscription historical to a non-main node")
     }
 
+    fun getSubscriptionsClasses(): Map<String, String> {
+        return if (isMainNode)
+            mainSubscriber.getSubscriptionsClasses()
+        else
+            throw IllegalAccessException("You cannot request subscription classes to a non-main node")
+    }
+
     // endregion
 
     // region PRIVATE PROPERTIES
+
+    private val name: String = if (ConfigManager.getEnumProperty(ConfigNames.ALLOCATION_STRATEGY, AllocationStrategy::class.java, ConfigNames.ALLOCATION_STRATEGY_DEFAULT) == AllocationStrategy.FIXED)
+        ConfigManager.getProperty(ConfigNames.SECONDARY_NAME, RuntimeException("${ConfigNames.SECONDARY_NAME} property is required when allocation type is ${AllocationStrategy.FIXED}"))
+    else UUID.randomUUID().toString()
 
     /**
      * Logger object to print logs
@@ -280,12 +285,4 @@ class Subscriber(
 
     // endregion
 
-
-    // region INIT
-
-    init {
-        start()
-    }
-
-    // endregion
 }

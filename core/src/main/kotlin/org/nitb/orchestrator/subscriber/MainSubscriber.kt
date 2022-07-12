@@ -24,6 +24,7 @@ import org.nitb.orchestrator.web.entities.UploadSubscriptionsRequest
 import org.reflections.Reflections
 import java.io.InputStream
 import java.io.Serializable
+import java.lang.Exception
 import java.lang.IllegalStateException
 import java.lang.RuntimeException
 import java.util.*
@@ -284,6 +285,14 @@ class MainSubscriber(
 
     fun getSubscriptionHistorical(name: String): List<SubscriptionSerializableEntry> {
         return DbController.getSubscriptionHistorical(name)
+    }
+
+    fun getSubscriptionsClasses(): Map<String, String> {
+        return subscribers.flatMap { it.value.subscriptions.values }
+            .map { JSONSerializer.deserialize(it.content, object : TypeReference<Map<String, Any>>() {}) }
+            .filter { it.containsKey("className") }.associate {
+                Pair(it["name"] as String, it["className"] as String)
+            }
     }
 
     // endregion

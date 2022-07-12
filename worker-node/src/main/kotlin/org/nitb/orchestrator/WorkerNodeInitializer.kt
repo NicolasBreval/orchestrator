@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.info.Info
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.logging.LoggingManager
+import org.nitb.orchestrator.subscriber.Subscriber
 import org.nitb.orchestrator.web.controllers.WorkerController
 import org.reflections.Reflections
 import java.nio.file.Files
@@ -42,6 +43,8 @@ object WorkerNodeInitializer {
             System.setProperty("micronaut.router.static-resources.swagger.mapping", "/swagger/**")
             System.setProperty("swagger-ui.enabled", "true")
         }
+
+        Subscriber.start()
 
         val controllers = arrayOf(WorkerController::class.java,
             *ConfigManager.getProperties(ConfigNames.CUSTOM_WEB_CONTROLLERS).map { Reflections(it).getTypesAnnotatedWith(Controller::class.java) }.flatten().toTypedArray())
