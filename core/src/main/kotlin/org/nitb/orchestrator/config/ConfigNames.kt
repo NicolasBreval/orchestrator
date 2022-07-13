@@ -336,6 +336,8 @@ object ConfigNames {
 
     const val SUBSCRIBER_COMMUNICATION_USE_ENV = "subscriber.communication.use.env"
 
+    const val SUBSCRIBER_COMMUNICATION_USE_PORT_ENV = "subscriber.communication.use.port.env"
+
     // endregion
 
     // region SECONDARY SUBSCRIBER DEFAULTS
