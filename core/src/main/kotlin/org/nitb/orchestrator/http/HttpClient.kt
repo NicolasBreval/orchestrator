@@ -60,9 +60,10 @@ class HttpClient(
         val request = createRequestBuilder(method, null)
 
         return client.newCall(request.build()).execute().use {res ->
+            val code = res.code
             res.body?.use { responseBody ->
                 responseBody.string().let {
-                    logger.debug("Response received from $url: $it")
+                    logger.debug("Response received from $url: [$code] $it")
                     JSONSerializer.deserialize(it, clazz)
                 }
             }

@@ -53,9 +53,13 @@ class SubscriberInfo(
         return result
     }
 
+    private val subscriberUseHostname = ConfigManager.getBoolean(ConfigNames.SUBSCRIBER_COMMUNICATION_USE_HOSTNAME)
+
+    private val subscriberUseEnv = ConfigManager.getProperty(ConfigNames.SUBSCRIBER_COMMUNICATION_USE_ENV)
+
     @get:JsonIgnore
     val fixedHost: String get() {
-        return if (ConfigManager.getBoolean(ConfigNames.SUBSCRIBER_COMMUNICATION_USE_HOSTNAME)) {
+        return subscriberUseEnv ?: if (subscriberUseHostname) {
             hostname
         } else {
             ipAddress

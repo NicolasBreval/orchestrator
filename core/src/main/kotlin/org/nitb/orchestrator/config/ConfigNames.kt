@@ -334,6 +334,8 @@ object ConfigNames {
 
     const val SUBSCRIBER_COMMUNICATION_USE_HOSTNAME = "subscriber.communication.use.hostname"
 
+    const val SUBSCRIBER_COMMUNICATION_USE_ENV = "subscriber.communication.use.env"
+
     // endregion
 
     // region SECONDARY SUBSCRIBER DEFAULTS
