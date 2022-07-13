@@ -53,8 +53,10 @@ class SubscriberInfo(
         return result
     }
 
+    @JsonIgnore
     private val subscriberUseHostname = ConfigManager.getBoolean(ConfigNames.SUBSCRIBER_COMMUNICATION_USE_HOSTNAME)
 
+    @JsonIgnore
     private val subscriberUseEnv = ConfigManager.getProperty(ConfigNames.SUBSCRIBER_COMMUNICATION_USE_ENV)
 
     @get:JsonIgnore
