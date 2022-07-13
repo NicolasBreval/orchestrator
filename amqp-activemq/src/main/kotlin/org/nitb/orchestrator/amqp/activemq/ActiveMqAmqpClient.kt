@@ -20,12 +20,19 @@ import javax.jms.*
 import javax.jms.Message
 
 /**
- * [AmqpClient] based on ActiveMQ protocol.
+ * Implementation of the AmqpClient interface with ActiveMQ technology, based on JMS.
+ * With this implementation, is possible to send data to a specific queue and register one o multiple consumers on
+ * a queue and process received messages. When you create a new instance of this client, always creates automatically
+ * a queue with the name passed as parameter. Also, it's possible register a consumer to process received messages
+ * to mentioned queue, and you can specify number of consumers to create. If you create more than one consumer ([workers] > 1),
+ * all consumers created contains same code, but messages will be processed at same time by multiple consumers, this is
+ * a good solution for parallel processing.
  *
- * @param name Name of queue related to this client.
- *  (specified by [ConfigNames.PRIMARY_NAME]]) contains a consumer. This is needed to don't create two consumers for main node listening to same queue.
- * @constructor Creates a client based on ActiveMQ protocol, and can be used to send messages a declared consumers to queue with same name as [name].
+ * @param name Name of queue that is automatically created in ActiveMQ server.
+ * @param workers Number of consumers that client creates.
+ *
  * @see AmqpClient
+ * @author Nicolas Breval Rodriguez - nicolasbrevalrodriguez@gmail.com
  */
 @AmqpType("activemq")
 class ActiveMqAmqpClient<T: Serializable>(
@@ -40,7 +47,9 @@ class ActiveMqAmqpClient<T: Serializable>(
         // region PRIVATE PROPERTIES
 
         /**
-         * Object used to create connections with same configuration, obtained from properties.
+         * Factory object used to create new connections with same configuration. All properties needed are taken from
+         * properties file. If property related to server url, called [ConfigNames.ACTIVEMQ_BROKER_URL], is not set,
+         * returns a [RuntimeException]
          */
         private val connectionFactory: ActiveMQConnectionFactory = ActiveMQConnectionFactory(
             ConfigManager.getProperty(ConfigNames.ACTIVEMQ_USERNAME, ConfigNames.ACTIVEMQ_DEFAULT_USERNAME),
@@ -54,6 +63,14 @@ class ActiveMqAmqpClient<T: Serializable>(
 
     // region PUBLIC METHODS
 
+    /**
+     * Method used to send a message from current client to another queue. All messages to send must inherit from
+     * Serializable interface, to endure object will be correctly binary-serialized.
+     *
+     * @param receiver Name of queue to send message.
+     * @param message Data to be sent to [receiver]. This object must inherit from Serializable.
+     * @author Nicolas Breval Rodriguez - nicolasbrevalrodriguez@gmail.com
+     */
     override fun <M: Serializable> send(receiver: String, message: M) {
         try {
             val amqpMessage = AmqpMessage(name, message)
@@ -68,6 +85,13 @@ class ActiveMqAmqpClient<T: Serializable>(
         }
     }
 
+    /**
+     * Allows to create a consumer to process received messages from Amqp server. A consumer is defined by their consume
+     * function, that specifies how it should process a new received message.
+     *
+     * @param onConsume Function used to process a new received message.
+     * @author Nicolas Breval Rodriguez - nicolasbrevalrodriguez@gmail.com
+     */
     @Suppress("UNCHECKED_CAST")
     override fun createConsumer(onConsume: Consumer<AmqpMessage<T>>) {
         if (!session.isClosed) {
@@ -112,11 +136,21 @@ class ActiveMqAmqpClient<T: Serializable>(
         }
     }
 
+    /**
+     * Allows to cancel previously declared consumer
+     *
+     * @author Nicolas Breval Rodriguez - nicolasbrevalrodriguez@gmail.com
+     */
     override fun cancelConsumer() {
         consumers.forEach { it.close() }
         consumers.clear()
     }
 
+    /**
+     * Purges queue related to this client. When a queue is purged, all messages enqueued on it are deleted permanently.
+     *
+     * @author Nicolas Breval Rodriguez - nicolasbrevalrodriguez@gmail.com
+     */
     override fun purge() {
         if (!session.isClosed) {
             consumers.forEach { it.close() }
@@ -145,6 +179,11 @@ class ActiveMqAmqpClient<T: Serializable>(
         }
     }
 
+    /**
+     * Used to initialize client. Creates a new connection and a new session.
+     *
+     * @author Nicolas Breval Rodriguez - nicolasbrevalrodriguez@gmail.com
+     */
     override fun start() {
         try {
             connection = initConnection()
@@ -154,6 +193,11 @@ class ActiveMqAmqpClient<T: Serializable>(
         }
     }
 
+    /**
+     * Brakes all connections with Amqp server, including declaring consumer.
+     *
+     * @author Nicolas Breval Rodriguez - nicolasbrevalrodriguez@gmail.com
+     */
     override fun close() {
         try {
             cancelConsumer()
@@ -166,17 +210,32 @@ class ActiveMqAmqpClient<T: Serializable>(
         }
     }
 
+    /**
+     * Used to check if master node is consuming their queue. This method is used to check periodically
+     * if master node is fallen, if is true, another node tries to consume from master node and obtain their role.
+     *
+     * @return `true` if there are any node with master role consuming from master queue, else `false`
+     * @author Nicolas Breval Rodriguez - nicolasbrevalrodriguez@gmail.com
+     */
     override fun masterConsuming(): Boolean {
         return masterConsumersCount.get() > 0
     }
 
+    /**
+     * Checks for connection with Amqp server.
+     *
+     * @return `true` if connection is already open, else false
+     * @author Nicolas Breval Rodriguez - nicolasbrevalrodriguez@gmail.com
+     */
     override fun isConnected(): Boolean {
         return !(session.isClosed || connection.isClosed)
     }
 
     /**
-     * Method used to process advisory messages and allows checking if main queue contains any consumer.
+     * Used to process advisory messages and allows checking if main queue contains any consumer.
+     *
      * @param message Message received with information about main queue
+     * @author Nicolas Breval Rodriguez - nicolasbrevalrodriguez@gmail.com
      */
     override fun onMessage(message: Message?) {
         val source = message?.jmsDestination
@@ -199,16 +258,22 @@ class ActiveMqAmqpClient<T: Serializable>(
 
     /**
      * Connection object used to send and receive data from ActiveMQ queues.
+     *
      * @see ActiveMQConnection
      */
     private var connection: ActiveMQConnection = initConnection()
 
     /**
      * Session object used to send and receive data from ActiveMQ queues. It's created from [connection] object.
+     *
      * @see ActiveMQSession
      */
     private var session: ActiveMQSession = initSession(connection)
 
+    /**
+     * List of consumers. Length of this list is equal that [workers] property, and all consumers have same
+     * consume function.
+     */
     private val consumers: MutableList<ActiveMQMessageConsumer> = mutableListOf()
 
     /**
@@ -226,28 +291,49 @@ class ActiveMqAmqpClient<T: Serializable>(
      */
     private var masterConsumersCount: AtomicInteger = AtomicInteger(0)
 
+    /**
+     * Executor object to run consumer function in another thread and wait for their termination without loops.
+     */
     private val executor = Executors.newSingleThreadExecutor()
 
+    /**
+     * Name configured for main node.
+     */
     private val mainNodeName = ConfigManager.getProperty(ConfigNames.PRIMARY_NAME)
 
+    /**
+     * Name configured for display node.
+     */
     private val displayNodeName = ConfigManager.getProperty(ConfigNames.DISPLAY_NODE_NAME)
 
     // endregion
 
     // region PRIVATE METHODS
 
+    /**
+     * Creates a new connection with Amqp server using [connectionFactory].
+     *
+     * @author Nicolas Breval Rodriguez - nicolasbrevalrodriguez@gmail.com
+     */
     private fun initConnection(): ActiveMQConnection {
         return connectionFactory.createConnection() as ActiveMQConnection
     }
 
+    /**
+     * Creates a new session with Amqp server using [connection].
+     *
+     * @author Nicolas Breval Rodriguez - nicolasbrevalrodriguez@gmail.com
+     */
     private fun initSession(connection: Connection): ActiveMQSession {
         return connection.createSession(false, Session.CLIENT_ACKNOWLEDGE) as ActiveMQSession
     }
 
     /**
-     * Creates a queue for this client. All queues are created as exclusive, to ensure that,
-     * if several consumers were created by mistake, only the first one would be operational
+     * Creates a queue for this client. Queue only is exclusive if is not related to display or main node,
+     * and have only a worker, else not.
+     *
      * @param name Name of queue to be created
+     * @author Nicolas Breval Rodriguez - nicolasbrevalrodriguez@gmail.com
      */
     private fun declareQueue(name: String): Destination {
         return session.createQueue("$name?consumer.exclusive=${ if (name != displayNodeName && workers == 1 && name != mainNodeName) "true" else "false" }")

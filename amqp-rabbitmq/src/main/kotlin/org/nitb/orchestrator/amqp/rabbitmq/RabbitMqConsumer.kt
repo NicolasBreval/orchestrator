@@ -9,7 +9,6 @@ import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.serialization.binary.BinarySerializer
 import org.nitb.orchestrator.serialization.json.JSONSerializer
 import java.io.Serializable
-import java.util.concurrent.Executors
 import java.util.function.Consumer
 
 /**
@@ -95,6 +94,9 @@ class RabbitMqConsumer<T: Serializable>(
      */
     private val logger = LoggingManager.getLogger(name)
 
+    /**
+     * Executor used to process received message in another thread and wait for it.
+     */
     private val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
 
     // endregion
