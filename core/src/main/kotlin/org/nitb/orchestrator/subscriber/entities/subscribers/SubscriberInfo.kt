@@ -1,5 +1,6 @@
 package org.nitb.orchestrator.subscriber.entities.subscribers
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.sun.management.OperatingSystemMXBean
 import io.swagger.v3.oas.annotations.media.Schema
 import org.nitb.orchestrator.annotations.NoArgsConstructor
@@ -52,6 +53,7 @@ class SubscriberInfo(
         return result
     }
 
+    @get:JsonIgnore
     val fixedHost: String get() {
         return if (ConfigManager.getBoolean(ConfigNames.SUBSCRIBER_COMMUNICATION_USE_HOSTNAME)) {
             hostname
