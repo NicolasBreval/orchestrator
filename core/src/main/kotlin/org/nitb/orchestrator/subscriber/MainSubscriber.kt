@@ -24,7 +24,6 @@ import org.nitb.orchestrator.web.entities.UploadSubscriptionsRequest
 import org.reflections.Reflections
 import java.io.InputStream
 import java.io.Serializable
-import java.lang.Exception
 import java.lang.IllegalStateException
 import java.lang.RuntimeException
 import java.util.*
@@ -129,6 +128,7 @@ class MainSubscriber(
                 val url = "http://${info?.fixedHost}:${info?.httpPort}/subscriptions/upload"
 
                 try {
+                    logger.debug("Making request to $url")
                     val response = HttpClient(url).jsonRequest("PUT", UploadSubscriptionsRequest(subscriptions), SubscriptionOperationResponse::class.java)
                     uploaded.addAll(response.modified)
                     notUploaded.addAll(response.notModified)
@@ -166,6 +166,7 @@ class MainSubscriber(
                     val url = "http://${info?.fixedHost}:${info?.httpPort}/subscriptions/remove" // TODO: Check for HTTPS option
 
                     try {
+                        logger.debug("Making request to $url")
                         val response = HttpClient(url).jsonRequest("PUT", subscriptions, SubscriptionOperationResponse::class.java)
                         removed.addAll(response.modified)
                         notRemoved.addAll(response.notModified)
@@ -204,6 +205,7 @@ class MainSubscriber(
                     val url = "http://${info?.fixedHost}:${info?.httpPort}/subscriptions/${if (stop) "stop" else "start"}" // TODO: Check for HTTPS option
 
                     try {
+                        logger.debug("Making request to $url")
                         val response = HttpClient(url).jsonRequest("PUT", subscriptions, SubscriptionOperationResponse::class.java)
                         set.addAll(response.modified)
                         notSet.addAll(response.notModified)
@@ -234,7 +236,7 @@ class MainSubscriber(
         } else {
             val info = subscribers[subscriber]
             val url = "http://${info?.fixedHost}:${info?.httpPort}/subscription/logs" // TODO: Check for HTTPS option
-
+            logger.debug("Making request to $url")
             HttpClient(url, params = mapOf("name" to listOf(name), "count" to listOf("$count")))
                 .jsonRequest("GET", object: TypeReference<List<String>>() {})
         }
@@ -248,7 +250,7 @@ class MainSubscriber(
         } else {
             val info = subscribers[subscriber]
             val url = "http://${info?.fixedHost}:${info?.httpPort}/subscription/logs/download" // TODO: Check for HTTPS option
-
+            logger.debug("Making request to $url")
             HttpClient(url, params = mapOf("name" to listOf(name))).basicRequest("GET").use { res ->
                 res.body?.byteStream()
             }
@@ -273,7 +275,7 @@ class MainSubscriber(
             } else {
                 val info = subscribers[it]
                 val url = "http://${info?.fixedHost}:${info?.httpPort}/subscriptions/remove" // TODO: Check for HTTPS option
-
+                logger.debug("Making request to $url")
                 HttpClient(url).jsonRequest("POST", message, Any::class.java)
             }
         }
