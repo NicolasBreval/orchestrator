@@ -8,6 +8,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
+import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.serialization.json.JSONSerializer
 import java.io.IOException
 
@@ -28,7 +29,10 @@ class HttpClient(
 
         return client.newCall(request.build()).execute().use {res ->
             res.body?.use { responseBody ->
-                responseBody.string().let { JSONSerializer.deserialize(it, clazz) }
+                responseBody.string().let {
+                    logger.debug("Response received from $url: $it")
+                    JSONSerializer.deserialize(it, clazz)
+                }
             }
         } ?: error("Response doesn't valid")
     }
@@ -42,7 +46,10 @@ class HttpClient(
 
         return client.newCall(request.build()).execute().use {res ->
             res.body?.use { responseBody ->
-                responseBody.string().let { JSONSerializer.deserialize(it, typeReference) }
+                responseBody.string().let {
+                    logger.debug("Response received from $url: $it")
+                    JSONSerializer.deserialize(it, typeReference)
+                }
             }
         } ?: error("Response doesn't valid")
     }
@@ -54,7 +61,10 @@ class HttpClient(
 
         return client.newCall(request.build()).execute().use {res ->
             res.body?.use { responseBody ->
-                responseBody.string().let { JSONSerializer.deserialize(it, clazz) }
+                responseBody.string().let {
+                    logger.debug("Response received from $url: $it")
+                    JSONSerializer.deserialize(it, clazz)
+                }
             }
         } ?: error("Response doesn't valid")
     }
@@ -66,7 +76,9 @@ class HttpClient(
 
         return client.newCall(request.build()).execute().use {res ->
             res.body?.use { responseBody ->
-                responseBody.string().let { JSONSerializer.deserialize(it, typeReference) }
+                responseBody.string().let {
+                    logger.debug("Response received from $url: $it")
+                    JSONSerializer.deserialize(it, typeReference) }
             }
         } ?: error("Response doesn't valid")
     }
@@ -88,6 +100,8 @@ class HttpClient(
 
         return client.newCall(request.build()).execute()
     }
+
+    private val logger = LoggingManager.getLogger(HttpClient::class.java)
 
     private fun createRequestBuilder(method: String, body: RequestBody? = null): Request.Builder {
         val requestUrl = url.toHttpUrl().newBuilder()
