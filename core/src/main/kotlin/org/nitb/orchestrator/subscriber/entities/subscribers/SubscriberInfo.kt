@@ -27,7 +27,7 @@ class SubscriberInfo(
     @Schema(description = "IP address of this subscriber. It's used to make easy HTTP communication between subscribers.")
     val ipAddress: String = InetAddress.getLocalHost().hostAddress,
     @Schema(description = "HTTP configured in this subscription. It's used to make easy HTTP communication between subscribers.")
-    val httpPort: Int? = ConfigManager.getInt(ConfigNames.HTTP_PORT),
+    val httpPort: Int? = ConfigManager.getInt(ConfigNames.SUBSCRIBER_COMMUNICATION_USE_PORT_ENV) ?: ConfigManager.getInt(ConfigNames.HTTP_PORT),
     @Schema(description = "Total memory available in JVM for this subscriber. This information allows main subscriber to decide where send a new subscription if allocation strategy type uses memory in their ranking.")
     val totalMemory: Long = Runtime.getRuntime().totalMemory(),
     @Schema(description = "Free memory available in JVM for this subscriber. This information allows main subscriber to decide where send a new subscription if allocation strategy type uses memory in their ranking.")
