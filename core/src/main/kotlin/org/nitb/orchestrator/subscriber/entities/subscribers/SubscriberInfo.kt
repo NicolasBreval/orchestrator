@@ -33,7 +33,9 @@ class SubscriberInfo(
     @Schema(description = "Free memory available in JVM for this subscriber. This information allows main subscriber to decide where send a new subscription if allocation strategy type uses memory in their ranking.")
     val freeMemory: Long = Runtime.getRuntime().freeMemory(),
     @Schema(description = "CPU usage at moment by this subscriber. This information allows main subscriber to decide where send a new subscription if allocation strategy type uses CPU in their ranking.")
-    val cpuUsage: Double = (ManagementFactory.getOperatingSystemMXBean() as OperatingSystemMXBean).processCpuLoad
+    val cpuUsage: Double = (ManagementFactory.getOperatingSystemMXBean() as OperatingSystemMXBean).processCpuLoad,
+    @Schema(description = "Fixed hostname used by subscriber")
+    val fixedHost: String = ConfigManager.getProperty(ConfigNames.SUBSCRIBER_COMMUNICATION_USE_ENV) ?: if (ConfigManager.getBoolean(ConfigNames.SUBSCRIBER_COMMUNICATION_USE_HOSTNAME)) { hostname } else { ipAddress }
 ): Serializable {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -51,20 +53,5 @@ class SubscriberInfo(
         var result = name.hashCode()
         result = 31 * result + isMainNode.hashCode()
         return result
-    }
-
-    @JsonIgnore
-    private val subscriberUseHostname = ConfigManager.getBoolean(ConfigNames.SUBSCRIBER_COMMUNICATION_USE_HOSTNAME)
-
-    @JsonIgnore
-    private val subscriberUseEnv = ConfigManager.getProperty(ConfigNames.SUBSCRIBER_COMMUNICATION_USE_ENV)
-
-    @get:JsonIgnore
-    val fixedHost: String get() {
-        return subscriberUseEnv ?: if (subscriberUseHostname) {
-            hostname
-        } else {
-            ipAddress
-        }
     }
 }
