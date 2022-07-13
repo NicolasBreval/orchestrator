@@ -11,7 +11,7 @@ import org.nitb.orchestrator.database.relational.entities.SubscriptionSerializab
 import org.nitb.orchestrator.database.relational.entities.Subscriptions
 import org.nitb.orchestrator.logging.LoggingManager
 import org.reflections.Reflections
-import java.lang.RuntimeException
+import kotlin.system.exitProcess
 
 object DbController {
 
@@ -142,7 +142,8 @@ object DbController {
                 }
             }
         } catch (e: Exception) {
-            throw RuntimeException("Impossible to connect to database at first time, shutting down", e)
+            logger.error("Impossible to connect to database at first time, shutting down", e)
+            exitProcess(1)
         }
     }
 
