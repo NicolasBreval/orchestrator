@@ -294,6 +294,14 @@ class MainSubscriber(
         return subscribers.flatMap { it.value.subscriptions.values }.filter { names.contains(it.name) }.associate { Pair(it.name, it.status) }
     }
 
+    fun getSubscriptionsClasses(): Map<String, String> {
+        return subscribers.flatMap { it.value.subscriptions.values }
+            .map { JSONSerializer.deserialize(it.content, object : TypeReference<Map<String, Any>>() {}) }
+            .filter { it.containsKey("className") }.associate {
+                Pair(it["name"] as String, it["className"] as String)
+            }
+    }
+
     // endregion
 
     // region PRIVATE PROPERTIES

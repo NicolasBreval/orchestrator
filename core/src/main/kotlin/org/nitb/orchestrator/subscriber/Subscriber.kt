@@ -186,6 +186,13 @@ object Subscriber: AmqpManager<Serializable>, AmqpConsumer<Serializable>, AmqpSe
             throw IllegalAccessException("You cannot request subscription historical to a non-main node")
     }
 
+    fun getSubscriptionsClasses(): Map<String, String> {
+        return if (isMainNode)
+            mainSubscriber.getSubscriptionsClasses()
+        else
+            throw IllegalAccessException("You cannot request subscription classes to a non-main node")
+    }
+
     fun getSubscriptionStatus(names: List<String>): Map<String, SubscriptionStatus> {
         return if (isMainNode)
             mainSubscriber.getSubscriptionStatus(names)
