@@ -15,6 +15,7 @@ import org.nitb.orchestrator.subscriber.entities.subscriptions.RequestType
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResponse
 import org.nitb.orchestrator.subscription.Subscription
+import org.nitb.orchestrator.subscription.SubscriptionStatus
 import org.nitb.orchestrator.subscription.entities.DirectMessage
 import java.io.FileInputStream
 import java.io.InputStream
@@ -185,11 +186,12 @@ object Subscriber: AmqpManager<Serializable>, AmqpConsumer<Serializable>, AmqpSe
             throw IllegalAccessException("You cannot request subscription historical to a non-main node")
     }
 
-    fun getSubscriptionsClasses(): Map<String, String> {
+    fun getSubscriptionStatus(names: List<String>): Map<String, SubscriptionStatus> {
         return if (isMainNode)
-            mainSubscriber.getSubscriptionsClasses()
+            mainSubscriber.getSubscriptionStatus(names)
         else
-            throw IllegalAccessException("You cannot request subscription classes to a non-main node")
+            throw IllegalAccessException("You cannot request subscription historical to a non-main node")
+
     }
 
     // endregion

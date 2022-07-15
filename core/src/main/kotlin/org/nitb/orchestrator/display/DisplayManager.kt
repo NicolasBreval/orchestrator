@@ -14,6 +14,7 @@ import org.nitb.orchestrator.serialization.json.JSONSerializer
 import org.nitb.orchestrator.subscriber.entities.subscribers.SubscriberInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResponse
+import org.nitb.orchestrator.subscription.SubscriptionStatus
 import org.nitb.orchestrator.subscription.entities.DirectMessage
 import org.nitb.orchestrator.web.entities.UploadSubscriptionsRequest
 import java.io.Serializable
@@ -137,6 +138,13 @@ object DisplayManager: AmqpManager<Serializable>, AmqpConsumer<Serializable>, Am
         logger.debug("Making request to $url")
         return HttpClient(url, params = mapOf("name" to listOf(name)))
             .jsonRequest("GET", object: TypeReference<List<SubscriptionSerializableEntry>>() {})
+    }
+
+    fun getSubscriptionStatus(names: List<String>): Map<String, SubscriptionStatus> {
+        val url = "http://${mainNode.fixedHost}:${mainNode.httpPort}/subscription/status"
+        logger.debug("Making request to $url")
+        return HttpClient(url, params = mapOf("names" to listOf(names.joinToString(","))))
+            .jsonRequest("GET", object: TypeReference<Map<String, SubscriptionStatus>>() {})
     }
 
     private val logger = LoggingManager.getLogger("display.node")

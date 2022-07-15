@@ -19,6 +19,7 @@ import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResponse
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResult
 import org.nitb.orchestrator.subscription.Subscription
+import org.nitb.orchestrator.subscription.SubscriptionStatus
 import org.nitb.orchestrator.subscription.entities.DirectMessage
 import org.nitb.orchestrator.web.entities.UploadSubscriptionsRequest
 import org.reflections.Reflections
@@ -289,12 +290,8 @@ class MainSubscriber(
         return DbController.getSubscriptionHistorical(name)
     }
 
-    fun getSubscriptionsClasses(): Map<String, String> {
-        return subscribers.flatMap { it.value.subscriptions.values }
-            .map { JSONSerializer.deserialize(it.content, object : TypeReference<Map<String, Any>>() {}) }
-            .filter { it.containsKey("className") }.associate {
-                Pair(it["name"] as String, it["className"] as String)
-            }
+    fun getSubscriptionStatus(names: List<String>): Map<String, SubscriptionStatus> {
+        return subscribers.flatMap { it.value.subscriptions.values }.filter { names.contains(it.name) }.associate { Pair(it.name, it.status) }
     }
 
     // endregion

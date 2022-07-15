@@ -10,6 +10,7 @@ import org.nitb.orchestrator.subscriber.Subscriber
 import org.nitb.orchestrator.subscriber.entities.subscribers.SubscriberInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResponse
+import org.nitb.orchestrator.subscription.SubscriptionStatus
 import org.nitb.orchestrator.subscription.entities.DirectMessage
 import org.nitb.orchestrator.web.entities.UploadSubscriptionsRequest
 import java.nio.file.FileSystems
@@ -113,6 +114,11 @@ class WorkerController {
     @Get("/subscriber/api/definition")
     fun apiDefinition(): String {
         return swaggerConfig ?: "NOT FOUND"
+    }
+
+    @Get("/subscriptions/status")
+    fun getSubscriptionStatus(@QueryValue("names") names: List<String>): Map<String, SubscriptionStatus> {
+        return Subscriber.getSubscriptionStatus(names)
     }
 
     private val logger = LoggingManager.getLogger("controller")

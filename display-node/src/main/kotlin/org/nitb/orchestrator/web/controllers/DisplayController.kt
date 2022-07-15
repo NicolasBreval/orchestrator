@@ -10,6 +10,7 @@ import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.subscriber.entities.subscribers.SubscriberInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionInfo
 import org.nitb.orchestrator.subscriber.entities.subscriptions.SubscriptionOperationResponse
+import org.nitb.orchestrator.subscription.SubscriptionStatus
 import org.nitb.orchestrator.subscription.entities.DirectMessage
 import org.nitb.orchestrator.web.entities.UploadSubscriptionsRequest
 import org.nitb.orchestrator.web.entities.VersionInfo
@@ -113,6 +114,11 @@ class DisplayController {
     @Get("/version")
     fun versionInfo(): VersionInfo {
         return VersionInfo()
+    }
+
+    @Get("/subscriptions/status")
+    fun getSubscriptionStatus(@QueryValue("names") names: List<String>): Map<String, SubscriptionStatus> {
+        return DisplayManager.getSubscriptionStatus(names)
     }
 
     private val logger = LoggingManager.getLogger("controller")
