@@ -114,7 +114,13 @@ class RabbitMqAmqpClient<T: Serializable>(
      * @author Nicolas Breval Rodriguez - nicolasbrevalrodriguez@gmail.com
      */
     override fun cancelConsumer() {
-        consumerTags.forEach { channel.basicCancel(it) }
+        consumerTags.forEach {
+            try {
+                channel.basicCancel(it)
+            } catch (e: Exception) {
+                logger.warn("Consumer $it already cancelled by remote server")
+            }
+        }
         consumerTags.clear()
     }
 
