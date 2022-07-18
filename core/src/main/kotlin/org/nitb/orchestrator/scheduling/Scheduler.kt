@@ -26,6 +26,11 @@ abstract class Scheduler(
      * Starts running the task periodically
      */
     fun start() {
+        if (!this::executor.isInitialized || executor.isShutdown)
+            executor = createExecutor()
+        if (!this::timeoutExecutor.isInitialized || timeoutExecutor.isShutdown)
+            timeoutExecutor = Executors.newSingleThreadScheduledExecutor()
+
         executorTask = initializeTask()
 
         if (timeout > 0) {
@@ -57,8 +62,11 @@ abstract class Scheduler(
      */
     fun stop(wait: Boolean = false) {
         pause(wait)
-        executor.shutdownNow()
-        timeoutExecutor.shutdownNow()
+        if (this::executor.isInitialized)
+            executor.shutdownNow()
+
+        if (this::timeoutExecutor.isInitialized)
+            timeoutExecutor.shutdownNow()
     }
 
     /**
@@ -88,12 +96,12 @@ abstract class Scheduler(
     /**
      * [ExecutorService] object used to run task periodically.
      */
-    protected val executor by lazy { createExecutor() }
+    protected lateinit var executor: ScheduledExecutorService
 
     /**
      * [ExecutorService] used to check if main executor exceeds timeout.
      */
-    private val timeoutExecutor = Executors.newSingleThreadScheduledExecutor()
+    private lateinit var timeoutExecutor: ScheduledExecutorService
 
     /**
      * Task object related to [executor].
