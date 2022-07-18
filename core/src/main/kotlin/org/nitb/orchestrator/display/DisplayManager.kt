@@ -32,7 +32,9 @@ object DisplayManager: AmqpManager<Serializable>, AmqpConsumer<Serializable>, Am
             registerConsumer(client) { message ->
                 when (message.message) {
                     is SubscriberInfo -> {
-                        if (!this::mainNode.isInitialized || mainNode != message.message) {
+                        logger.debug("New subscriber info received")
+
+                        if (mainNode != message.message) {
                             logger.info("New main node registered: ${message.message.name}")
                             mainNode = message.message
                         }

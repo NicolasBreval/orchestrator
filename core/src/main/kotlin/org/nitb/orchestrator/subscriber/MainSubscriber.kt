@@ -422,7 +422,7 @@ class MainSubscriber(
 
     private val sendInfoToDisplayNodeSchedulerDelegate = lazy { object : PeriodicalScheduler(sendInfoToDisplayNodePeriod, 0, sendInfoToDisplayNodeTimeout, name = subscriberName) {
         override fun onCycle() {
-            client.send(displayNodeName, SubscriberInfo(name, mapOf(), true))
+            sendMessage(SubscriberInfo(name, mapOf(), true), client, displayNodeName)
         }
     } }
     private val sendInfoToDisplayNodeScheduler by sendInfoToDisplayNodeSchedulerDelegate
