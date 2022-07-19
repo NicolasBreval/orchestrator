@@ -11,6 +11,7 @@ import org.nitb.orchestrator.amqp.AmqpType
 import org.nitb.orchestrator.config.ConfigManager
 import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.logging.LoggingManager
+import org.nitb.orchestrator.scheduling.PeriodicalScheduler
 import org.nitb.orchestrator.serialization.binary.BinarySerializer
 import java.io.IOException
 import java.io.Serializable
@@ -146,6 +147,7 @@ class RabbitMqAmqpClient<T: Serializable>(
             if (!isConnected()) {
                 initConnection()
             }
+            showConnInfoScheduler.start()
         } catch (e: Exception) {
             // do nothing
         }
@@ -162,6 +164,7 @@ class RabbitMqAmqpClient<T: Serializable>(
             channel.removeShutdownListener(shutdownListener)
             channel.close()
             connection.close()
+            showConnInfoScheduler.stop()
         } catch (e: Exception) {
             // do nothing
         }
@@ -250,6 +253,13 @@ class RabbitMqAmqpClient<T: Serializable>(
             }
         }
     }
+
+    private val showConnInfoSchedulerDelegate = lazy { object : PeriodicalScheduler(5000, 0, -1, "rabbitmq.connection.info") {
+        override fun onCycle() {
+            logger.debug("$name | Connection ${if (connection.isOpen) "OPEN" else "CLOSED"} | Channel ${if (channel.isOpen) "OPEN" else "CLOSED"}")
+        }
+    } }
+    private val showConnInfoScheduler by showConnInfoSchedulerDelegate
 
     // endregion
 
