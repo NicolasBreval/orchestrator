@@ -8,6 +8,7 @@ import com.cronutils.parser.CronParser
 import java.lang.Exception
 import java.lang.IllegalStateException
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -40,6 +41,8 @@ abstract class CronScheduler(
             throw IllegalStateException("Cannot calculate next date with cron expression")
 
         val delay = ChronoUnit.MILLIS.between(ZonedDateTime.now(), optionalNextExecutor.get())
+
+        logger.debug("Date for next execution: ${optionalNextExecutor.get().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))}")
 
         return executor.schedule({
             try {
