@@ -23,6 +23,7 @@ import java.nio.file.Paths
         contact = Contact(name = "Nicolas Breval Rodriguez", email = "nicolasbrevalrodriguez@gmail.com")
     )
 )
+@Suppress("unused")
 object DisplayNodeInitializer {
 
     fun init(vararg args: String) {
@@ -70,14 +71,6 @@ object DisplayNodeInitializer {
         LoggingManager.setLoggerLevel("io.micronaut")
         LoggingManager.setLoggerLevel("io.netty")
         LoggingManager.setLoggerLevel("reactor")
-
-        if (ConfigManager.getBoolean(ConfigNames.DATABASE_SHOW_LOGS)) {
-            LoggingManager.setLoggerLevel("com.zaxxer")
-            LoggingManager.setLoggerLevel("Exposed")
-        } else {
-            LoggingManager.setLoggerLevel("com.zaxxer", Level.OFF)
-            LoggingManager.setLoggerLevel("Exposed", Level.OFF)
-        }
 
         if (ConfigManager.getBoolean(ConfigNames.AMQP_SHOW_LOGS)) {
             LoggingManager.setLoggerLevel("org.apache.activemq.")
