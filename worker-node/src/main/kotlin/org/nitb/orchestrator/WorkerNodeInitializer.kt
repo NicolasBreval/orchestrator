@@ -23,6 +23,7 @@ import java.nio.file.Paths
         contact = Contact(name = "Nicolas Breval Rodriguez", email = "nicolasbrevalrodriguez@gmail.com")
     )
 )
+@Suppress("unused")
 object WorkerNodeInitializer {
 
     fun init(vararg args: String) {
@@ -67,6 +68,10 @@ object WorkerNodeInitializer {
         } else {
             LoggingManager.setLoggerLevel("com.zaxxer", Level.OFF)
             LoggingManager.setLoggerLevel("Exposed", Level.OFF)
+        }
+
+        if (ConfigManager.getBoolean(ConfigNames.DATABASE_SHOW_SQL_QUERIES)) {
+            LoggingManager.setLoggerLevel("Exposed", Level.DEBUG)
         }
 
         if (ConfigManager.getBoolean(ConfigNames.AMQP_SHOW_LOGS)) {
