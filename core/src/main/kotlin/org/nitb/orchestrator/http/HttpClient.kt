@@ -11,13 +11,17 @@ import org.nitb.orchestrator.config.ConfigNames
 import org.nitb.orchestrator.logging.LoggingManager
 import org.nitb.orchestrator.serialization.json.JSONSerializer
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 
 class HttpClient(
     private val url: String,
     private val params: Map<String, List<String>> = mapOf(),
     private val headers: Map<String, List<String>> = mapOf(),
     private val retries: Int = ConfigManager.getInt(ConfigNames.HTTP_CLIENT_RETRIES, ConfigNames.HTTP_CLIENT_RETRIES_DEFAULT),
-    private val timeBetweenRetries: Long = ConfigManager.getLong(ConfigNames.HTTP_CLIENT_TIME_BETWEEN_RETRIES, ConfigNames.HTTP_CLIENT_TIME_BETWEEN_RETRIES_DEFAULT)
+    private val timeBetweenRetries: Long = ConfigManager.getLong(ConfigNames.HTTP_CLIENT_TIME_BETWEEN_RETRIES, ConfigNames.HTTP_CLIENT_TIME_BETWEEN_RETRIES_DEFAULT),
+    private val connectTimeout: Long = ConfigManager.getLong(ConfigNames.HTTP_CLIENT_CONNECT_TIMEOUT, ConfigNames.HTTP_CLIENT_CONNECT_TIMEOUT_DEFAULT),
+    private val readTimeout: Long = ConfigManager.getLong(ConfigNames.HTTP_CLIENT_READ_TIMEOUT, ConfigNames.HTTP_CLIENT_READ_TIMEOUT_DEFAULT),
+    private val writeTimeout: Long = ConfigManager.getLong(ConfigNames.HTTP_CLIENT_WRITE_TIMEOUT, ConfigNames.HTTP_CLIENT_WRITE_TIMEOUT_DEFAULT)
 ) {
 
     fun <T> jsonRequest(method: String, body: Any, clazz: Class<T>): T {
@@ -37,6 +41,7 @@ class HttpClient(
         } ?: error("Response doesn't valid")
     }
 
+    @Suppress("unused")
     fun <T> jsonRequest(method: String, body: Any, typeReference: TypeReference<T>): T {
         val client = createClient()
 
@@ -84,6 +89,7 @@ class HttpClient(
         } ?: error("Response doesn't valid")
     }
 
+    @Suppress("unused")
     fun basicRequest(method: String, body: Any): Response {
         val client = createClient()
 
@@ -128,6 +134,9 @@ class HttpClient(
 
     private fun createClient(): OkHttpClient {
         val clientBuilder = OkHttpClient.Builder()
+            .connectTimeout(connectTimeout, TimeUnit.MILLISECONDS)
+            .writeTimeout(writeTimeout, TimeUnit.MILLISECONDS)
+            .readTimeout(readTimeout, TimeUnit.MILLISECONDS)
 
         clientBuilder.addInterceptor(Interceptor { chain ->
             val req = chain.request()

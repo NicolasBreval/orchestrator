@@ -216,8 +216,6 @@ object ConfigNames {
      */
     const val AMQP_RETRIES_DEFAULT = 0
 
-    const val AMQP_WORKERS_DEFAULT = 1
-
     // region RABBITMQ DEFAULTS
 
     /**
@@ -422,7 +420,22 @@ object ConfigNames {
 
     const val HTTP_CLIENT_RETRIES = "http.client.retries"
 
-    const val HTTP_CLIENT_TIME_BETWEEN_RETRIES = "http.time.between.retries"
+    const val HTTP_CLIENT_TIME_BETWEEN_RETRIES = "http.client.time.between.retries"
+
+    /**
+     * Time period in which client should establish a connection with target host.
+     */
+    const val HTTP_CLIENT_CONNECT_TIMEOUT = "http.client.connect.timeout"
+
+    /**
+     * Maximum time of inactivity between two data packets when waiting for the server's response.
+     */
+    const val HTTP_CLIENT_READ_TIMEOUT = "http.client.read.timeout"
+
+    /**
+     * Maximum time of inactivity between two data packets when sending the request to server.
+     */
+    const val HTTP_CLIENT_WRITE_TIMEOUT = "http.client.write.timeout"
 
     // endregion
 
@@ -430,7 +443,13 @@ object ConfigNames {
 
     const val HTTP_CLIENT_RETRIES_DEFAULT = 3
 
-    const val HTTP_CLIENT_TIME_BETWEEN_RETRIES_DEFAULT = 500L
+    const val HTTP_CLIENT_TIME_BETWEEN_RETRIES_DEFAULT = 1000L
+
+    const val HTTP_CLIENT_CONNECT_TIMEOUT_DEFAULT = 10000L
+
+    const val HTTP_CLIENT_READ_TIMEOUT_DEFAULT = 10000L
+
+    const val HTTP_CLIENT_WRITE_TIMEOUT_DEFAULT = 10000L
 
     // endregion
 
