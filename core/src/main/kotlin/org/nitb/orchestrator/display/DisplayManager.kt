@@ -167,7 +167,7 @@ object DisplayManager: AmqpManager<Serializable>, AmqpConsumer<Serializable>, Am
             .jsonRequest("GET", object: TypeReference<Map<String, SubscriptionStatus>>() {})
     }
 
-    @Suppress
+    @JvmStatic
     val mainNodeUri get() = "http://${mainNode.fixedHost}:${mainNode.httpPort}"
 
     private val logger = LoggingManager.getLogger("display.node")
