@@ -13,13 +13,19 @@ import org.nitb.orchestrator.logging.LoggingManager
 import org.reflections.Reflections
 import kotlin.system.exitProcess
 
+/**
+ * Class used to configure and operate with database.
+ */
 object DbController {
 
     // region PUBLIC METHODS
 
     /**
      * Obtains last subscriptions registered to a subscriber.
+     *
      * @param subscriber Name of subscriber to search subscriptions.
+     *
+     * @return List of subscriptions related to a subscriber.
      */
     fun getLastActiveSubscriptionsBySubscriber(subscriber: String): List<SubscriptionEntry> {
         return transaction {
@@ -46,7 +52,12 @@ object DbController {
     }
 
     /**
-     * Inserts a list of subscriptions concurrently inside an ExecutorService
+     * Inserts a list of subscriptions concurrently inside an ExecutorService.
+     *
+     * @param subscriptions List of subscriptions to upload.
+     * @param subscriber Subscriber where subscriptions are uploaded.
+     * @param stopped Indicates if subscriptions are stopped.
+     * @param active Indicates if subscriptions are removed or not.
      */
     fun uploadSubscriptionsConcurrently(subscriptions: Map<String, String>, subscriber: String, stopped: Boolean? = null, active: Boolean? = null) {
         Thread {
@@ -66,6 +77,13 @@ object DbController {
         }.start()
     }
 
+    /**
+     * Updates all subscriptions passed as parameter
+     *
+     * @param subscriptions List of subscription names to update.
+     * @param stopped Indicates if subscriptions are stopped.
+     * @param active Indicates if subscriptions are removed.
+     */
     fun setSubscriptionsConcurrentlyByName(subscriptions: List<String>, stopped: Boolean? = null, active: Boolean? = null) {
         Thread {
             transaction {
@@ -84,6 +102,13 @@ object DbController {
         }.start()
     }
 
+    /**
+     * Returns all changes of a subscription from database.
+     *
+     * @param name Name of subscription to retrieve their historical.
+     *
+     * @return List of all subscription contents registered on database.
+     */
     fun getSubscriptionHistorical(name: String): List<SubscriptionSerializableEntry> {
         val historical = mutableListOf<SubscriptionSerializableEntry>()
 
@@ -99,23 +124,8 @@ object DbController {
     // region INTERNAL METHODS
 
     /**
-     * Checks if tables are created or not. This method is used only in tests.
+     * Initializes database connection pool.
      */
-    internal fun checkTablesAreCreated(): Boolean {
-        return transaction {
-            Subscriptions.exists()
-        }
-    }
-
-    /**
-     * Remove all subscriptions from table. This method is used only in tests.
-     */
-    internal fun clearSubscriptions() {
-        transaction {
-            Subscriptions.deleteAll()
-        }
-    }
-
     internal fun initialize() {
         try {
             DbFactory.connect()
@@ -151,6 +161,9 @@ object DbController {
 
     // region PRIVATE PROPERTIES
 
+    /**
+     * Logger object to show message on application log.
+     */
     private val logger = LoggingManager.getLogger("db.controller")
 
     // endregion

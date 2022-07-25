@@ -1,5 +1,8 @@
 package org.nitb.orchestrator.config
 
+import org.nitb.orchestrator.annotations.PropertyDependency
+import org.nitb.orchestrator.annotations.RequiredProperty
+import org.nitb.orchestrator.logging.LoggingManager
 import java.io.File
 import java.io.FileInputStream
 import java.lang.reflect.InvocationTargetException
@@ -689,6 +692,35 @@ object ConfigManager {
         }
         properties.putAll(System.getProperties())
         properties.putAll(System.getenv().map { Pair(it.key.replace("_", "."), it.value) }.toMap())
+
+        val requiredProperties = ConfigNames::class.java.declaredFields.filter { it.isAnnotationPresent(RequiredProperty::class.java) }
+        val dependencyProperties = ConfigNames::class.java.declaredFields.filter { it.isAnnotationPresent(PropertyDependency::class.java) }
+
+        requiredProperties.forEach { field ->
+            val propertyName = field.get(null).toString()
+            val property = properties.getProperty(propertyName)
+            val requirementDescription = field.getAnnotation(RequiredProperty::class.java).description
+
+            if (property == null) {
+                LoggingManager.getLogger("config.manager").error("Required property `$propertyName` not found ($requirementDescription)")
+            }
+        }
+
+        dependencyProperties.forEach { field ->
+            val propertyName = field.get(null).toString()
+            val property = properties.getProperty(propertyName)
+
+            if (property != null) {
+                field.getAnnotationsByType(PropertyDependency::class.java).forEach {  dependency ->
+                    val dependencyValue = properties.getProperty(dependency.propertyName)
+
+                    if (dependencyValue == null || (dependency.propertyValue.isNotEmpty() && dependency.propertyValue != dependencyValue)) {
+                        LoggingManager.getLogger("config.manager").error("Dependency `${dependency.propertyName}` doesn't exists for property `$propertyName`")
+                    }
+                }
+            }
+        }
+
     }
 
     // endregion

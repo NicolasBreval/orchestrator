@@ -26,6 +26,9 @@ interface AmqpManager<T: Serializable> {
         return client.masterConsuming()
     }
 
+    /**
+     * Determines if current AMQP connection related to client is opene or not.
+     */
     fun amqpConnectionIsOpen(client: AmqpClient<T>): Boolean {
         return client.isConnected()
     }

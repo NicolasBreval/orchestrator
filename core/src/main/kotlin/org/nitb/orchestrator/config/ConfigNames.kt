@@ -1,5 +1,6 @@
 package org.nitb.orchestrator.config
 
+import org.nitb.orchestrator.annotations.PropertyDependency
 import org.nitb.orchestrator.annotations.RequiredProperty
 import org.nitb.orchestrator.subscriber.entities.subscribers.AllocationStrategy
 
@@ -68,7 +69,6 @@ object ConfigNames {
     /**
      * Name of driver used in database connection.
      */
-    @RequiredProperty("Master node needs to connect to database, also slaves can connect to database when changes to master mode")
     const val DATABASE_DRIVER_CLASSNAME = "database.driver.classname"
 
     /**
@@ -76,19 +76,16 @@ object ConfigNames {
      *
      * @see <a href="https://www.baeldung.com/java-jdbc-url-format">JDBC URL Format For Different Databases - By Baeldung</a>
      */
-    @RequiredProperty("Master node needs to connect to database, also slaves can connect to database when changes to master mode")
     const val DATABASE_JDBC_URL = "database.jdbc.url"
 
     /**
      * Username used to connect with database.
      */
-    @RequiredProperty("Master node needs to connect to database, also slaves can connect to database when changes to master mode")
     const val DATABASE_USERNAME = "database.username"
 
     /**
      * Password used to connect with database
      */
-    @RequiredProperty("Master node needs to connect to database, also slaves can connect to database when changes to master mode")
     const val DATABASE_PASSWORD = "database.password"
 
     /**
@@ -116,8 +113,14 @@ object ConfigNames {
      */
     const val DATABASE_SHOW_LOGS = "database.show.logs"
 
+    /**
+     * List of package names where custom Exposed database tables are defined to create them on startup.
+     */
     const val DATABASE_CREATE_ON_STARTUP_SCHEMAS_PACKAGES = "database.create.on.startup.schemas.packages"
 
+    /**
+     * Schema name used to locate all database tables defined on application.
+     */
     const val DATABASE_ORCHESTRATOR_SCHEMA = "database.orchestrator.schema"
 
     // endregion
@@ -141,7 +144,6 @@ object ConfigNames {
     /**
      * Selects type of technology used for queues management
      */
-    @RequiredProperty("Needed to select queue connection type")
     const val AMQP_TYPE = "amqp.type"
 
     /**
@@ -159,7 +161,7 @@ object ConfigNames {
     /**
      * Hostname of RabbitMQ server. This property is only required if [AMQP_TYPE] property is RABBITMQ.
      */
-    @RequiredProperty("Only if amqp.type is RABBITMQ", depends = true, dependency = "amqp.type", dependencyValue = "RABBITMQ")
+    @PropertyDependency(propertyName = AMQP_TYPE, propertyValue = "rabbitmq")
     const val RABBITMQ_HOST = "amqp.rabbitmq.host"
 
     /**
@@ -170,13 +172,13 @@ object ConfigNames {
     /**
      * Username used to connect with RabbitMQ server. This property is only required if [AMQP_TYPE] property is RABBITMQ.
      */
-    @RequiredProperty("Only if amqp.type is RABBITMQ", depends = true, dependency = "amqp.type", dependencyValue = "RABBITMQ")
+    @PropertyDependency(propertyName = AMQP_TYPE, propertyValue = "rabbitmq")
     const val RABBITMQ_USERNAME = "amqp.rabbitmq.username"
 
     /**
      * Password used to connect with RabbitMQ server. This property is only required if [AMQP_TYPE] property is RABBITMQ.
      */
-    @RequiredProperty("Only if amqp.type is RABBITMQ", depends = true, dependency = "amqp.type", dependencyValue = "RABBITMQ")
+    @PropertyDependency(propertyName = AMQP_TYPE, propertyValue = "rabbitmq")
     const val RABBITMQ_PASSWORD = "amqp.rabbitmq.password"
 
     // endregion
@@ -188,21 +190,21 @@ object ConfigNames {
      * *failover:{protocol}://{host}:{port}*, because if you don't put *failover* before URL, if server falls, client couldn't reconnect.
      * This property is only required if [AMQP_TYPE] property is ACTIVEMQ.
      */
-    @RequiredProperty("Only if amqp.type is ACTIVEMQ", depends = true, dependency = "amqp.type", dependencyValue = "ACTIVEMQ")
+    @PropertyDependency(propertyName = AMQP_TYPE, propertyValue = "activemq")
     const val ACTIVEMQ_BROKER_URL = "amqp.activemq.broker.url"
 
     /**
      * Username used to connect with ActiveMQ server(s).
      * This property is only required if [AMQP_TYPE] property is ACTIVEMQ.
      */
-    @RequiredProperty("Only if amqp.type is ACTIVEMQ", depends = true, dependency = "amqp.type", dependencyValue = "ACTIVEMQ")
+    @PropertyDependency(propertyName = AMQP_TYPE, propertyValue = "activemq")
     const val ACTIVEMQ_USERNAME = "amqp.activemq.username"
 
     /**
      * Password used to connect with ActiveMQ server(s).
      * This property is only required if [AMQP_TYPE] property is ACTIVEMQ.
      */
-    @RequiredProperty("Only if amqp.type is ACTIVEMQ", depends = true, dependency = "amqp.type", dependencyValue = "ACTIVEMQ")
+    @PropertyDependency(propertyName = AMQP_TYPE, propertyValue = "activemq")
     const val ACTIVEMQ_PASSWORD = "amqp.activemq.password"
 
     // endregion
@@ -256,7 +258,7 @@ object ConfigNames {
     /**
      * Name used to detect a secondary node. This property is required only if [ALLOCATION_STRATEGY] property is FIXED.
      */
-    @RequiredProperty("Needed only if allocation strategy is FIXED", depends = true, dependency = "subscriber.master.allocation.strategy", dependencyValue = "FIXED")
+    @PropertyDependency(propertyName = ALLOCATION_STRATEGY, propertyValue = "FIXED")
     const val SECONDARY_NAME = "subscriber.secondary.name"
 
     /**
@@ -307,7 +309,7 @@ object ConfigNames {
     /**
      * Name related to main node. All nodes must contain same value for this property.
      */
-    @RequiredProperty("All nodes need to know the name of the primary node in order to know to which queue to send availability notification messages and to consume the queue in case they get the primary role")
+    @RequiredProperty("Name of main node is always required to initialize server")
     const val PRIMARY_NAME = "subscriber.primary.name"
 
     /**
@@ -330,10 +332,28 @@ object ConfigNames {
      */
     const val CUSTOM_WEB_CONTROLLERS = "custom.web.controllers"
 
+    /**
+     * Property to override hostname passed from worker node to display node. This property is useful when display node
+     * and worker node are not in same network, so you can override worker's hostname with a DNS name and allow communication
+     * between two nodes. If this property is not set, uses custom hostname taken from system.
+     */
     const val SUBSCRIBER_COMMUNICATION_USE_HOSTNAME = "subscriber.communication.use.hostname"
 
+    /**
+     * Property to override hostname passed from worker node to display node. This property is useful when display node
+     * and worker node are not in same network, so you can override worker's hostname with a DNS name and allow communication
+     * between two nodes. The value of this property is resolved as an environment variable, if it doesn't exist any environment
+     * variable with this name, uses [SUBSCRIBER_COMMUNICATION_USE_HOSTNAME] as hostname value.
+     */
     const val SUBSCRIBER_COMMUNICATION_USE_ENV = "subscriber.communication.use.env"
 
+
+    /**
+     * Property to override port passed from worker node to display node. This property is useful when display node
+     * and worker node are not in same network, so you can override worker's port with a DNS name and allow communication
+     * between two nodes. The value of this property is resolved as an environment variable, if it doesn't exist any environment
+     * variable with this name, uses [HTTP_PORT] as port value.
+     */
     const val SUBSCRIBER_COMMUNICATION_USE_PORT_ENV = "subscriber.communication.use.port.env"
 
     // endregion
@@ -406,20 +426,30 @@ object ConfigNames {
     /**
      * Name used for controller node. Display node is the node to communicate user with cluster.
      */
+    @RequiredProperty("This property is required always to specify name of display node queue")
     const val DISPLAY_NODE_NAME = "display.node.name"
 
     // endregion
 
     // region OPEN API
 
+    /**
+     * If is true, open api specification file is generated.
+     */
     const val OPEN_API_RESOURCE_ACTIVE = "open.api.resource.active"
 
     // endregion
 
     // region HTTP CLIENT
 
+    /**
+     * Used to configure number of [org.nitb.orchestrator.http.HttpClient] retries when a connection is not possible.
+     */
     const val HTTP_CLIENT_RETRIES = "http.client.retries"
 
+    /**
+     * Used to configure milliseconds to wait between retries in [org.nitb.orchestrator.http.HttpClient].
+     */
     const val HTTP_CLIENT_TIME_BETWEEN_RETRIES = "http.client.time.between.retries"
 
     /**
@@ -441,14 +471,29 @@ object ConfigNames {
 
     // region HTTP_CLIENT_DEFAULTS
 
+    /**
+     * Default value for [HTTP_CLIENT_RETRIES] property.
+     */
     const val HTTP_CLIENT_RETRIES_DEFAULT = 3
 
+    /**
+     * Default value for [HTTP_CLIENT_TIME_BETWEEN_RETRIES] property.
+     */
     const val HTTP_CLIENT_TIME_BETWEEN_RETRIES_DEFAULT = 1000L
 
+    /**
+     * Default value for [HTTP_CLIENT_CONNECT_TIMEOUT] property.
+     */
     const val HTTP_CLIENT_CONNECT_TIMEOUT_DEFAULT = 10000L
 
+    /**
+     * Default value for [HTTP_CLIENT_READ_TIMEOUT] property.
+     */
     const val HTTP_CLIENT_READ_TIMEOUT_DEFAULT = 10000L
 
+    /**
+     * Default value for [HTTP_CLIENT_WRITE_TIMEOUT] property.
+     */
     const val HTTP_CLIENT_WRITE_TIMEOUT_DEFAULT = 10000L
 
     // endregion

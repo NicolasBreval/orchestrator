@@ -37,6 +37,10 @@ class SubscriptionEntry(id: EntityID<Long>): Entity<Long>(id) {
     var active by Subscriptions.active
 }
 
+/**
+ * Serializable version of [SubscriptionEntry] class, used to return on web controllers. This class it's needed because
+ * original types of table class are Column<T>, and in serializable entities, application must return JSON-compatible types.
+ */
 data class SubscriptionSerializableEntry(
     val id: Long,
     val name: String,
