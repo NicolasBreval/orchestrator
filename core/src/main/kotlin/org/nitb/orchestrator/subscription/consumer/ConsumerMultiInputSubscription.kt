@@ -30,8 +30,8 @@ abstract class ConsumerMultiInputSubscription(
     @delegate:Transient
     private val client: AmqpClient<Serializable> by lazy { createClient(name, workers) }
 
-    override fun initialize() {
-        client.createConsumer() { cloudMessage ->
+    override fun onStart() {
+        client.createConsumer { cloudMessage ->
 
             senderQueues[cloudMessage.sender].let { queue ->
                 queue?.push(push(cloudMessage.message))

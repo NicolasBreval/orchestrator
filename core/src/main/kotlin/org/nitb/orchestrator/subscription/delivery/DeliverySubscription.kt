@@ -34,7 +34,7 @@ abstract class DeliverySubscription<I: Serializable, O: Serializable>(
     }
 
     override fun onStart() {
-        client.createConsumer() { cloudMessage ->
+        client.createConsumer { cloudMessage ->
             val result = runEvent(cloudMessage.size, cloudMessage.sender, cloudMessage.message)
 
             if (result != null)

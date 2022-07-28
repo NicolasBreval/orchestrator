@@ -18,8 +18,8 @@ abstract class ConsumerSubscription<I: Serializable>(
     @delegate:Transient
     protected val client: AmqpClient<I> by lazy { createClient(name, workers) }
 
-    override fun initialize() {
-        client.createConsumer() { cloudMessage ->
+    override fun onStart() {
+        client.createConsumer { cloudMessage ->
             runEvent(cloudMessage.size, cloudMessage.sender, cloudMessage.message)
         }
     }
