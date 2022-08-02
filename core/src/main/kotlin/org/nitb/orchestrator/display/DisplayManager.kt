@@ -77,6 +77,11 @@ object DisplayManager: AmqpManager<Serializable>, AmqpConsumer<Serializable>, Am
         }
     }
 
+    /**
+     * Used to retrieve all subscriptions of all worker nodes registered to this display node.
+     *
+     * @return List of subscriptions inside cluster.
+     */
     fun listSubscriptions(): List<SubscriptionInfo> {
         return if (!this::mainNode.isInitialized) {
             listOf()
@@ -88,6 +93,11 @@ object DisplayManager: AmqpManager<Serializable>, AmqpConsumer<Serializable>, Am
         }
     }
 
+    /**
+     * Obtains information about a required subscription.
+     *
+     * @return Information about requested subscription like status, creation date, number of executions, ...
+     */
     fun getSubscriptionInfo(name: String): SubscriptionInfo {
         val url = "${mainNodeUri}/subscription/info"
         logger.debug("Making request to $url")
@@ -95,6 +105,9 @@ object DisplayManager: AmqpManager<Serializable>, AmqpConsumer<Serializable>, Am
             .jsonRequest("GET", SubscriptionInfo::class.java)
     }
 
+    /**
+     * Obtains last [count] log lines of a subscription.
+     */
     fun getLogs(name: String, count: Int): List<String> {
         val url = "${mainNodeUri}/subscription/logs"
         logger.debug("Making request to $url")

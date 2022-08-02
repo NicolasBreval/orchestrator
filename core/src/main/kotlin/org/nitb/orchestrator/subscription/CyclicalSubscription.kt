@@ -62,14 +62,17 @@ abstract class CyclicalSubscription<O>(
     }
 
     override fun deactivate() {
+        logger.debug("Scheduler paused")
         scheduler.pause(true)
     }
 
     override fun onStart() {
+        logger.debug("Scheduler started")
         scheduler.start()
     }
 
     override fun onStop() {
+        logger.debug("Scheduler stopped")
         scheduler.stop(true)
     }
 }
