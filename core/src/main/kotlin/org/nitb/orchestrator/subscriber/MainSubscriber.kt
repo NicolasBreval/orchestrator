@@ -65,11 +65,11 @@ class MainSubscriber(
         logger.info("${lastSubscriptions.size} subscriptions obtained from database")
         if (allocationStrategy == AllocationStrategy.FIXED) {
             lastSubscriptions.groupBy { it.subscriber }.forEach { (subscriber, subscriptions) ->
-                fallenSubscriptionsBySubscriber[subscriber] = subscriptions.associate { Pair(it.name, String(it.content.bytes)) }
+                fallenSubscriptionsBySubscriber[subscriber] = subscriptions.associate { Pair(it.name, Pair(String(it.content.bytes), it.stopped)) }
                 fallenSubscriptionsNeedToSend[subscriber] = true
             }
         } else {
-            fallenSubscriptionsBySubscriber[""] = lastSubscriptions.associate { Pair(it.name, String(it.content.bytes)) }
+            fallenSubscriptionsBySubscriber[""] = lastSubscriptions.associate { Pair(it.name, Pair(String(it.content.bytes), it.stopped)) }
             fallenSubscriptionsNeedToSend[""] = true
         }
 
@@ -104,7 +104,7 @@ class MainSubscriber(
         isStarted = false
     }
 
-    fun uploadSubscriptions(subscriptions: List<String>, subscriber: String? = null): SubscriptionOperationResponse {
+    fun uploadSubscriptions(subscriptions: List<String>, subscriber: String? = null, stopped: Map<String, Boolean> = mapOf()): SubscriptionOperationResponse {
         if (allocationStrategy == AllocationStrategy.FIXED && (subscriber == null || !subscribers.containsKey(subscriber))) {
             return SubscriptionOperationResponse(RequestType.UPLOAD, "Unable to upload subscriptions for a FIXED strategy without a valid subscriber name", notModified = subscriptions)
         }
@@ -123,21 +123,21 @@ class MainSubscriber(
             subscriptions.withIndex().groupBy({ (i, _) -> ranking[i % ranking.size] }, { (_, subscription) -> subscription })
         }.entries.parallelStream().forEach { (subscriber, subscriptions) ->
             if (subscriber == subscriberName) {
-                parentSubscriber.uploadSubscriptions(subscriptions, subscriber, true)
+                parentSubscriber.uploadSubscriptions(subscriptions, subscriber, true, stopped)
             } else {
                 val info = subscribers[subscriber]
                 val url = "http://${info?.fixedHost}:${info?.httpPort}/subscriptions/upload"
 
                 try {
                     logger.debug("Making request to $url")
-                    val response = HttpClient(url).jsonRequest("PUT", UploadSubscriptionsRequest(subscriptions), SubscriptionOperationResponse::class.java)
+                    val response = HttpClient(url, params = mapOf("stoppedSubscriptions" to listOf(stopped.keys.joinToString(",")))).jsonRequest("PUT", UploadSubscriptionsRequest(subscriptions), SubscriptionOperationResponse::class.java)
                     uploaded.addAll(response.modified)
                     notUploaded.addAll(response.notModified)
                 } catch (e: IllegalStateException) {
                     notUploaded.addAll(subscriptions)
                 }
             }
-            DbController.uploadSubscriptionsConcurrently(subscriptions.associateBy { (JSONSerializer.deserializeWithClassName(it) as Subscription<*, *>).name }, subscriber, stopped = false, active = true)
+            DbController.uploadSubscriptionsConcurrently(subscriptions.associateBy { (JSONSerializer.deserializeWithClassName(it) as Subscription<*, *>).name }, subscriber, stopped)
         }
 
         val message = if (notUploaded.isEmpty()) {
@@ -369,7 +369,7 @@ class MainSubscriber(
     /**
      * List of subscriptions to reallocate due to node crash
      */
-    private val fallenSubscriptionsBySubscriber = ConcurrentHashMap<String, Map<String, String>>()
+    private val fallenSubscriptionsBySubscriber = ConcurrentHashMap<String, Map<String, Pair<String, Boolean>>>()
 
     private val fallenSubscriptionsNeedToSend = ConcurrentHashMap<String, Boolean>()
 
@@ -403,13 +403,13 @@ class MainSubscriber(
             for ((subscriber, subscriptions) in fallenSubscriptionsBySubscriber) {
                 if (fallenSubscriptionsNeedToSend[subscriber] == true) {
                     val response = if (allocationStrategy == AllocationStrategy.FIXED) {
-                        uploadSubscriptions(subscriptions.values.toList(), subscriber)
+                        uploadSubscriptions(subscriptions.values.map { it.first }.toList(), subscriber, stopped = subscriptions.entries.associate { Pair(it.key, it.value.second) })
                     } else {
-                        uploadSubscriptions(subscriptions.values.toList())
+                        uploadSubscriptions(subscriptions.values.map { it.first }.toList(), stopped = subscriptions.entries.associate { Pair(it.key, it.value.second) })
                     }
 
                     if (response.result == SubscriptionOperationResult.PARTIAL) {
-                        fallenSubscriptionsBySubscriber[subscriber] = subscriptions.filter { subscription -> subscription.value in response.notModified }
+                        fallenSubscriptionsBySubscriber[subscriber] = subscriptions.filter { subscription -> subscription.key in response.notModified }
                     } else if (response.result == SubscriptionOperationResult.TOTAL) {
                         fallenSubscriptionsBySubscriber.remove(subscriber)
                         fallenSubscriptionsNeedToSend.remove(subscriber)
@@ -450,7 +450,7 @@ class MainSubscriber(
         }
 
         subscribers.forEach { subscriber ->
-            val subscriptionsForSubscriber = DbController.getLastActiveSubscriptionsBySubscriber(subscriber).associate { Pair(it.name, String(it.content.bytes)) }
+            val subscriptionsForSubscriber = DbController.getLastActiveSubscriptionsBySubscriber(subscriber).associate { Pair(it.name, Pair(String(it.content.bytes), it.stopped)) }
             fallenSubscriptionsBySubscriber[subscriber] = subscriptionsForSubscriber
             fallenSubscriptionsNeedToSend[subscriber] = true
         }

@@ -8,6 +8,9 @@ import org.nitb.orchestrator.amqp.AmqpSender
 import org.nitb.orchestrator.subscription.Subscription
 import org.nitb.orchestrator.subscription.SubscriptionReceiver
 import java.io.Serializable
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 @HeritableSubscription
 abstract class DeliverySubscription<I: Serializable, O: Serializable>(
@@ -35,10 +38,22 @@ abstract class DeliverySubscription<I: Serializable, O: Serializable>(
 
     override fun onStart() {
         client.createConsumer { cloudMessage ->
-            val result = runEvent(cloudMessage.size, cloudMessage.sender, cloudMessage.message)
+            val executor = Executors.newSingleThreadExecutor()
 
-            if (result != null)
-                sendToReceivers(result, client, receivers)
+            val task = executor.submit {
+                val result = runEvent(cloudMessage.size, cloudMessage.sender, cloudMessage.message)
+
+                if (result != null)
+                    sendToReceivers(result, client, receivers)
+            }
+
+            try {
+                task.get(timeout, TimeUnit.MILLISECONDS)
+            } catch (e: TimeoutException) {
+               throw InterruptedException()
+            } finally {
+                executor.shutdownNow()
+            }
         }
     }
 }

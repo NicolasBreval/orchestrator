@@ -16,6 +16,7 @@ import org.nitb.orchestrator.web.entities.UploadSubscriptionsRequest
 import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Paths
+import javax.annotation.Nullable
 
 @Controller
 class WorkerController {
@@ -58,8 +59,8 @@ class WorkerController {
     @Operation(summary = "Used to upload some subscriptions.")
     @ApiResponse(description = "Result of operation, with list of subscriptions that have been modified and that have not.")
     @Put("/subscriptions/upload")
-    fun addSubscriptions(@Body request: UploadSubscriptionsRequest): SubscriptionOperationResponse {
-        return Subscriber.uploadSubscriptions(request.subscriptions, request.subscriber)
+    fun addSubscriptions(@Body request: UploadSubscriptionsRequest, @Nullable @QueryValue stoppedSubscriptions: List<String>?): SubscriptionOperationResponse {
+        return Subscriber.uploadSubscriptions(request.subscriptions, request.subscriber, stopped = (stoppedSubscriptions?: listOf()).associateWith { true })
     }
 
     @Operation(summary = "Used to delete some subscriptions.")

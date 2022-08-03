@@ -59,7 +59,7 @@ object DbController {
      * @param stopped Indicates if subscriptions are stopped.
      * @param active Indicates if subscriptions are removed or not.
      */
-    fun uploadSubscriptionsConcurrently(subscriptions: Map<String, String>, subscriber: String, stopped: Boolean? = null, active: Boolean? = null) {
+    fun uploadSubscriptionsConcurrently(subscriptions: Map<String, String>, subscriber: String, stopped: Map<String, Boolean> = mapOf()) {
         Thread {
             val lastSubscriptions = getLastActiveSubscriptionsBySubscriber(subscriber).associateBy { it.name }
 
@@ -69,8 +69,8 @@ object DbController {
                         this.name = name
                         this.content = ExposedBlob(content.toByteArray())
                         this.subscriber = subscriber
-                        this.stopped = stopped ?: (lastSubscriptions[name]?.stopped ?: false)
-                        this.active = active ?: (lastSubscriptions[name]?.active ?: true)
+                        this.stopped = stopped[name] ?: (lastSubscriptions[name]?.stopped ?: false)
+                        this.active = lastSubscriptions[name]?.active ?: true
                     }
                 }
             }

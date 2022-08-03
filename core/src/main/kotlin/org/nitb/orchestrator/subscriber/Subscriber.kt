@@ -58,7 +58,7 @@ object Subscriber: AmqpManager<Serializable>, AmqpConsumer<Serializable>, AmqpSe
         checkMainNodeExistsScheduler.start()
     }
 
-    fun uploadSubscriptions(subscriptions: List<String>, subscriber: String? = null, force: Boolean = false): SubscriptionOperationResponse {
+    fun uploadSubscriptions(subscriptions: List<String>, subscriber: String? = null, force: Boolean = false, stopped: Map<String, Boolean> = mapOf()): SubscriptionOperationResponse {
         return try {
             if (isMainNode && !force) {
                 mainSubscriber.uploadSubscriptions(subscriptions, subscriber)
@@ -70,8 +70,14 @@ object Subscriber: AmqpManager<Serializable>, AmqpConsumer<Serializable>, AmqpSe
                     .filter { subscription -> subscriptionsPool[subscription.name]?.info?.content != subscription.info.content }
                     .forEach { subscription ->
                         logger.info("Uploading subscription ${subscription.name}")
+                        subscriptionsPool[subscription.name]?.stop()
                         subscriptionsPool[subscription.name] = subscription
-                        subscription.start()
+
+                        val subscriptionStopped = stopped[subscription.name] ?: false
+
+                        if (!subscriptionStopped) {
+                            subscription.start()
+                        }
                     }
 
                 val info = SubscriberInfo(name,
