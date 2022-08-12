@@ -48,7 +48,10 @@ abstract class DeliverySubscription<I: Serializable, O: Serializable>(
             }
 
             try {
-                task.get(timeout, TimeUnit.MILLISECONDS)
+                if (timeout > 0)
+                    task.get(timeout, TimeUnit.MILLISECONDS)
+                else
+                    task.get()
             } catch (e: TimeoutException) {
                 onError(cloudMessage.message)
                throw InterruptedException()
